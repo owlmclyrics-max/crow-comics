@@ -38,7 +38,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
   onDelete,
   onOpenChapter
 }) => {
-  const { isAdmin, user } = useAuth();
+  const { canManageContent, user } = useAuth();
 
   // Estado para la calificación del usuario
   const [userRating, setUserRating] = useState(0);
@@ -133,7 +133,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           <span>Volver al Directorio</span>
         </button>
 
-        {isAdmin && (
+        {canManageContent && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => onEdit?.(comic)}

@@ -20,7 +20,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   onSelectChapter,
   onOpenManageModal
 }) => {
-  const { isAdmin } = useAuth();
+  const { canManageContent } = useAuth();
   const { comics: allComics } = useComics();
   const [chapterIds, setChapterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +68,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
           <span>Volver a Personajes</span>
         </button>
 
-        {isAdmin && (
+        {canManageContent && (
           <button
             onClick={onOpenManageModal}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold transition-colors border border-zinc-700"

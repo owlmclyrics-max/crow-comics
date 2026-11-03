@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isCollaborator: boolean;
+  canManageContent: boolean;
   loading: boolean;
   isDemoMode: boolean;
   signIn: (email: string, password?: string, asAdmin?: boolean) => Promise<{ error: Error | null }>;
@@ -27,6 +29,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ADMIN_EMAILS = [
   'owlmclyrics@gmail.com',
   // agrega más correos admin aquí (en minúsculas)
+];
+
+const COLLABORATOR_EMAILS = [
+  'crow.comics.01@gmail.com',
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -168,6 +174,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ADMIN: la cuenta de Google está en ADMIN_EMAILS (sin segundo login).
   // Demo: sin Supabase configurado, consola demo.
   const isAdmin = isDemoAdmin || ADMIN_EMAILS.includes((user?.email ?? '').toLowerCase());
+  const isCollaborator = !isAdmin && COLLABORATOR_EMAILS.includes((user?.email ?? '').toLowerCase());
+  const canManageContent = isAdmin || isCollaborator;
 
   return (
     <AuthContext.Provider
@@ -176,6 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         profile,
         isAdmin,
+        isCollaborator,
+        canManageContent,
         loading,
         isDemoMode: !isSupabaseConfigured,
         signIn,

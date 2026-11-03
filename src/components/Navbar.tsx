@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPublicProfile,
   onOpenNewComic
 }) => {
-  const { user, profile, isAdmin, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, canManageContent, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
   const { getLinkReports, updateLinkReportStatus } = useComics();
 
   // Menú desplegable del usuario
@@ -525,7 +525,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* Menú visible SOLO si eres administrador logueado */}
+          {canManageContent && !isAdmin && (
+            <button
+              onClick={onOpenNewComic}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold transition-all shadow-md shadow-red-500/20 active:scale-95"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span className="hidden sm:inline">Nuevo Cómic</span>
+            </button>
+          )}
+
+          {/* Herramientas administrativas: reportes y estado de admin */}
           {isAdmin && (
             <div className="flex items-center gap-2">
               {/* Botón Nuevo Cómic */}

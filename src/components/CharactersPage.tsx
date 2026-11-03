@@ -11,7 +11,7 @@ interface CharactersPageProps {
 }
 
 export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModal, onSelectCharacter }) => {
-  const { isAdmin } = useAuth();
+  const { canManageContent } = useAuth();
   const { characters, loading } = useCharactersContext();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -43,7 +43,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModa
           </p>
         </div>
 
-        {isAdmin && (
+        {canManageContent && (
           <button
             onClick={onOpenManageModal}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95"
@@ -79,7 +79,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModa
             <p className="text-xs text-zinc-400 max-w-sm mx-auto">
               {searchTerm
                 ? 'Intenta con otro término de búsqueda'
-                : isAdmin
+                : canManageContent
                   ? 'Agrega el primer personaje usando el botón de gestión'
                   : 'Pronto se agregarán personajes'}
             </p>

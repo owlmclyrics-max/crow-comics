@@ -113,6 +113,63 @@ export const useCharacters = () => {
     [fetchCharacters],
   );
 
+  const updateCharacter = useCallback(
+    async (id: string, input: CharacterInput): Promise<CharacterResult> => {
+      const name = input.name.trim();
+      if (!name) return { success: false, error: 'El nombre es obligatorio' };
+
+      const payload = {
+        name,
+        name_spanish: clean(input.name_spanish) ?? null,
+        real_name: clean(input.real_name) ?? null,
+        photo_url: clean(input.photo_url) ?? null,
+        description: clean(input.description) ?? null,
+        first_appearance: clean(input.first_appearance) ?? null,
+        publisher: clean(input.publisher) ?? null,
+      };
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { error: updateError } = await supabase
+            .from('characters')
+            .update(payload)
+            .eq('id', id);
+          if (updateError) throw updateError;
+
+          await fetchCharacters();
+          return { success: true };
+        } catch (err: unknown) {
+          console.error('Error actualizando personaje:', err);
+          return { success: false, error: getErrorMessage(err) };
+        }
+      }
+
+      setCharacters((current) => {
+        const next = sortByName(
+          current.map((character) =>
+            character.id === id
+              ? {
+                  ...character,
+                  name,
+                  name_spanish: clean(input.name_spanish),
+                  real_name: clean(input.real_name),
+                  photo_url: clean(input.photo_url),
+                  description: clean(input.description),
+                  first_appearance: clean(input.first_appearance),
+                  publisher: clean(input.publisher),
+                }
+              : character,
+          ),
+        );
+        writeLocalCharacters(next);
+        return next;
+      });
+
+      return { success: true };
+    },
+    [fetchCharacters],
+  );
+
   const deleteCharacter = useCallback(
     async (id: string): Promise<CharacterResult> => {
       if (isSupabaseConfigured && supabase) {
@@ -144,6 +201,7 @@ export const useCharacters = () => {
     loading,
     error,
     addCharacter,
+    updateCharacter,
     deleteCharacter,
     refreshCharacters: fetchCharacters,
   };

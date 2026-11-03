@@ -116,7 +116,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   onSelectCharacter,
   onOpenChapter
 }) => {
-  const { isAdmin, user } = useAuth();
+  const { canManageContent, user } = useAuth();
   const { comics, reportBrokenLink } = useComics();
 
   // ── SPRINT 2: guardado automático de progreso de lectura ──
@@ -668,7 +668,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               Personajes que aparecen en este capítulo
             </p>
           </div>
-          {isAdmin && (
+          {canManageContent && (
             <button
               onClick={() => onOpenCharactersModal(loadChapterCharacters)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold transition-all shadow-md shadow-red-500/20"
@@ -687,7 +687,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
         ) : chapterCharacters.length === 0 ? (
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
             <p className="text-sm text-zinc-400 text-center">
-              {isAdmin
+              {canManageContent
                 ? 'Aún no hay personajes asignados. Usa el botón "Asignar Personajes" para añadirlos.'
                 : 'Los personajes aparecerán aquí cuando se asignen a este tomo.'}
             </p>

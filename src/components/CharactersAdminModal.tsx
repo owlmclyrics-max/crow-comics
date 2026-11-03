@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Character } from '../types/comic';
-import { X, Plus, Trash2, Save, Image as ImageIcon, User, Search, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, Save, Edit3, Image as ImageIcon, User, Search, AlertCircle } from 'lucide-react';
 import { useCharactersContext } from '../context/CharactersContext';
 import { matchesCharacterSearch } from '../lib/comicUtils';
 import { Modal } from './ui/Modal';
@@ -34,8 +34,9 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { characters, loading, addCharacter, deleteCharacter } = useCharactersContext();
+  const { characters, loading, addCharacter, updateCharacter, deleteCharacter } = useCharactersContext();
   const [isAdding, setIsAdding] = useState(false);
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
   const [form, setForm] = useState<CharacterFormState>(EMPTY_FORM);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +52,14 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
     setForm(EMPTY_FORM);
     setError(null);
     setIsAdding(false);
+    setEditingCharacterId(null);
   };
 
-  const handleAddCharacter = async () => {
+  const handleSaveCharacter = async () => {
     if (!form.name.trim()) return;
 
     setError(null);
-    const result = await addCharacter({
+    const input = {
       name: form.name,
       name_spanish: form.nameSpanish,
       real_name: form.realName,
@@ -65,13 +67,31 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
       description: form.description,
       first_appearance: form.firstAppearance,
       publisher: form.publisher,
-    });
+    };
+    const result = editingCharacterId
+      ? await updateCharacter(editingCharacterId, input)
+      : await addCharacter(input);
 
     if (result.success) {
       resetForm();
     } else {
-      setError(result.error ?? 'Error al agregar personaje');
+      setError(result.error ?? 'Error al guardar personaje');
     }
+  };
+
+  const handleEditCharacter = (character: Character) => {
+    setEditingCharacterId(character.id);
+    setForm({
+      name: character.name,
+      nameSpanish: character.name_spanish ?? '',
+      realName: character.real_name ?? '',
+      photoUrl: character.photo_url ?? '',
+      description: character.description ?? '',
+      firstAppearance: character.first_appearance ?? '',
+      publisher: character.publisher ?? '',
+    });
+    setError(null);
+    setIsAdding(true);
   };
 
   const handleDeleteCharacter = async (character: Character) => {
@@ -135,7 +155,7 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
           <div className="bg-zinc-950/60 border border-red-500/40 rounded-2xl p-6 space-y-4">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Plus className="w-5 h-5 text-red-400" />
-              Agregar Nuevo Personaje
+              {editingCharacterId ? 'Editar Personaje' : 'Agregar Nuevo Personaje'}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,12 +239,12 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
 
             <div className="flex items-center gap-3 pt-2">
               <button
-                onClick={handleAddCharacter}
+                onClick={handleSaveCharacter}
                 disabled={!form.name.trim()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
-                <span>Guardar Personaje</span>
+                <span>{editingCharacterId ? 'Guardar Cambios' : 'Guardar Personaje'}</span>
               </button>
               <button
                 onClick={resetForm}
@@ -283,13 +303,22 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteCharacter(character)}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-semibold transition-colors border border-rose-800/80"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Eliminar</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditCharacter(character)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors border border-zinc-700"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Editar</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCharacter(character)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-semibold transition-colors border border-rose-800/80"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Eliminar</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
