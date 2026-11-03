@@ -207,7 +207,7 @@ export const App: React.FC = () => {
       />
 
       {/* Contenido Principal según Vista */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="box-border flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
         {error && (
           <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs flex items-center gap-3">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />

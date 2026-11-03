@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
 import { Modal } from './ui/Modal';
+import { ImageUploadField } from './ImageUploadField';
 
 interface ComicAdminFormModalProps {
   isOpen: boolean;
@@ -94,11 +95,11 @@ const ChapterEditor: React.FC<{
         <input type="number" value={chapter.chapter_number}
           onChange={e => onUpdate('chapter_number', parseInt(e.target.value, 10))} className={inputCls} />
       </Field>
-      <Field label="Portada (URL)">
-        <input type="text" value={chapter.cover_url ?? ''}
-          onChange={e => onUpdate('cover_url', e.target.value)}
-          placeholder="https://..." className={inputCls} />
-      </Field>
+      <ImageUploadField
+        label="Portada del capítulo"
+        value={chapter.cover_url ?? ''}
+        onChange={url => onUpdate('cover_url', url)}
+      />
       <Field label="Fecha">
         <input type="date" value={chapter.release_date ?? TODAY}
           onChange={e => onUpdate('release_date', e.target.value)} className={inputCls} />
@@ -316,10 +317,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           <input type="text" value={originalTitle} onChange={e => setOriginalTitle(e.target.value)}
             placeholder="Original title" className={inputCls} />
         </Field>
-        <Field label="URL de Portada *">
-          <input type="text" value={coverUrl} onChange={e => setCoverUrl(e.target.value)}
-            placeholder="https://..." className={inputCls} />
-        </Field>
+        <ImageUploadField label="Portada del cómic *" value={coverUrl} onChange={setCoverUrl} />
         <Field label="Editorial">
           <select value={publisher} onChange={e => setPublisher(e.target.value as ComicPublisher)} className={inputCls}>
             {PUBLISHERS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -403,10 +401,10 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   const selectedChapter = chapters[selectedChapterIdx];
 
   const renderChapters = () => (
-    <div className="flex gap-4 h-full min-h-[420px]">
+    <div className="flex flex-col md:flex-row gap-4 min-h-0 md:h-full md:min-h-[420px]">
 
       {/* ── COLUMNA IZQUIERDA: lista compacta ── */}
-      <div className="w-52 shrink-0 flex flex-col gap-2">
+      <div className="w-full md:w-52 md:shrink-0 flex flex-col gap-2">
         <div className="flex items-center justify-between mb-1">
           <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
             Tomos ({chapters.length})
@@ -421,7 +419,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 space-y-1 overflow-y-auto pr-0.5 max-h-[380px]">
+        <div className="flex gap-2 overflow-x-auto md:flex-col md:overflow-x-visible md:overflow-y-auto pr-0.5 md:max-h-[380px]">
           {chapters.length === 0 && (
             <div className="py-8 text-center rounded-xl bg-zinc-950/60 border border-dashed border-zinc-700">
               <p className="text-[11px] text-zinc-500">Sin capítulos</p>
@@ -435,7 +433,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
                 key={ch.id}
                 type="button"
                 onClick={() => setSelectedChapterIdx(i)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all group flex items-center gap-2 ${
+                className={`min-w-[180px] md:min-w-0 md:w-full text-left px-3 py-2.5 rounded-xl border transition-all group flex items-center gap-2 ${
                   i === selectedChapterIdx
                     ? 'bg-red-500/15 border-red-500/40 text-white'
                     : 'bg-zinc-900/50 border-zinc-700/40 text-zinc-400 hover:text-white hover:bg-zinc-800/60'
@@ -476,10 +474,10 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
 
       {/* ── Divisor ── */}
-      <div className="w-px bg-zinc-800 shrink-0" />
+      <div className="hidden md:block w-px bg-zinc-800 shrink-0" />
 
       {/* ── COLUMNA DERECHA: editor ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-w-0 md:overflow-y-auto">
         {selectedChapter ? (
           <div className="space-y-1 mb-3">
             <div className="flex items-center gap-2">
@@ -518,7 +516,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-zinc-800">
         <div>
           <h2 className="text-xl font-black text-white">
             {comicToEdit ? 'Editar Cómic' : 'Nuevo Cómic'}
@@ -565,7 +563,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
 
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto px-6 py-5 ${currentStep === 'chapters' ? 'overflow-hidden' : ''}`}>
+      <div className={`flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5 ${currentStep === 'chapters' ? 'md:overflow-hidden' : ''}`}>
         {errorMsg && (
           <div className="mb-4 p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-200 text-xs flex items-center gap-3">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
@@ -577,9 +575,9 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 bg-zinc-900/20">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 bg-zinc-900/20">
         <button type="button" onClick={handleBack} disabled={stepIndex === 0}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <ChevronLeft className="w-4 h-4" /> Anterior
         </button>
 
@@ -594,13 +592,13 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         {isLastStep ? (
           <button type="button" onClick={handleSave}
             disabled={saving || !title.trim() || !coverUrl.trim() || !synopsis.trim() || !writer.trim() || !translatorTypesetter.trim()}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
             <Save className="w-4 h-4" />
             {saving ? 'Guardando...' : 'Guardar Cómic'}
           </button>
         ) : (
           <button type="button" onClick={handleNext}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95">
+            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95">
             Siguiente <ChevronRight className="w-4 h-4" />
           </button>
         )}

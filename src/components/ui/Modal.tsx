@@ -36,13 +36,13 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
       onMouseDown={(event) => {
         if (closeOnBackdrop && event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        className={`bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-scale-in ${className}`}
+        className={`bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-hidden flex flex-col animate-scale-in ${className}`}
       >
         {children}
       </div>

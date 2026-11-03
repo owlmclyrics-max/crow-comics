@@ -28,7 +28,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
       {/* Filtros por Etiquetas */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+    <div className="flex flex-wrap items-center gap-1.5 pb-1 sm:pb-0 w-full sm:w-auto">
         <div className="flex items-center gap-1.5 text-xs text-zinc-400 mr-2 shrink-0">
           <Filter className="w-3.5 h-3.5 text-red-400" />
           <span className="font-semibold">Etiquetas:</span>

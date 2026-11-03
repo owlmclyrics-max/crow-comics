@@ -633,8 +633,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             </div>
           </div>
 
-          <div className="relative w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl"
-               style={{ paddingBottom: '133%' /* ratio 3:4 aprox para un PDF */ }}>
+          <div className="relative w-full h-[72svh] min-h-[420px] max-h-[900px] sm:h-auto sm:min-h-0 sm:max-h-none sm:pb-[133%] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
             <iframe
               src={chapter.pdf_url}
               title={`Leer ${chapter.title} online`}

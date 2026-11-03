@@ -1,12 +1,51 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    overflow-x: clip;
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: #0c0609; /* negro-rojizo de fondo, acento Crow */
     color: #f8fafc; /* zinc-50 */
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     margin: 0;
     min-height: 100vh;
+    overflow-x: clip;
+  }
+
+  #root {
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 639px) {
+  main,
+  main > *,
+  main section,
+  main article {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  img,
+  iframe,
+  video {
+    max-width: 100%;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 }
 

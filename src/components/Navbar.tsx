@@ -18,6 +18,7 @@ import {
   XCircle,
   Clock,
   History,
+  Menu,
 } from 'lucide-react';
 import type { Comic, LinkReport, Profile } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -119,6 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const pendingCount = reports.filter(r => r.status === 'pending').length;
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -214,20 +216,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-50 w-full bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand + Navegación Principal (Inicio / Cómics) */}
-        <div className="flex items-center gap-6 sm:gap-8 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-6 md:gap-8 shrink-0">
           <button
             type="button"
             onClick={() => onNavigate('landing')}
             className="flex items-center gap-3 cursor-pointer group text-left"
             title="Volver a la pantalla de bienvenida"
           >
-            <div className="w-10 h-10 transition-transform group-hover:scale-105">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 transition-transform group-hover:scale-105">
               <img
                 src={`${import.meta.env.BASE_URL}crow-emblem.png`}
                 alt="Crow Comics"
-                className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(220,38,38,0.45)]"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow-[0_0_10px_rgba(220,38,38,0.45)]"
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.style.display = 'none';
@@ -239,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Feather className="hidden w-6 h-6 stroke-[2.5] text-red-500" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tight text-white uppercase font-sans">
+                <span className="text-sm sm:text-lg font-black tracking-tight text-white uppercase font-sans">
                   CROW <span className="text-red-400">COMICS</span>
                 </span>
               </div>
@@ -250,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Links de Navegación: Inicio, Cómics, Personajes e Historial (con cuenta) */}
-          <nav className="flex items-center gap-1.5 sm:gap-2">
+          <nav className="hidden md:flex items-center gap-1.5 sm:gap-2">
             {NAV_ITEMS.map((item) => {
               // El Historial requiere sesión: sin cuenta no se muestra.
               if (item.view === 'historial' && !user) return null;
@@ -282,11 +284,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Zona Derecha: Barra de Búsqueda Expandible + Panel Admin */}
-        <div className="flex items-center gap-3 relative justify-end flex-1" ref={searchContainerRef}>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1" ref={searchContainerRef}>
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(open => !open)}
+            aria-label={isMobileNavOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={isMobileNavOpen}
+            className="md:hidden p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300"
+          >
+            {isMobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
           {/* Lupa / Input Expandible */}
           <div className="relative flex items-center">
             {isSearchOpen ? (
-              <div className="relative flex items-center w-60 sm:w-80 md:w-96 transition-all duration-300">
+              <div className="relative flex items-center w-[min(68vw,20rem)] sm:w-80 md:w-96 transition-all duration-300">
                 <Search className="absolute left-3 w-4 h-4 text-red-400 pointer-events-none" />
                 <input
                   ref={searchInputRef}
@@ -321,7 +332,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Dropdown flotante con resultados inmediatos */}
             {isSearchOpen && searchQuery.trim() && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-[min(90vw,24rem)] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
                 {/* ── Perfiles (Sprint 4) ── */}
                 {matchingProfiles.length > 0 && (
                   <>
@@ -518,7 +529,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ) : (
                       <GoogleIcon className="w-4 h-4" />
                     )}
-                    <span>Continuar con Google</span>
+                    <span className="hidden sm:inline">Continuar con Google</span>
                   </button>
                 </div>
               )
@@ -667,6 +678,93 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
+      {isMobileNavOpen && (
+        <nav className="absolute right-3 top-[calc(100%+0.5rem)] z-[60] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-zinc-700/80 bg-zinc-950/95 p-2 shadow-2xl shadow-black/60 backdrop-blur-xl md:hidden">
+          <div className="mb-2 flex items-center justify-between border-b border-zinc-800 px-3 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Explorar</span>
+            <span className="text-[10px] font-semibold text-red-400">CROW COMICS</span>
+          </div>
+          <div className="space-y-1">
+            {NAV_ITEMS.map(item => {
+            if (item.view === 'historial' && !user) return null;
+            const Icon = item.icon;
+            const isActive = item.view === 'personajes'
+              ? currentView === 'personajes' || currentView === 'character-detail'
+              : item.view === 'historial'
+                ? currentView === 'historial'
+                : currentView === item.view;
+            return (
+              <button
+                key={item.view}
+                type="button"
+                onClick={() => {
+                  onNavigate(item.view);
+                  setIsMobileNavOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                  isActive ? 'bg-zinc-900 text-red-400' : 'text-zinc-300 hover:bg-zinc-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            );
+            })}
+          </div>
+          {user && (
+            <div className="mt-2 border-t border-zinc-800 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenProfile();
+                  setIsMobileNavOpen(false);
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:bg-zinc-900"
+              >
+                <UserCircle className="h-4 w-4" />
+                Mi perfil
+              </button>
+              {canManageContent && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenNewComic();
+                    setIsMobileNavOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-red-300 transition-colors hover:bg-red-950/40"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nuevo cómic
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileNavOpen(false);
+                  void signOut();
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-zinc-400 transition-colors hover:bg-rose-950/40 hover:text-rose-300"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            </div>
+          )}
+          {!user && !authLoading && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAuth();
+                setIsMobileNavOpen(false);
+              }}
+              className="mt-2 w-full flex items-center gap-3 rounded-xl border-t border-zinc-800 px-3 py-4 text-sm font-semibold text-zinc-300 hover:bg-zinc-900"
+            >
+              <User className="w-4 h-4" />
+              Entrar o crear cuenta
+            </button>
+          )}
+        </nav>
+      )}
     </header>
   );
 };
