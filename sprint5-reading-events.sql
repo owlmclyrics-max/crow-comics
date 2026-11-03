@@ -59,39 +59,39 @@ on public.event_items for select
 to anon, authenticated
 using (true);
 
--- 6. Escritura reservada para cuentas con sesión (el admin la maneja desde
---    Supabase, igual que comics/chapters en supabase-schema.sql)
-create policy "Solo usuarios autenticados pueden crear eventos"
+-- 6. Escritura reservada para el equipo Crow (admins). Requiere la función
+--    is_crow_admin() del script hardening-admin-rls.sql (ejecutarlo primero).
+create policy "Solo el equipo Crow crea guías"
 on public.events for insert
 to authenticated
-with check (true);
+with check (public.is_crow_admin());
 
-create policy "Solo usuarios autenticados pueden editar eventos"
+create policy "Solo el equipo Crow edita guías"
 on public.events for update
 to authenticated
-using (true)
-with check (true);
+using (public.is_crow_admin())
+with check (public.is_crow_admin());
 
-create policy "Solo usuarios autenticados pueden eliminar eventos"
+create policy "Solo el equipo Crow elimina guías"
 on public.events for delete
 to authenticated
-using (true);
+using (public.is_crow_admin());
 
-create policy "Solo usuarios autenticados pueden crear items de eventos"
+create policy "Solo el equipo Crow crea items de guías"
 on public.event_items for insert
 to authenticated
-with check (true);
+with check (public.is_crow_admin());
 
-create policy "Solo usuarios autenticados pueden editar items de eventos"
+create policy "Solo el equipo Crow edita items de guías"
 on public.event_items for update
 to authenticated
-using (true)
-with check (true);
+using (public.is_crow_admin())
+with check (public.is_crow_admin());
 
-create policy "Solo usuarios autenticados pueden eliminar items de eventos"
+create policy "Solo el equipo Crow elimina items de guías"
 on public.event_items for delete
 to authenticated
-using (true);
+using (public.is_crow_admin());
 
 -- 7. Índices para las consultas del catálogo y del detalle
 create index if not exists idx_event_items_event_position
