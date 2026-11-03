@@ -1,0 +1,15 @@
+CPORTADAS DE LA LANDING
+=======================
+
+Suelta aquí las imágenes de portadas que quieres usar en el fondo de la
+pantalla de bienvenida (el mosaico de columnas que sube y baja).
+
+Formatos aceptados: .jpg, .jpeg, .png, .webp, .avif
+Recomendado: webp o jpg, proporción vertical (2:3), ancho ~600px,
+peso < 200KB por imagen (se cargan todas al abrir la web).
+
+No hace falta ningún listado ni index: Vite las descubre automáticamente
+con import.meta.glob y las incluye en el build con su nombre con hash.
+
+Cuando el catálogo de Supabase crezca, sus portadas se mezclarán con estas:
+ambas fuentes se combinan para rellenar las 6 columnas del fondo.
