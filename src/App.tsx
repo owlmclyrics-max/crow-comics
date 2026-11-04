@@ -163,6 +163,11 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg text-ink flex flex-col font-sans selection:bg-accent selection:text-onaccent">
+      {/* ===== AMBIENTE GLOBAL: luces y halftone detrás de toda la web ===== */}
+      {/* Solo visible donde no hay superficies pintadas (fondo de página) */}
+      <div className="pointer-events-none fixed inset-0 z-0 crow-dots opacity-40" aria-hidden="true" />
+      <div className="pointer-events-none fixed -top-40 right-[-6rem] z-0 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none fixed -bottom-48 left-[-8rem] z-0 h-[30rem] w-[30rem] rounded-full bg-accent/10 blur-3xl" aria-hidden="true" />
       {/* Notificaciones globales (Sprint 2.5) */}
       <ToastHost />
       {/* Splash "Sesión iniciada" (aparece al autentificarse en cualquier vista) */}
@@ -207,7 +212,7 @@ export const App: React.FC = () => {
       />
 
       {/* Contenido Principal según Vista */}
-      <main className="box-border flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
+      <main className="box-border relative z-10 flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
         {error && (
           <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs flex items-center gap-3">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />

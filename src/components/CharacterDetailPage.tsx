@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Character, Comic, Chapter } from '../types/comic';
+import { CrowAmbience } from './ui/CrowAmbience';
 import { ArrowLeft, BookOpen, Layers, User, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -92,7 +93,8 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
         </div>
-
+        {/* Ambiente Crow (puntos + resplandor + marca de agua) */}
+        <CrowAmbience glow="right" />
         <div className="relative p-8 sm:p-12 flex flex-col md:flex-row items-center md:items-start gap-8 z-10">
           {/* Foto Circular del Personaje */}
           <div className="relative shrink-0">

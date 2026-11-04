@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { Comic, Chapter } from '../types/comic';
+import { CrowAmbience } from './ui/CrowAmbience';
 import {
   ArrowLeft,
   User,
@@ -157,6 +158,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       {/* HERO BANNER CON FICHA COMPLETA + DESCARGA + ESTRELLAS      */}
       {/* ======================================================== */}
       <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl smooth-transition-slow">
+        <CrowAmbience glow="right" />
         {/* Fondo con desenfoque de la misma portada con parallax */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
           <img

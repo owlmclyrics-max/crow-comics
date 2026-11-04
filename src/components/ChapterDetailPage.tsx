@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChapterWithComic, ChapterLink, Chapter, Comic, Character } from '../types/comic';
+import { CrowAmbience } from './ui/CrowAmbience';
 import {
   ArrowLeft,
   Download,
@@ -415,6 +416,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* HERO CARD: portada + info + descargas + calificación + leer online */}
       {/* ================================================================ */}
       <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl">
+        <CrowAmbience glow="right" />
         {/* Fondo desenfocado */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img

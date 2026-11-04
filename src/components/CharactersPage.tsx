@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
+import { CrowAmbience } from './ui/CrowAmbience';
 import { User, Search, Edit3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCharactersContext } from '../context/CharactersContext';
@@ -31,8 +32,10 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModa
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header con ambiente Crow */}
+      <div className="relative overflow-hidden rounded-3xl border border-line bg-bg p-5 sm:p-6">
+        <CrowAmbience glow="right" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-ink flex items-center gap-3">
             <User className="w-8 h-8 text-accent" />
@@ -52,6 +55,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModa
             <span>Gestionar Personajes</span>
           </button>
         )}
+        </div>
       </div>
 
       {/* Buscador */}

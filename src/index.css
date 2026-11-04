@@ -134,6 +134,19 @@
   background-color: oklch(var(--crow-accent-l) 0.21 var(--crow-hue) / 0.35);
 }
 
+/* ============ AMBIENTE "CROW" (luces + halftone por toda la web) ============ */
+/* Textura de puntos estilo historieta; color adaptado a cada tema */
+[data-theme='dark'] {
+  --crow-dot-color: rgba(255, 255, 255, 0.07);
+}
+[data-theme='light'] {
+  --crow-dot-color: rgba(0, 0, 0, 0.055);
+}
+.crow-dots {
+  background-image: radial-gradient(var(--crow-dot-color) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
 /* Tinte dinámico de logos: rota el tono rojo original hacia el acento activo.
    El rojo de los PNG vive alrededor de oklch hue 25°; por eso restamos 25. */
 .logo-tint {

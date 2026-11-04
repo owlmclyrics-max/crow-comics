@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Comic, ComicPublisher, ReadingEvent } from '../types/comic';
+import { CrowAmbience } from './ui/CrowAmbience';
 import { PUBLISHER_FILTERS } from '../lib/constants';
 import { ComicCard } from './ComicCard';
 import { EventsListPage } from './EventsListPage';
@@ -60,7 +61,10 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
         /* PESTAÑA: GUÍAS DE LECTURA (EVENTOS / CROSSOVERS)          */
         /* ======================================================== */
         <div className="space-y-6">
-          <div className="space-y-2">
+          {/* Encabezado con ambiente Crow */}
+          <div className="relative overflow-hidden rounded-3xl border border-line bg-bg p-5 sm:p-6">
+            <CrowAmbience glow="right" />
+            <div className="relative space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
               Crossovers y Sagas
@@ -71,6 +75,7 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
             <p className="text-sm text-mute max-w-2xl">
               El orden correcto para leer sagas que cruzan varias series. Cada guía marca qué cómics ya están disponibles y cuáles esperan maquetación.
             </p>
+            </div>
           </div>
 
           <EventsListPage comics={comics} onSelectEvent={onSelectEvent ?? (() => {})} />
@@ -81,8 +86,10 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
         /* ======================================================== */
         <>
 
-      {/* Cabecera de la Sección Cómics */}
-      <div className="space-y-2">
+      {/* Cabecera de la Sección Cómics (con ambiente Crow) */}
+      <div className="relative overflow-hidden rounded-3xl border border-line bg-bg p-5 sm:p-6">
+        <CrowAmbience glow="right" />
+        <div className="relative space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5" />
           Archivo General de Maquetaciones
@@ -93,6 +100,7 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
         <p className="text-sm text-mute max-w-2xl">
           Selecciona tu editorial favorita para filtrar los cómics disponibles o explora los proyectos de editoriales independientes y de culto.
         </p>
+        </div>
       </div>
 
       {/* Selector de Editoriales con Pills Grandes */}

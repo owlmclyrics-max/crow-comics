@@ -115,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   }, [comics]);
 
   return (
-    <div className="relative min-h-[100svh] w-full overflow-hidden bg-bg select-none">
+    <div className="relative h-[100svh] w-full overflow-hidden bg-bg select-none">
       {/* ====== FONDO: COLUMNAS EN MOSAICO ====== */}
       <div
         className="absolute inset-0 flex gap-2 sm:gap-4 -mx-3 sm:-mx-6"
@@ -171,7 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <div className="absolute left-1/2 top-[8%] -translate-x-1/2 w-72 h-72 sm:w-[36rem] sm:h-[36rem] bg-accent/15 blur-3xl rounded-full pointer-events-none" />
 
       {/* ====== CONTENIDO ====== */}
-      <div className="relative z-10 flex min-h-[100svh] flex-col">
+      <div className="relative z-10 flex h-full min-h-[100svh] flex-col">
         {/* Barra superior: logo + botones de sesión */}
         <div className="flex items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-10 sm:pt-6">
           {/* Logo: usa /crow-logo.png si el usuario lo sube a /public */}
@@ -245,8 +245,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Centro: emblema + titular + CTA */}
-        <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-0">
-          <div className="relative flex w-full max-w-2xl flex-col items-center gap-5 rounded-[2rem] border border-line bg-bg/35 px-5 py-7 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-7 sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
+        <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6 sm:px-6 sm:py-0">
+          {/* Tarjeta siempre "dark glass": el fondo es la foto de portadas con
+              viñeta negra en AMBOS temas, así el texto claro es fijo y legible */}
+          <div className="relative flex w-full max-w-2xl flex-col items-center gap-3.5 rounded-[2rem] border border-white/10 bg-black/35 px-5 py-5 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-5 sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
           <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-accent sm:text-[10px]">
             <Sparkles className="h-3 w-3 text-accent" />
             Tu universo de cómics
@@ -256,7 +258,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <img
               src={`${BASE_URL}crow-emblem.png`}
               alt="Emblema de Crow Comics"
-              className="logo-tint h-36 w-36 object-contain drop-shadow-[0_10px_40px_oklch(0.63_0.21_var(--crow-hue)/60%)] animate-parallax-float sm:h-60 sm:w-60 md:h-72 md:w-72"
+              className="logo-tint h-[26svh] w-[26svh] object-contain drop-shadow-[0_10px_40px_oklch(0.63_0.21_var(--crow-hue)/60%)] animate-parallax-float sm:h-[32svh] sm:w-[32svh] md:h-[36svh] md:w-[36svh]"
               onError={(e) => {
                 // Fallback: círculo con emblema genérico de pluma
                 const target = e.currentTarget;
@@ -265,17 +267,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               }}
             />
             <div
-              className="hidden h-36 w-36 items-center justify-center rounded-full border-4 border-accent/30 bg-gradient-to-br from-accent via-accent2 to-accent2 shadow-[0_10px_50px_oklch(0.63_0.21_var(--crow-hue)/50%)] animate-parallax-float sm:h-60 sm:w-60 sm:border-8 md:h-72 md:w-72"
+              className="hidden h-[26svh] w-[26svh] items-center justify-center rounded-full border-4 border-accent/30 bg-gradient-to-br from-accent via-accent2 to-accent2 shadow-[0_10px_50px_oklch(0.63_0.21_var(--crow-hue)/50%)] animate-parallax-float sm:h-[32svh] sm:w-[32svh] sm:border-8 md:h-[36svh] md:w-[36svh]"
             >
               <Feather className="h-14 w-14 text-accent stroke-[1.5] sm:h-28 sm:w-28" />
             </div>
           </div>
 
-          {/* Titular estilo cómic */}
-          <h1 className="max-w-xl font-landing text-3xl font-black leading-[1.08] tracking-tight text-ink drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
+          {/* Titular estilo cómic — texto claro FIJO: el fondo del héroe es
+              la foto de portadas con viñeta (oscura en ambos temas) */}
+          <h1 className="max-w-xl font-landing text-3xl font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
             Lee, guarda tus <span className="text-accent">cómics</span>
           </h1>
-          <p className="max-w-md text-sm leading-relaxed text-ink sm:text-base">
+          <p className="max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
             Descubre nuevas historias, sigue tus lecturas y encuentra a tus personajes favoritos.
           </p>
 
@@ -289,7 +292,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </span>
             <ArrowRight className="h-5 w-5 text-onaccent transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
           </button>
-          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-mute">
+          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">
             Historias para descubrir · Lecturas para guardar
           </span>
           </div>
