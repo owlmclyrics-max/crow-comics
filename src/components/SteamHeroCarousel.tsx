@@ -63,14 +63,14 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
 
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Auto-slide cada 6 segundos
+  // Auto-slide cada 6 segundos (se reinicia al navegar manualmente)
   useEffect(() => {
     if (recentChapters.length <= 1) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % recentChapters.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [recentChapters.length]);
+  }, [recentChapters.length, activeIndex]);
 
   if (recentChapters.length === 0) {
     // Fallback: mostrar cómics directamente si no hay tomos cargados
@@ -127,7 +127,19 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   };
 
   return (
-    <div className="relative rounded-3xl bg-surface border border-line/90 shadow-2xl overflow-hidden group smooth-transition-slow">
+    <div className="relative rounded-3xl bg-surface border border-accent/25 shadow-2xl overflow-hidden group smooth-transition-slow">
+      {/* Línea de luz superior del acento (marco "neón" del card) */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
+
+      {/* Contador de posición estilo gestor de UI (01 / 05) */}
+      <div className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
+        <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-3 py-1 font-mono text-[11px] font-bold tracking-widest text-white/90 shadow-lg backdrop-blur-md">
+          {String(currentIndex + 1).padStart(2, '0')}
+          <span className="mx-1 text-white/40">/</span>
+          {String(recentChapters.length).padStart(2, '0')}
+        </span>
+      </div>
+
       {/* Fondo cinemático desenfocado dinámico del cómic activo con parallax */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
         <img
@@ -139,11 +151,39 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-surface/80 to-bg/60" />
       </div>
 
+      {/* ── Flechas de navegación flotantes a media altura ── */}
+      {/* Discos glass grandes al costado del card, estilo Steam/gestor de   */}
+      {/* UI: en escritorio aparecen al pasar el cursor; en móvil siempre    */}
+      {/* visibles. Al hover se visten del acento. */}
+      {recentChapters.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label="Anterior novedad"
+            title="Anterior"
+            className="absolute left-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 shadow-xl backdrop-blur-md transition-all duration-200 opacity-100 active:scale-95 hover:scale-110 hover:border-accent hover:bg-accent hover:text-onaccent hover:shadow-accent/50 sm:left-4 sm:h-12 sm:w-12 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-label="Siguiente novedad"
+            title="Siguiente"
+            className="absolute right-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 shadow-xl backdrop-blur-md transition-all duration-200 opacity-100 active:scale-95 hover:scale-110 hover:border-accent hover:bg-accent hover:text-onaccent hover:shadow-accent/50 sm:right-4 sm:h-12 sm:w-12 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+        </>
+      )}
+
       <div className="relative p-5 sm:p-8 md:p-10 flex flex-col lg:flex-row gap-6 sm:gap-8 items-center z-10 animate-fade-in">
         {/* LADO IZQUIERDO: Portada Principal Vertical con badge de Novedad */}
         <div
+          key={current.id}
           onClick={() => onSelectChapter?.(current)}
-          className="relative aspect-[2/3] w-48 sm:w-56 md:w-64 rounded-2xl overflow-hidden border-2 border-line/80 shadow-2xl bg-bg shrink-0 cursor-pointer group/cover transform hover:scale-[1.03] smooth-transition animate-scale-in"
+          className="relative aspect-[2/3] w-48 sm:w-56 md:w-64 rounded-2xl overflow-hidden border-2 border-accent/30 shadow-2xl bg-bg shrink-0 cursor-pointer group/cover transform hover:scale-[1.03] smooth-transition animate-scale-in"
         >
           <img
             src={current.cover_url || current.comic_cover_url}
@@ -171,8 +211,8 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           </div>
         </div>
 
-        {/* LADO DERECHO: Información, Sinopsis, Tomos y Botones */}
-        <div className="flex-1 space-y-4 text-center lg:text-left">
+        {/* LADO DERECHO: Información, Sinopsis, Tomos y Botones (re-anima al cambiar de slide) */}
+        <div key={current.id} className="flex-1 space-y-4 text-center lg:text-left animate-fade-in">
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
@@ -245,7 +285,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
 
       {/* Miniaturas Inferiores estilo Selector de Steam */}
       {recentChapters.length > 1 && (
-        <div className="border-t border-line/80 bg-bg/70 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+        <div className="border-t border-accent/20 bg-bg/70 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center gap-4">
           <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none flex-1">
             <span className="text-[11px] font-bold text-mute uppercase tracking-wider mr-2 shrink-0 hidden sm:inline">
               Últimas 5 Novedades:
@@ -256,16 +296,17 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                 <button
                   key={chapter.id}
                   onClick={() => setActiveIndex(idx)}
-                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all shrink-0 border ${
+                  aria-label={`Ir a ${chapter.title}`}
+                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all shrink-0 border active:scale-95 ${
                     isActive
-                      ? 'bg-raised border-accent text-ink shadow-md'
+                      ? 'bg-raised border-accent text-ink shadow-md shadow-accent/20'
                       : 'bg-surface/60 border-line/80 text-mute hover:text-ink hover:bg-raised'
                   }`}
                 >
                   <img
                     src={chapter.cover_url || chapter.comic_cover_url}
                     alt={chapter.title}
-                    className="w-5 h-7 object-cover rounded shrink-0"
+                    className={`w-5 h-7 object-cover rounded shrink-0 transition-all ${isActive ? 'ring-1 ring-accent' : 'opacity-70'}`}
                   />
                   <span className="text-xs font-semibold truncate max-w-[120px] sm:max-w-[160px]">
                     {chapter.title}
@@ -273,24 +314,6 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                 </button>
               );
             })}
-          </div>
-
-          {/* Flechas de Navegación manual */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={handlePrev}
-              className="p-1.5 rounded-lg bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-colors"
-              title="Anterior novedad"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="p-1.5 rounded-lg bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-colors"
-              title="Siguiente novedad"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
       )}
