@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Comic, ChapterWithComic } from '../types/comic';
+import type { Comic, Chapter, ChapterWithComic } from '../types/comic';
 import { toChapterWithComic } from '../lib/comicUtils';
 import {
   Sparkles,
@@ -21,17 +21,43 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   onSelectChapter,
   onExplorePublishers
 }) => {
-  // Crear lista plana de capítulos con información del cómic
+  // Crear lista plana de capítulos con información del cómic.
+  // REGLAS:
+  //  - Recencia = fecha más confiable disponible (release_date > created_at).
+  //    Así, un capítulo sin release_date asignado NO queda al fondo.
+  //  - SOLO UN capítulo por cómic: el más reciente de cada serie. Si se
+  //    publican 3 tomos seguidos del mismo cómic, el carrusel no se satura.
   const recentChapters = useMemo(() => {
-    const allChapters: ChapterWithComic[] = [];
+    type RecentChapter = ChapterWithComic & { _ts: number };
+
+    const chapterTs = (c: Chapter): number => {
+      const rd = c.release_date ? new Date(c.release_date).getTime() : 0;
+      const ca = c.created_at ? new Date(c.created_at).getTime() : 0;
+      return Math.max(rd, ca);
+    };
+
+    const latestByComic = new Map<string, RecentChapter>();
     comics.forEach(comic => {
       comic.chapters?.forEach(chapter => {
-        allChapters.push(toChapterWithComic(chapter, comic));
+        const ts = chapterTs(chapter);
+        const existing = latestByComic.get(comic.id);
+        const isBetter =
+          !existing ||
+          ts > existing._ts ||
+          (ts === existing._ts && chapter.chapter_number > existing.chapter_number);
+        if (isBetter) {
+          latestByComic.set(comic.id, { ...toChapterWithComic(chapter, comic), _ts: ts });
+        }
       });
     });
+
     // Ordenar por fecha de lanzamiento y tomar los 5 más recientes
-    return allChapters
-      .sort((a, b) => new Date(b.release_date || 0).getTime() - new Date(a.release_date || 0).getTime())
+    return Array.from(latestByComic.values())
+      .sort((a, b) =>
+        b._ts - a._ts ||
+        b.chapter_number - a.chapter_number ||
+        a.comic_title.localeCompare(b.comic_title),
+      )
       .slice(0, 5);
   }, [comics]);
 
