@@ -83,25 +83,25 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
         </div>
       </div>
 
-      {/* Filtros: búsqueda + editorial + rol */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mute" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, alias, especie, enemigos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface border border-line focus:border-accent text-sm text-ink outline-none transition-colors"
-          />
-        </div>
+      {/* Filtros: búsqueda + editorial + rol en chips */}
+      <div className="space-y-3">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-mute" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, alias, especie, enemigos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface border border-line focus:border-accent text-sm text-ink outline-none transition-colors"
+            />
+          </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 md:flex-none">
+          <div className="relative md:w-56">
             <select
               value={publisherFilter}
               onChange={(e) => setPublisherFilter(e.target.value)}
-              className="w-full md:w-auto appearance-none pl-4 pr-9 py-3 rounded-xl bg-surface border border-line focus:border-accent text-sm text-ink outline-none transition-colors cursor-pointer"
+              className="w-full appearance-none pl-4 pr-9 py-3 rounded-xl bg-surface border border-line focus:border-accent text-sm text-ink outline-none transition-colors cursor-pointer"
             >
               <option value="Todas">Todas las editoriales</option>
               {PUBLISHERS.map((publisher) => (
@@ -112,22 +112,36 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
           </div>
+        </div>
 
-          <div className="relative flex-1 md:flex-none">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full md:w-auto appearance-none pl-4 pr-9 py-3 rounded-xl bg-surface border border-line focus:border-accent text-sm text-ink outline-none transition-colors cursor-pointer"
+        {/* Chips de rol: Héroe / Villano / etc. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-mute mr-1">
+            Rol:
+          </span>
+          <button
+            onClick={() => setRoleFilter('Todos')}
+            className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all active:scale-95 ${
+              roleFilter === 'Todos'
+                ? 'bg-accent text-onaccent border-accent shadow-md shadow-accent/30'
+                : 'bg-surface border-line text-mute hover:text-ink hover:border-accent/40'
+            }`}
+          >
+            Todos
+          </button>
+          {CHARACTER_ALIGNMENTS.map((alignment) => (
+            <button
+              key={alignment}
+              onClick={() => setRoleFilter(roleFilter === alignment ? 'Todos' : alignment)}
+              className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all active:scale-95 ${
+                roleFilter === alignment
+                  ? getAlignmentBadgeClass(alignment)
+                  : 'bg-surface border-line text-mute hover:text-ink hover:border-accent/40'
+              }`}
             >
-              <option value="Todos">Todos los roles</option>
-              {CHARACTER_ALIGNMENTS.map((alignment) => (
-                <option key={alignment} value={alignment}>
-                  {alignment}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
-          </div>
+              {alignment}
+            </button>
+          ))}
         </div>
       </div>
 
