@@ -27,6 +27,12 @@ interface CrowAmbienceProps {
   emblem?: boolean;
   /** Velo degradado del acento. Por defecto sí. */
   veil?: boolean;
+  /**
+   * 'soft' (default): ambiente sutil de fondo.
+   * 'bold': más color del tono elegido — lámina radial del acento,
+   * resplandor extra en la esquina inferior y línea de luz superior.
+   */
+  tint?: 'soft' | 'bold';
   /** Clases extra sobre el contenedor. */
   className?: string;
 }
@@ -35,24 +41,41 @@ export const CrowAmbience: React.FC<CrowAmbienceProps> = ({
   glow = 'right',
   emblem = true,
   veil = true,
+  tint = 'soft',
   className = '',
 }) => (
   <div
     className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
     aria-hidden="true"
   >
+    {tint === 'bold' && (
+      <>
+        {/* Lámina radial del acento (sigue --crow-hue) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(55% 80% at 18% 10%, oklch(0.6 0.21 var(--crow-hue) / 24%), transparent 70%)',
+          }}
+        />
+        {/* Contraluz en la esquina inferior derecha */}
+        <div className="absolute -right-24 -bottom-40 h-[24rem] w-[24rem] rounded-full bg-accent/10 blur-3xl" />
+        {/* Línea de luz superior */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+      </>
+    )}
     {veil && (
       <div className="absolute inset-0 bg-gradient-to-r from-accent/10 via-transparent to-transparent" />
     )}
     <div className="crow-dots absolute inset-0 opacity-70" />
     {glow !== 'none' && (
-      <div className={`absolute rounded-full bg-accent/15 blur-3xl ${GLOW_POS[glow]}`} />
+      <div className={`absolute rounded-full ${tint === 'bold' ? 'bg-accent/25' : 'bg-accent/15'} blur-3xl ${GLOW_POS[glow]}`} />
     )}
     {emblem && (
       <img
         src={`${import.meta.env.BASE_URL}crow-emblem.png`}
         alt=""
-        className="logo-tint absolute right-6 top-1/2 w-24 -translate-y-1/2 opacity-15 select-none sm:right-10 sm:w-32"
+        className={`logo-tint absolute right-6 top-1/2 w-24 -translate-y-1/2 select-none sm:right-10 sm:w-32 ${tint === 'bold' ? 'opacity-20' : 'opacity-15'}`}
         onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     )}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { Comic, ReadingEvent, ReadingEventItem } from '../types/comic';
 import { getEventItemLabel, getEventItems } from '../lib/events';
+import { CrowAmbience } from './ui/CrowAmbience';
 
 interface EventDetailPageProps {
   event: ReadingEvent;
@@ -74,7 +75,8 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
       {/* ======================================================== */}
       {/* HEADER CON PORTADA, TÍTULO Y DESCRIPCIÓN                  */}
       {/* ======================================================== */}
-      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl">
+      <div className="relative rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl">
+        <CrowAmbience glow="right" tint="bold" />
         {/* Fondo con desenfoque de la portada */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {event.cover_url ? (

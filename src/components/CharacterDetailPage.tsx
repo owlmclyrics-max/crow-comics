@@ -81,7 +81,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
       </div>
 
       {/* Ficha del Personaje */}
-      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl smooth-transition-slow">
+      <div className="relative rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl smooth-transition-slow">
         {/* Fondo con desenfoque */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {character.photo_url ? (
@@ -94,7 +94,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
         </div>
         {/* Ambiente Crow (puntos + resplandor + marca de agua) */}
-        <CrowAmbience glow="right" />
+        <CrowAmbience glow="right" tint="bold" />
         <div className="relative p-8 sm:p-12 flex flex-col md:flex-row items-center md:items-start gap-8 z-10">
           {/* Foto Circular del Personaje */}
           <div className="relative shrink-0">

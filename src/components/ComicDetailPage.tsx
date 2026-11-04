@@ -157,8 +157,8 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       {/* ======================================================== */}
       {/* HERO BANNER CON FICHA COMPLETA + DESCARGA + ESTRELLAS      */}
       {/* ======================================================== */}
-      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl smooth-transition-slow">
-        <CrowAmbience glow="right" />
+      <div className="relative rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl smooth-transition-slow">
+        <CrowAmbience glow="right" tint="bold" />
         {/* Fondo con desenfoque de la misma portada con parallax */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
           <img

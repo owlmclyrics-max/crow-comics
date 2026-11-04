@@ -415,8 +415,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* ================================================================ */}
       {/* HERO CARD: portada + info + descargas + calificación + leer online */}
       {/* ================================================================ */}
-      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl">
-        <CrowAmbience glow="right" />
+      <div className="relative rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl">
+        <CrowAmbience glow="right" tint="bold" />
         {/* Fondo desenfocado */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img
