@@ -129,107 +129,97 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
         )}
       </div>
 
-      {/* ═══ WIKI: infobox a la derecha · contenido a la izquierda ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem] xl:grid-cols-[1fr_22rem] gap-6 items-start">
-        {/* ── INFOBOX: rectángulo alto con foto + datos básicos ── */}
-        <aside className="lg:order-2 lg:sticky lg:top-6 rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl">
-          {/* Retrato */}
-          <div className="relative aspect-[3/4] bg-bg">
-            {character.photo_url ? (
-              <img
-                src={character.photo_url}
-                alt={character.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-raised/50">
-                <User className="w-20 h-20 text-faint" />
-              </div>
+      {/* ═══ HERO: retrato circular + identidad debajo ═══ */}
+      <header className="relative rounded-[2rem] border border-accent/25 bg-surface overflow-hidden shadow-2xl">
+        <CrowAmbience glow="center" />
+        <div className="relative px-6 pt-10 pb-8 flex flex-col items-center text-center">
+          <div className="relative mb-5">
+            {/* Retrato circular */}
+            <div className="w-40 h-40 sm:w-52 sm:h-52 rounded-full overflow-hidden border-4 border-accent/40 ring-8 ring-accent/5 bg-bg shadow-2xl shadow-accent/25">
+              {character.photo_url ? (
+                <img
+                  src={character.photo_url}
+                  alt={character.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User className="w-16 h-16 sm:w-20 sm:h-20 text-faint" />
+                </div>
+              )}
+            </div>
+            {character.alignment && (
+              <span
+                className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full border shadow-lg backdrop-blur-sm ${getAlignmentBadgeClass(character.alignment)}`}
+              >
+                {character.alignment}
+              </span>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent opacity-90" />
-
-            {/* Rol y editorial sobre la foto */}
-            <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
-              {character.alignment ? (
-                <span
-                  className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wide rounded-lg border backdrop-blur-sm ${getAlignmentBadgeClass(character.alignment)}`}
-                >
-                  {character.alignment}
-                </span>
-              ) : <span />}
-              {character.publisher && (
-                <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-bg/85 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                  {character.publisher}
-                </span>
-              )}
-            </div>
-
-            {/* Nombre sobre la foto, abajo */}
-            <div className="absolute bottom-0 inset-x-0 p-4">
-              <h2 className="text-2xl font-black text-white leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
-                {character.name}
-              </h2>
-              {character.name_spanish && (
-                <p className="text-sm font-semibold text-accent">{character.name_spanish}</p>
-              )}
-              {character.real_name && (
-                <p className="text-[11px] text-white/80 italic">({character.real_name})</p>
-              )}
-            </div>
           </div>
 
-          {/* Datos básicos */}
-          <div className="p-5 space-y-4">
+          <div className="space-y-1.5">
+            <h2 className="text-3xl sm:text-4xl font-black text-ink leading-tight">
+              {character.name}
+            </h2>
+            {character.name_spanish && (
+              <p className="text-lg font-bold text-accent">{character.name_spanish}</p>
+            )}
+            {character.real_name && (
+              <p className="text-sm text-mute italic">({character.real_name})</p>
+            )}
+            {character.publisher && (
+              <span className="inline-block px-3 py-1 mt-2 text-[10px] font-black uppercase tracking-widest rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/30">
+                {character.publisher}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Ficha de datos básicos debajo del retrato */}
+        {(infoRows.length > 0 || aliases.length > 0 || character.weapon) && (
+          <div className="relative border-t border-line px-5 sm:px-8 py-6 flex flex-col items-center gap-5">
             {infoRows.length > 0 && (
-              <div className="divide-y divide-line border-y border-line">
+              <div className="flex flex-wrap justify-center gap-3">
                 {infoRows.map((row) => (
-                  <div key={row.label} className="py-2.5 flex items-start gap-3">
-                    <span className="text-accent mt-0.5 shrink-0">{row.icon}</span>
+                  <div
+                    key={row.label}
+                    className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-raised border border-line text-left max-w-xs"
+                  >
+                    <span className="text-accent shrink-0">{row.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-faint">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-faint">
                         {row.label}
                       </p>
-                      <p className="text-sm font-semibold text-ink leading-snug">{row.value}</p>
+                      <p className="text-xs font-bold text-ink leading-snug">{row.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {aliases.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-mute">
-                  <AtSign className="w-3 h-3 text-accent" /> Alias
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {aliases.map((alias) => (
-                    <span
-                      key={alias}
-                      className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-accent/10 text-accent2 border border-accent/25"
-                    >
-                      {alias}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {character.weapon && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 px-3.5 py-2.5">
-                <Swords className="w-4 h-4 text-accent shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-faint">
-                    Arma principal
-                  </p>
-                  <p className="text-xs font-bold text-ink leading-snug">{character.weapon}</p>
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap justify-center items-center gap-3">
+              {aliases.map((alias) => (
+                <span
+                  key={alias}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-full bg-accent/10 text-accent2 border border-accent/25 inline-flex items-center gap-1"
+                >
+                  <AtSign className="w-3 h-3" />
+                  {alias}
+                </span>
+              ))}
+              {character.weapon && (
+                <span className="px-3 py-1 text-[11px] font-bold rounded-full bg-raised text-ink border border-accent/30 inline-flex items-center gap-1.5">
+                  <Swords className="w-3 h-3 text-accent" />
+                  {character.weapon}
+                </span>
+              )}
+            </div>
           </div>
-        </aside>
+        )}
+      </header>
 
-        {/* ── CONTENIDO PRINCIPAL ── */}
-        <div className="space-y-6 lg:order-1 min-w-0">
+      {/* ── CONTENIDO PRINCIPAL ── */}
+      <div className="space-y-6 min-w-0">
           {/* Biografía (descripción larga) */}
           <section className="relative rounded-3xl border border-line bg-surface overflow-hidden">
             <CrowAmbience glow="right" />
@@ -449,7 +439,6 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
               )}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
