@@ -67,7 +67,7 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/40 transition-all"
+          className="p-2.5 rounded-xl bg-bg border border-line text-mute hover:text-accent hover:border-accent/40 transition-all"
           title="Volver"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -75,14 +75,14 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {list.is_featured && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-red-500 text-zinc-950">
-                <Star className="w-2.5 h-2.5 fill-zinc-950" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-accent text-onaccent">
+                <Star className="w-2.5 h-2.5 fill-onaccent" />
                 Colección del sitio
               </span>
             )}
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">{list.name}</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-ink tracking-tight truncate">{list.name}</h2>
           </div>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <p className="text-xs text-mute mt-0.5">
             {listComics.length} {listComics.length === 1 ? 'cómic' : 'cómics'}
             {list.description ? ` · ${list.description}` : ''}
           </p>
@@ -92,16 +92,16 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
       {/* Contenido */}
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-zinc-400">Cargando lista...</p>
+          <div className="w-8 h-8 border-4 border-accent/30 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-mute">Cargando lista...</p>
         </div>
       ) : listComics.length === 0 ? (
-        <div className="py-16 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/60 p-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-800 text-zinc-400 mb-3">
+        <div className="py-16 text-center rounded-3xl bg-surface/40 border border-line/60 p-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-raised text-mute mb-3">
             <Trash2 className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-white">Esta lista está vacía</h3>
-          <p className="text-xs text-zinc-400 max-w-sm mx-auto mt-1">
+          <h3 className="text-base font-bold text-ink">Esta lista está vacía</h3>
+          <p className="text-xs text-mute max-w-sm mx-auto mt-1">
             {isOwner
               ? 'Añade cómics desde su página de detalle con el botón "Añadir a lista".'
               : 'Su dueño todavía está armando esta colección.'}
@@ -118,7 +118,7 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
                     e.stopPropagation();
                     void handleRemove(comic.id);
                   }}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-950/80 hover:bg-rose-950/90 text-rose-400 hover:text-rose-300 border border-zinc-800 transition-all z-10"
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-bg/80 hover:bg-accent/10 text-accent2 hover:text-accent2 border border-line transition-all z-10"
                   title="Quitar de la lista"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

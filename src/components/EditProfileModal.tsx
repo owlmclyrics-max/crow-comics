@@ -101,22 +101,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/70 backdrop-blur-sm">
+      <div className="bg-surface border border-line rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-              <User className="w-5 h-5 text-red-400" />
+            <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
+              <User className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">Editar Perfil</h2>
-              <p className="text-xs text-zinc-400">Actualiza tu información</p>
+              <h2 className="text-xl font-black text-ink">Editar Perfil</h2>
+              <p className="text-xs text-mute">Actualiza tu información</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -126,7 +126,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Username */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-300">Username</label>
+            <label className="text-xs font-semibold text-mute">Username</label>
             <input
               type="text"
               value={username}
@@ -137,46 +137,46 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               }}
               onBlur={() => validateUsername(username)}
               placeholder="tu_username"
-              className={`w-full px-4 py-3 rounded-xl bg-zinc-950 border ${
-                usernameError ? 'border-rose-500' : 'border-zinc-800 focus:border-red-500'
-              } text-sm text-zinc-100 outline-none transition-colors`}
+              className={`w-full px-4 py-3 rounded-xl bg-bg border ${
+                usernameError ? 'border-accent2' : 'border-line focus:border-accent/30'
+              } text-sm text-ink outline-none transition-colors`}
             />
             {usernameError && (
-              <p className="text-xs text-rose-400">{usernameError}</p>
+              <p className="text-xs text-accent2">{usernameError}</p>
             )}
           </div>
 
           {/* Avatar: galería compartida + modo dev para administrarla */}
           <div className="space-y-3">
-            <label className="text-xs font-semibold text-zinc-300">Avatar</label>
+            <label className="text-xs font-semibold text-mute">Avatar</label>
             <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} />
           </div>
 
           {/* Bio */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-300">Bio</label>
+            <label className="text-xs font-semibold text-mute">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Cuéntanos sobre ti..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-sm text-zinc-100 outline-none resize-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl bg-bg border border-line focus:border-accent/30 text-sm text-ink outline-none resize-none transition-colors"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-zinc-800">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-line">
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-mute text-xs font-semibold transition-colors"
           >
             <span>Cancelar</span>
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !username.trim() || !!usernameError}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'Guardando...' : 'Guardar'}</span>

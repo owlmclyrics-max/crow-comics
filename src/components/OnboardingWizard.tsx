@@ -198,12 +198,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Elige tu Username</h3>
-              <p className="text-sm text-zinc-400">Este será tu nombre en la comunidad</p>
+              <h3 className="text-xl font-bold text-ink">Elige tu Username</h3>
+              <p className="text-sm text-mute">Este será tu nombre en la comunidad</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-zinc-300">Username</label>
+              <label className="text-xs font-semibold text-mute">Username</label>
               <input
                 type="text"
                 value={username}
@@ -215,17 +215,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 }}
                 onBlur={() => validateUsername(username)}
                 placeholder="tu_username"
-                className={`w-full px-4 py-3 rounded-xl bg-zinc-950 border ${
-                  usernameError ? 'border-rose-500' : 'border-zinc-800 focus:border-red-500'
-                } text-sm text-zinc-100 outline-none transition-colors`}
+                className={`w-full px-4 py-3 rounded-xl bg-bg border ${
+                  usernameError ? 'border-accent2' : 'border-line focus:border-accent/30'
+                } text-sm text-ink outline-none transition-colors`}
               />
               {usernameError && (
-                <p className="text-xs text-rose-400">{usernameError}</p>
+                <p className="text-xs text-accent2">{usernameError}</p>
               )}
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-zinc-300">Elige tu Avatar</label>
+              <label className="text-xs font-semibold text-mute">Elige tu Avatar</label>
               <AvatarPicker value={selectedAvatar} onChange={setSelectedAvatar} />
             </div>
           </div>
@@ -235,12 +235,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Tus Preferencias</h3>
-              <p className="text-sm text-zinc-400">Selecciona tus editoriales y personajes favoritos</p>
+              <h3 className="text-xl font-bold text-ink">Tus Preferencias</h3>
+              <p className="text-sm text-mute">Selecciona tus editoriales y personajes favoritos</p>
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-zinc-300">Editoriales Favoritas</label>
+              <label className="text-xs font-semibold text-mute">Editoriales Favoritas</label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {PUBLISHERS.map((publisher) => (
                   <button
@@ -254,8 +254,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     }}
                     className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                       selectedPublishers.includes(publisher)
-                        ? 'bg-red-500 text-zinc-950'
-                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
+                        ? 'bg-accent text-onaccent'
+                        : 'bg-surface text-mute hover:bg-raised'
                     }`}
                   >
                     {publisher}
@@ -266,22 +266,22 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <label className="text-xs font-semibold text-zinc-300">
+                <label className="text-xs font-semibold text-mute">
                   Personajes Favoritos{selectedCharacters.length > 0 && (
-                    <span className="ml-2 text-[10px] font-bold text-red-400">
+                    <span className="ml-2 text-[10px] font-bold text-accent">
                       {selectedCharacters.length} seleccionado{selectedCharacters.length !== 1 ? 's' : ''}
                     </span>
                   )}
                 </label>
                 {/* Buscador de personajes */}
                 <div className="relative w-48 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-faint pointer-events-none" />
                   <input
                     type="text"
                     value={charSearch}
                     onChange={(e) => setCharSearch(e.target.value)}
                     placeholder="Buscar personaje..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-bg border border-line focus:border-accent/30 text-xs text-ink placeholder:text-faint outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -289,7 +289,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               {/* Grid de personajes en círculos, con nombre, nombre alterno y
                   nombre real (cada línea solo si el personaje la tiene) */}
               {characters.length === 0 ? (
-                <p className="text-xs text-zinc-500 py-6 text-center">
+                <p className="text-xs text-faint py-6 text-center">
                   No hay personajes cargados en el catálogo todavía.
                 </p>
               ) : (
@@ -305,7 +305,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
                   if (filtered.length === 0) {
                     return (
-                      <p className="text-xs text-zinc-500 py-6 text-center">
+                      <p className="text-xs text-faint py-6 text-center">
                         Sin resultados para "{charSearch}".
                       </p>
                     );
@@ -336,8 +336,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                             <div
                               className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 transition-all ${
                                 isSelected
-                                  ? 'border-red-500 ring-2 ring-red-500/40'
-                                  : 'border-zinc-700 group-hover:border-zinc-500'
+                                  ? 'border-accent/30 ring-2 ring-accent/40'
+                                  : 'border-line group-hover:border-line'
                               }`}
                             >
                               {character.photo_url ? (
@@ -348,29 +348,29 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                                  <User className="w-6 h-6 text-zinc-600" />
+                                <div className="w-full h-full flex items-center justify-center bg-surface">
+                                  <User className="w-6 h-6 text-faint" />
                                 </div>
                               )}
                               {isSelected && (
-                                <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
-                                  <Check className="w-5 h-5 text-white drop-shadow" />
+                                <div className="absolute inset-0 bg-accent/30 flex items-center justify-center">
+                                  <Check className="w-5 h-5 text-ink drop-shadow" />
                                 </div>
                               )}
                             </div>
 
                             {/* Nombres (cada uno solo si existe) */}
                             <div className="w-full min-w-0 space-y-0.5">
-                              <p className="text-[11px] font-bold text-white truncate leading-tight">
+                              <p className="text-[11px] font-bold text-ink truncate leading-tight">
                                 {character.name}
                               </p>
                               {altName && (
-                                <p className="text-[10px] text-red-400/90 italic truncate leading-tight">
+                                <p className="text-[10px] text-accent/90 italic truncate leading-tight">
                                   {altName}
                                 </p>
                               )}
                               {character.real_name && (
-                                <p className="text-[10px] text-zinc-500 truncate leading-tight">
+                                <p className="text-[10px] text-faint truncate leading-tight">
                                   {character.real_name}
                                 </p>
                               )}
@@ -390,8 +390,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Estilo de Lectura</h3>
-              <p className="text-sm text-zinc-400">¿Cómo prefieres leer cómics?</p>
+              <h3 className="text-xl font-bold text-ink">Estilo de Lectura</h3>
+              <p className="text-sm text-mute">¿Cómo prefieres leer cómics?</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -401,15 +401,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   onClick={() => setSelectedReadingStyle(style.id)}
                   className={`p-6 rounded-2xl border-2 transition-all ${
                     selectedReadingStyle === style.id
-                      ? 'border-red-500 bg-red-500/10'
-                      : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900'
+                      ? 'border-accent/30 bg-accent/10'
+                      : 'border-line hover:border-line bg-surface'
                   }`}
                 >
                   <style.icon className={`w-8 h-8 mx-auto mb-3 ${
-                    selectedReadingStyle === style.id ? 'text-red-400' : 'text-zinc-500'
+                    selectedReadingStyle === style.id ? 'text-accent' : 'text-faint'
                   }`} />
-                  <h4 className="font-bold text-white text-sm mb-1">{style.label}</h4>
-                  <p className="text-xs text-zinc-400">{style.description}</p>
+                  <h4 className="font-bold text-ink text-sm mb-1">{style.label}</h4>
+                  <p className="text-xs text-mute">{style.description}</p>
                 </button>
               ))}
             </div>
@@ -419,19 +419,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       case 'complete':
         return (
           <div className="space-y-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mx-auto">
-              <Check className="w-10 h-10 text-red-400" />
+            <div className="w-20 h-20 rounded-full bg-accent/15 flex items-center justify-center mx-auto">
+              <Check className="w-10 h-10 text-accent" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-white">¡Configuración Completada!</h3>
-              <p className="text-sm text-zinc-400">Tu perfil está listo para usar</p>
+              <h3 className="text-2xl font-bold text-ink">¡Configuración Completada!</h3>
+              <p className="text-sm text-mute">Tu perfil está listo para usar</p>
             </div>
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 space-y-3">
+            <div className="bg-surface/60 border border-line rounded-2xl p-6 space-y-3">
               <div className="flex items-center gap-4">
                 <img src={selectedAvatar} alt="Avatar" className="w-16 h-16 rounded-full" />
                 <div className="text-left">
-                  <p className="font-bold text-white">{username}</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="font-bold text-ink">{username}</p>
+                  <p className="text-xs text-mute">
                     {selectedPublishers.length} editoriales • {selectedCharacters.length} personajes
                   </p>
                 </div>
@@ -446,17 +446,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/70 backdrop-blur-sm">
+      <div className="bg-surface border border-line rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-red-400" />
+            <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">Configura tu Perfil</h2>
-              <p className="text-xs text-zinc-400">Personaliza tu experiencia</p>
+              <h2 className="text-xl font-black text-ink">Configura tu Perfil</h2>
+              <p className="text-xs text-mute">Personaliza tu experiencia</p>
             </div>
           </div>
           {currentStep !== 'complete' && (
@@ -465,7 +465,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 if (!saving && onClose) onClose();
               }}
               title="Omitir por ahora"
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -474,17 +474,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
         {/* Wizard Steps */}
         {currentStep !== 'complete' && (
-          <div className="flex items-center justify-center gap-2 p-4 border-b border-zinc-800">
+          <div className="flex items-center justify-center gap-2 p-4 border-b border-line">
             {steps.map((step, index) => (
               <button
                 key={step.id}
                 disabled={index > currentStepIndex}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                   currentStep === step.id
-                    ? 'bg-red-500 text-zinc-950'
+                    ? 'bg-accent text-onaccent'
                     : index < currentStepIndex
-                      ? 'bg-zinc-800 text-zinc-300'
-                      : 'bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                      ? 'bg-raised text-mute'
+                      : 'bg-bg text-faint cursor-not-allowed'
                 }`}
               >
                 <step.icon className="w-4 h-4" />
@@ -501,11 +501,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
         {/* Footer */}
         {currentStep !== 'complete' && (
-          <div className="flex items-center justify-between p-6 border-t border-zinc-800">
+          <div className="flex items-center justify-between p-6 border-t border-line">
             <button
               onClick={handleBack}
               disabled={currentStepIndex === 0}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-mute text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Anterior</span>
@@ -514,7 +514,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             <button
               onClick={currentStep === 'reading-style' ? handleComplete : handleNext}
               disabled={saving || (currentStep === 'username' && (!username.trim() || !!usernameError))}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>{saving ? 'Guardando...' : currentStep === 'reading-style' ? 'Completar' : 'Siguiente'}</span>
               <ChevronRight className="w-4 h-4" />

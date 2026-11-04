@@ -143,19 +143,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   if (!user) {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-center space-y-5 animate-fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-          <LogIn className="w-7 h-7 text-red-400" />
+        <div className="w-16 h-16 rounded-2xl bg-surface border border-line flex items-center justify-center">
+          <LogIn className="w-7 h-7 text-accent" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-xl font-black text-white">Inicia sesión para ver tu perfil</h2>
-          <p className="text-xs text-zinc-400 max-w-xs">
+          <h2 className="text-xl font-black text-ink">Inicia sesión para ver tu perfil</h2>
+          <p className="text-xs text-mute max-w-xs">
             Favoritos, listas de lectura, historial e insignias te esperan.
           </p>
         </div>
         <button
           type="button"
           onClick={onOpenAuth}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg transition-all active:scale-95"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg transition-all active:scale-95"
         >
           <LogIn className="w-4 h-4" />
           Entrar / Crear cuenta
@@ -233,11 +233,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       {/* ================================================================ */}
       {/* SPRINT 4: HEADER "HOGAR" — banner, avatar solapado, XP y stats    */}
       {/* ================================================================ */}
-      <section className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60">
+      <section className="relative overflow-hidden rounded-3xl border border-line bg-bg shadow-2xl shadow-black/60">
         {/* ── Banner decorativo ── */}
         <div className="relative h-32 sm:h-44">
           {/* Base de gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-r from-red-950/70 via-zinc-950 to-zinc-950" />
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/15 via-bg to-bg" />
           {/* Textura de medio punto (estilo historieta) */}
           <div
             className="absolute inset-0 opacity-70"
@@ -247,22 +247,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             }}
           />
           {/* Brillo rojo */}
-          <div className="absolute -top-24 right-16 w-96 h-48 bg-red-600/25 blur-3xl rounded-full" />
+          <div className="absolute -top-24 right-16 w-96 h-48 bg-accent/15 blur-3xl rounded-full" />
           {/* Emblema del cuervo como marca de agua */}
           <img
             src={`${import.meta.env.BASE_URL}crow-emblem.png`}
             alt=""
-            className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 w-24 sm:w-32 opacity-15 pointer-events-none select-none"
+            className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 w-24 sm:w-32 opacity-15 pointer-events-none select-none logo-tint"
             onError={(e) => { (e.currentTarget.style.display = 'none'); }}
           />
           {/* Desvanecido hacia el fondo */}
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-zinc-950 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-bg to-transparent" />
 
           {/* Volver (sobre el banner) */}
           <button
             type="button"
             onClick={onBack}
-            className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-950/70 backdrop-blur border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-600 transition-colors"
+            className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-bg/70 backdrop-blur border border-line text-xs font-semibold text-mute hover:text-ink hover:border-line transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Volver
@@ -273,7 +273,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ── Fila principal: avatar solapado + identidad + acciones ── */}
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             {/* Avatar grande que sobresale del banner */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-3xl overflow-hidden border-4 border-zinc-950 shadow-xl shadow-black/60 bg-zinc-900">
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-3xl overflow-hidden border-4 border-bg shadow-xl shadow-black/60 bg-surface">
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -286,27 +286,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 />
               ) : null}
               <span
-                className={`w-full h-full flex items-center justify-center text-3xl font-black text-white bg-gradient-to-br from-red-400 to-red-600 ${profile?.avatar_url ? 'hidden' : ''}`}
+                className={`w-full h-full flex items-center justify-center text-3xl font-black text-ink bg-gradient-to-br from-accent to-accent2 ${profile?.avatar_url ? 'hidden' : ''}`}
               >
                 {handleAvatar}
               </span>
               {/* Aro rojo decorativo */}
-              <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-red-500/30" />
+              <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-accent/30" />
             </div>
 
             <div className="flex-1 min-w-0 space-y-1 sm:pb-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight truncate drop-shadow">
+                <h1 className="text-2xl sm:text-4xl font-black text-ink tracking-tight truncate drop-shadow">
                   @{displayName}
                 </h1>
                 {/* Chip de nivel con gradiente */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-950/60">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase rounded-lg bg-gradient-to-r from-accent to-accent2 text-ink shadow-lg shadow-accent/60">
                   <Sparkles className="w-3 h-3" />
                   Nivel {level}
                 </span>
               </div>
-              <p className="text-xs text-zinc-500">
-                <span className="text-red-400 font-semibold">{levelTitle}</span>
+              <p className="text-xs text-faint">
+                <span className="text-accent font-semibold">{levelTitle}</span>
                 {profile?.created_at && (
                   <> · En la bóveda desde{' '}
                     {new Date(profile.created_at).toLocaleDateString('es-ES', {
@@ -324,7 +324,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsEditProfileOpen(true)}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg shadow-red-500/25 transition-all hover:scale-105 active:scale-95"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/25 transition-all hover:scale-105 active:scale-95"
               >
                 <Edit3 className="w-4 h-4" />
                 Editar Perfil
@@ -335,7 +335,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   type="button"
                   onClick={onOpenOnboarding}
                   title="Modo desarrollador: reabrir el Onboarding Wizard (username, gustos y estilo de lectura)"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-700 hover:border-red-500/50 text-zinc-400 hover:text-red-400 text-[10px] font-bold transition-all active:scale-95"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/80 border border-line hover:border-accent/50 text-mute hover:text-accent text-[10px] font-bold transition-all active:scale-95"
                 >
                   <Code2 className="w-3.5 h-3.5" />
                   Modo dev · Reconfigurar perfil
@@ -347,14 +347,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ── Barra de XP hacia el siguiente nivel ── */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-              <span className="text-zinc-500">Progreso del cuervo</span>
-              <span className="text-red-400">
+              <span className="text-faint">Progreso del cuervo</span>
+              <span className="text-accent">
                 {xp} / {xpForLevel(level + 1)} XP
               </span>
             </div>
-            <div className="relative h-2.5 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden">
+            <div className="relative h-2.5 rounded-full bg-surface border border-line overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400 transition-all duration-700"
+                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent via-accent to-accent2 transition-all duration-700"
                 style={{ width: `${xpProgressPct}%` }}
               />
               {/* Brillo animado sutil sobre la barra */}
@@ -367,11 +367,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
           {/* ── Bio con estilo de cita ── */}
           {profile?.bio?.trim() ? (
-            <blockquote className="border-l-2 border-red-500/60 pl-4 py-1">
-              <p className="text-sm text-zinc-300 italic leading-relaxed">"{profile.bio.trim()}"</p>
+            <blockquote className="border-l-2 border-accent/60 pl-4 py-1">
+              <p className="text-sm text-mute italic leading-relaxed">"{profile.bio.trim()}"</p>
             </blockquote>
           ) : (
-            <p className="text-xs text-zinc-500 italic">
+            <p className="text-xs text-faint italic">
               Sin bio todavía — pulsa "Editar Perfil" y cuenta qué te mueve de los cómics.
             </p>
           )}
@@ -379,23 +379,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ── Tarjetas de estadísticas ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { icon: Heart, label: 'Favoritos', value: favorites.length, color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+              { icon: Heart, label: 'Favoritos', value: favorites.length, color: 'text-accent bg-accent/10 border-accent/30' },
               { icon: ListVideo, label: 'Listas', value: lists.length, color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
               { icon: BookOpen, label: 'Tomos leídos', value: progress.length, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-              { icon: Award, label: 'Insignias', value: badgesUnlocked, color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+              { icon: Award, label: 'Insignias', value: badgesUnlocked, color: 'text-accent2 bg-accent/10 border-accent2/30' },
             ].map((stat) => {
               const StatIcon = stat.icon;
               return (
                 <div
                   key={stat.label}
-                  className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-surface/60 border border-line hover:border-line transition-colors"
                 >
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${stat.color}`}>
                     <StatIcon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-                    <p className="text-[10px] text-zinc-500 mt-1 truncate">{stat.label}</p>
+                    <p className="text-lg font-black text-ink leading-none">{stat.value}</p>
+                    <p className="text-[10px] text-faint mt-1 truncate">{stat.label}</p>
                   </div>
                 </div>
               );
@@ -420,8 +420,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-zinc-900 text-red-400 border border-red-500/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent'
+                  ? 'bg-surface text-accent border border-accent/30 shadow-sm'
+                  : 'text-mute hover:text-ink hover:bg-surface/60 border border-transparent'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -433,18 +433,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center space-y-3">
-          <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-zinc-400">Cargando tu perfil...</p>
+          <div className="w-10 h-10 border-4 border-accent/30 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-mute">Cargando tu perfil...</p>
         </div>
       ) : (
         <>
           {/* ------------------------------ FAVORITOS ------------------------------ */}
           {activeTab === 'favoritos' && (
             favoriteComics.length === 0 ? (
-              <div className="py-20 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/60 p-8 space-y-3 animate-fade-in">
-                <Heart className="w-10 h-10 mx-auto text-zinc-700" />
-                <h3 className="text-base font-bold text-white">Aún no tienes favoritos</h3>
-                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+              <div className="py-20 text-center rounded-3xl bg-surface/40 border border-line/60 p-8 space-y-3 animate-fade-in">
+                <Heart className="w-10 h-10 mx-auto text-faint" />
+                <h3 className="text-base font-bold text-ink">Aún no tienes favoritos</h3>
+                <p className="text-xs text-mute max-w-sm mx-auto">
                   Toca el corazón en cualquier cómic para guardarlo aquí.
                 </p>
               </div>
@@ -468,13 +468,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   onChange={(e) => setNewListName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void handleCreateList(); }}
                   placeholder="Nombre de tu nueva lista..."
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/30 text-sm text-ink placeholder:text-faint outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={handleCreateList}
                   disabled={creatingList || !newListName.trim()}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-4 h-4" />
                   {creatingList ? 'Creando...' : 'Crear'}
@@ -482,10 +482,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               </div>
 
               {lists.length === 0 ? (
-                <div className="py-16 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/60 p-8 space-y-3 animate-fade-in">
-                  <ListVideo className="w-10 h-10 mx-auto text-zinc-700" />
-                  <h3 className="text-base font-bold text-white">Sin listas todavía</h3>
-                  <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                <div className="py-16 text-center rounded-3xl bg-surface/40 border border-line/60 p-8 space-y-3 animate-fade-in">
+                  <ListVideo className="w-10 h-10 mx-auto text-faint" />
+                  <h3 className="text-base font-bold text-ink">Sin listas todavía</h3>
+                  <p className="text-xs text-mute max-w-sm mx-auto">
                     Crea tu primera colección y añade cómics desde su ficha.
                   </p>
                 </div>
@@ -506,7 +506,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         type="button"
                         onClick={() => void handleDeleteList(list)}
                         title={`Eliminar la lista "${list.name}"`}
-                        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-zinc-950/85 border border-zinc-700 text-zinc-300 hover:bg-red-500 hover:border-red-500 hover:text-zinc-950 transition-all shadow-lg opacity-0 group-hover/list:opacity-100 focus:opacity-100 active:scale-90"
+                        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent/30 hover:text-onaccent transition-all shadow-lg opacity-0 group-hover/list:opacity-100 focus:opacity-100 active:scale-90"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -520,10 +520,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ------------------------------ HISTORIAL ------------------------------ */}
           {activeTab === 'historial' && (
             progress.length === 0 ? (
-              <div className="py-20 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/60 p-8 space-y-3 animate-fade-in">
-                <History className="w-10 h-10 mx-auto text-zinc-700" />
-                <h3 className="text-base font-bold text-white">Tu historial está vacío</h3>
-                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+              <div className="py-20 text-center rounded-3xl bg-surface/40 border border-line/60 p-8 space-y-3 animate-fade-in">
+                <History className="w-10 h-10 mx-auto text-faint" />
+                <h3 className="text-base font-bold text-ink">Tu historial está vacío</h3>
+                <p className="text-xs text-mute max-w-sm mx-auto">
                   Abre cualquier tomo y aparecerá aquí para retomarlo donde lo dejaste.
                 </p>
               </div>
@@ -544,10 +544,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         if (comic && chapter) onSelectChapter(chapter, comic);
                         else if (comic) onSelectComic(comic);
                       }}
-                      className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-red-500/50 transition-all text-left cursor-pointer group"
+                      className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 transition-all text-left cursor-pointer group"
                     >
                       {/* Portada del tomo (fallback: portada de la serie) */}
-                      <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 shrink-0">
+                      <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line shrink-0">
                         <img
                           src={chapter?.cover_url || comic?.cover_url || ''}
                           alt={comic?.title ?? 'Cómic'}
@@ -556,10 +556,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-white truncate group-hover:text-red-400 transition-colors">
+                        <h4 className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
                           {comic?.title ?? 'Cómic eliminado'}
                         </h4>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                        <p className="text-[11px] text-mute mt-0.5">
                           Tomo {row.chapter_number}
                           {!sameTitleAsComic && chapter ? ` · ${chapter.title}` : ''}
                           {' · '}
@@ -573,7 +573,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           </p>
                         )}
                       </div>
-                      <BookOpen className="w-4 h-4 text-zinc-600 group-hover:text-red-400 transition-colors shrink-0" />
+                      <BookOpen className="w-4 h-4 text-faint group-hover:text-accent transition-colors shrink-0" />
                     </button>
                   );
                 })}
@@ -584,7 +584,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ------------------------------ PRIVACIDAD ------------------------------ */}
           {activeTab === 'privacidad' && (
             <div className="max-w-2xl space-y-4">
-              <div className="rounded-2xl bg-zinc-900 border border-zinc-800 divide-y divide-zinc-800/80">
+              <div className="rounded-2xl bg-surface border border-line divide-y divide-line/80">
                 {(
                   [
                     { key: 'profilePublic', label: 'Perfil público', desc: 'Otros usuarios pueden ver tu perfil y tus listas.' },
@@ -594,8 +594,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 ).map((setting) => (
                   <div key={setting.key} className="flex items-center justify-between gap-4 p-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-white">{setting.label}</p>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">{setting.desc}</p>
+                      <p className="text-sm font-bold text-ink">{setting.label}</p>
+                      <p className="text-[11px] text-mute mt-0.5">{setting.desc}</p>
                     </div>
                     <button
                       type="button"
@@ -603,7 +603,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       aria-checked={privacy[setting.key]}
                       onClick={() => setPrivacy((prev) => ({ ...prev, [setting.key]: !prev[setting.key] }))}
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                        privacy[setting.key] ? 'bg-red-500' : 'bg-zinc-700'
+                        privacy[setting.key] ? 'bg-accent' : 'bg-line'
                       }`}
                     >
                       <span
@@ -618,7 +618,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={handleSavePrivacy}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/20 transition-all active:scale-95"
               >
                 Guardar ajustes
               </button>

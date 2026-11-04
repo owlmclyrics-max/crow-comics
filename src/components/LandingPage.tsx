@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { ArrowRight, Feather, Sparkles } from 'lucide-react';
+import { ArrowRight, Feather, Moon, Sparkles, Sun } from 'lucide-react';
 import type { Comic } from '../types/comic';
 import { useComics } from '../context/ComicsContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 // ==============================================================================
 // PANTALLA DE BIENVENIDA (LANDING)
@@ -73,6 +74,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const comics: Comic[] = useComics().comics;
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
+  // Cambio de tema con transición circular desde el botón
+  const handleThemeToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    toggleTheme({ x: e.clientX, y: e.clientY });
+  };
 
   // Pool de portadas: locales (src/assets/covers) + catálogo de Supabase,
   // deduplicadas y mezcladas de forma estable para que el patrón no "salte".
@@ -107,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   }, [comics]);
 
   return (
-    <div className="relative min-h-[100svh] w-full overflow-hidden bg-zinc-950 select-none">
+    <div className="relative min-h-[100svh] w-full overflow-hidden bg-bg select-none">
       {/* ====== FONDO: COLUMNAS EN MOSAICO ====== */}
       <div
         className="absolute inset-0 flex gap-2 sm:gap-4 -mx-3 sm:-mx-6"
@@ -137,7 +145,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     src={coverUrl}
                     alt=""
                     loading="lazy"
-                    className="w-full aspect-[2/3] object-cover rounded-lg sm:rounded-xl border border-zinc-900 shadow-xl my-1.5 sm:my-2 opacity-70"
+                    className="w-full aspect-[2/3] object-cover rounded-lg sm:rounded-xl border border-line shadow-xl my-1.5 sm:my-2 opacity-70"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = PLACEHOLDER_COVERS[0];
                     }}
@@ -160,7 +168,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }}
       />
       {/* Glow rojo bajo el emblema */}
-      <div className="absolute left-1/2 top-[8%] -tranzinc-x-1/2 w-72 h-72 sm:w-[36rem] sm:h-[36rem] bg-red-600/15 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute left-1/2 top-[8%] -translate-x-1/2 w-72 h-72 sm:w-[36rem] sm:h-[36rem] bg-accent/15 blur-3xl rounded-full pointer-events-none" />
 
       {/* ====== CONTENIDO ====== */}
       <div className="relative z-10 flex min-h-[100svh] flex-col">
@@ -176,7 +184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <img
               src={`${BASE_URL}crow-logo.png`}
               alt="Crow Comics"
-              className="h-9 max-w-[38vw] object-contain object-left sm:h-14 md:h-16 sm:max-w-none w-auto drop-shadow-[0_2px_12px_rgba(220,38,38,0.45)] transition-transform group-hover:scale-105"
+              className="logo-tint h-9 max-w-[38vw] object-contain object-left sm:h-14 md:h-16 sm:max-w-none w-auto drop-shadow-[0_2px_12px_oklch(0.63_0.21_var(--crow-hue)/45%)] transition-transform group-hover:scale-105"
               onError={(e) => {
                 // Fallback: si no existe crow-logo.png, mostramos el texto estilizado
                 const target = e.currentTarget;
@@ -184,19 +192,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 target.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <span className="hidden font-landing text-xl sm:text-4xl md:text-5xl text-red-600 uppercase tracking-wide font-black drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] group-hover:text-red-500 transition-colors">
+            <span className="hidden font-landing text-xl sm:text-4xl md:text-5xl text-accent uppercase tracking-wide font-black drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] group-hover:text-accent2 transition-colors">
               Crow Comics
             </span>
           </a>
 
-          {user ? (
-            /* Ya con sesión: botón bonito directo al perfil */
+          {/* Tema claro/oscuro (junto a los botones de sesión) */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <button
-              onClick={onOpenProfile}
-              className="group flex items-center gap-2 rounded-full border border-red-400/30 bg-gradient-to-b from-red-500 to-red-700 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-red-900/50 transition-all hover:from-red-400 hover:to-red-600 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
+              type="button"
+              onClick={handleThemeToggle}
+              className="rounded-full border border-line/40 bg-bg/70 p-2 text-ink shadow-lg backdrop-blur-md transition-all hover:bg-raised active:scale-90 sm:p-2.5"
+              title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+            >
+              {theme === 'dark'
+                ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
+                : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
+            </button>
+
+            {user ? (
+              /* Ya con sesión: botón bonito directo al perfil */
+              <button
+                onClick={onOpenProfile}
+                className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-3 py-2 text-xs font-bold text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
               title="Ir a mi perfil"
             >
-              <span className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-[11px] font-black uppercase shrink-0">
+              <span className="w-7 h-7 rounded-full bg-onaccent/10 flex items-center justify-center text-[11px] font-black uppercase shrink-0">
                 {(user.email ?? '?').slice(0, 2)}
               </span>
               <span className="sm:hidden">Mi perfil</span>
@@ -206,35 +227,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-4">
               <button
                 onClick={onOpenSignIn}
-                className="rounded-full border border-zinc-300/30 bg-zinc-950/70 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-zinc-100 shadow-lg backdrop-blur-md transition-all hover:border-zinc-200/60 hover:bg-zinc-800 sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
+                className="rounded-full border border-line/40 bg-bg/70 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink shadow-lg backdrop-blur-md transition-all hover:border-mute/60 hover:bg-raised sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
               >
                 <span className="sm:hidden">Entrar</span>
                 <span className="hidden sm:inline">Iniciar sesión</span>
               </button>
               <button
                 onClick={onOpenSignUp}
-                className="rounded-full border border-red-400/30 bg-gradient-to-b from-red-500 to-red-700 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/50 transition-all hover:from-red-400 hover:to-red-600 sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
+                className="rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
               >
                 <span className="sm:hidden">Crear cuenta</span>
                 <span className="hidden sm:inline">Registrarse</span>
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {/* Centro: emblema + titular + CTA */}
         <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-0">
-          <div className="relative flex w-full max-w-2xl flex-col items-center gap-5 rounded-[2rem] border border-white/10 bg-zinc-950/35 px-5 py-7 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-7 sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
-          <div className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-950/50 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-red-200 sm:text-[10px]">
-            <Sparkles className="h-3 w-3 text-red-400" />
+          <div className="relative flex w-full max-w-2xl flex-col items-center gap-5 rounded-[2rem] border border-line bg-bg/35 px-5 py-7 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-7 sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-accent sm:text-[10px]">
+            <Sparkles className="h-3 w-3 text-accent" />
             Tu universo de cómics
           </div>
           {/* Emblema: usa /crow-emblem.png si el usuario lo sube a /public */}
-          <div className="relative rounded-full bg-red-950/25 p-2 ring-1 ring-red-400/20 shadow-[0_0_70px_rgba(185,28,28,0.22)] sm:p-0 sm:ring-0 sm:shadow-none">
+          <div className="relative rounded-full bg-accent/10 p-2 ring-1 ring-accent/20 shadow-[0_0_70px_oklch(0.63_0.21_var(--crow-hue)/22%)] sm:p-0 sm:ring-0 sm:shadow-none">
             <img
               src={`${BASE_URL}crow-emblem.png`}
               alt="Emblema de Crow Comics"
-              className="h-36 w-36 object-contain drop-shadow-[0_10px_40px_rgba(185,28,28,0.6)] animate-parallax-float sm:h-60 sm:w-60 md:h-72 md:w-72"
+              className="logo-tint h-36 w-36 object-contain drop-shadow-[0_10px_40px_oklch(0.63_0.21_var(--crow-hue)/60%)] animate-parallax-float sm:h-60 sm:w-60 md:h-72 md:w-72"
               onError={(e) => {
                 // Fallback: círculo con emblema genérico de pluma
                 const target = e.currentTarget;
@@ -243,31 +265,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               }}
             />
             <div
-              className="hidden h-36 w-36 items-center justify-center rounded-full border-4 border-red-900 bg-gradient-to-br from-red-500 via-red-800 to-red-950 shadow-[0_10px_50px_rgba(185,28,28,0.5)] animate-parallax-float sm:h-60 sm:w-60 sm:border-8 md:h-72 md:w-72"
+              className="hidden h-36 w-36 items-center justify-center rounded-full border-4 border-accent/30 bg-gradient-to-br from-accent via-accent2 to-accent2 shadow-[0_10px_50px_oklch(0.63_0.21_var(--crow-hue)/50%)] animate-parallax-float sm:h-60 sm:w-60 sm:border-8 md:h-72 md:w-72"
             >
-              <Feather className="h-14 w-14 text-red-200 stroke-[1.5] sm:h-28 sm:w-28" />
+              <Feather className="h-14 w-14 text-accent stroke-[1.5] sm:h-28 sm:w-28" />
             </div>
           </div>
 
           {/* Titular estilo cómic */}
-          <h1 className="max-w-xl font-landing text-3xl font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
-            Lee, guarda tus <span className="text-red-300">cómics</span>
+          <h1 className="max-w-xl font-landing text-3xl font-black leading-[1.08] tracking-tight text-ink drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
+            Lee, guarda tus <span className="text-accent">cómics</span>
           </h1>
-          <p className="max-w-md text-sm leading-relaxed text-zinc-200 sm:text-base">
+          <p className="max-w-md text-sm leading-relaxed text-ink sm:text-base">
             Descubre nuevas historias, sigue tus lecturas y encuentra a tus personajes favoritos.
           </p>
 
           {/* Botón principal */}
           <button
             onClick={onEnterLibrary}
-            className="group flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl border border-red-300/30 bg-gradient-to-b from-red-500 to-red-800 px-5 py-3.5 shadow-xl shadow-red-950/70 transition-all hover:from-red-400 hover:to-red-600 hover:scale-[1.03] active:scale-95 sm:w-auto sm:gap-4 sm:px-10 sm:py-4"
+            className="group flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-5 py-3.5 shadow-xl shadow-accent/70 transition-all hover:from-accent2 hover:to-accent2 hover:scale-[1.03] active:scale-95 sm:w-auto sm:gap-4 sm:px-10 sm:py-4"
           >
-            <span className="font-landing text-lg font-black uppercase tracking-[0.12em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-2xl sm:tracking-wider">
+            <span className="font-landing text-lg font-black uppercase tracking-[0.12em] text-onaccent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-2xl sm:tracking-wider">
               Explorar cómics
             </span>
-            <ArrowRight className="h-5 w-5 text-white transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
+            <ArrowRight className="h-5 w-5 text-onaccent transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
           </button>
-          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-mute">
             Historias para descubrir · Lecturas para guardar
           </span>
           </div>

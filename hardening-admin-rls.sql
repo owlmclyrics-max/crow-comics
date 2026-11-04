@@ -50,6 +50,9 @@ grant execute on function public.is_crow_admin() to authenticated;
 drop policy if exists "Solo administradores autenticados pueden insertar comics" on public.comics;
 drop policy if exists "Solo administradores autenticados pueden actualizar comics" on public.comics;
 drop policy if exists "Solo administradores autenticados pueden eliminar comics" on public.comics;
+drop policy if exists "Solo el equipo Crow inserta cómics" on public.comics;
+drop policy if exists "Solo el equipo Crow actualiza cómics" on public.comics;
+drop policy if exists "Solo el equipo Crow elimina cómics" on public.comics;
 
 create policy "Solo el equipo Crow inserta cómics"
   on public.comics for insert
@@ -73,6 +76,9 @@ create policy "Solo el equipo Crow elimina cómics"
 drop policy if exists "Solo administradores autenticados pueden insertar capítulos" on public.chapters;
 drop policy if exists "Solo administradores autenticados pueden actualizar capítulos" on public.chapters;
 drop policy if exists "Solo administradores autenticados pueden eliminar capítulos" on public.chapters;
+drop policy if exists "Solo el equipo Crow inserta capítulos" on public.chapters;
+drop policy if exists "Solo el equipo Crow actualiza capítulos" on public.chapters;
+drop policy if exists "Solo el equipo Crow elimina capítulos" on public.chapters;
 
 create policy "Solo el equipo Crow inserta capítulos"
   on public.chapters for insert
@@ -96,6 +102,9 @@ create policy "Solo el equipo Crow elimina capítulos"
 drop policy if exists "Solo administradores pueden insertar personajes" on public.characters;
 drop policy if exists "Solo administradores pueden actualizar personajes" on public.characters;
 drop policy if exists "Solo administradores pueden eliminar personajes" on public.characters;
+drop policy if exists "Solo el equipo Crow inserta personajes" on public.characters;
+drop policy if exists "Solo el equipo Crow actualiza personajes" on public.characters;
+drop policy if exists "Solo el equipo Crow elimina personajes" on public.characters;
 
 create policy "Solo el equipo Crow inserta personajes"
   on public.characters for insert
@@ -115,35 +124,53 @@ create policy "Solo el equipo Crow elimina personajes"
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. RELACIONES CÓMIC-PERSONAJE: escritura solo admin
+--    (SOLO si la tabla existe: si nunca creaste las tablas de personajes,
+--     esta sección se salta sola y el resto del script aplica igual)
 -- ─────────────────────────────────────────────────────────────────────────────
-drop policy if exists "Solo administradores pueden insertar relaciones cómic-personaje" on public.comic_characters;
-drop policy if exists "Solo administradores pueden eliminar relaciones cómic-personaje" on public.comic_characters;
+do $$
+begin
+  if to_regclass('public.comic_characters') is not null then
+    drop policy if exists "Solo administradores pueden insertar relaciones cómic-personaje" on public.comic_characters;
+    drop policy if exists "Solo administradores pueden eliminar relaciones cómic-personaje" on public.comic_characters;
+    drop policy if exists "Solo el equipo Crow inserta relaciones cómic-personaje" on public.comic_characters;
+    drop policy if exists "Solo el equipo Crow elimina relaciones cómic-personaje" on public.comic_characters;
 
-create policy "Solo el equipo Crow inserta relaciones cómic-personaje"
-  on public.comic_characters for insert
-  to authenticated
-  with check (public.is_crow_admin());
+    create policy "Solo el equipo Crow inserta relaciones cómic-personaje"
+      on public.comic_characters for insert
+      to authenticated
+      with check (public.is_crow_admin());
 
-create policy "Solo el equipo Crow elimina relaciones cómic-personaje"
-  on public.comic_characters for delete
-  to authenticated
-  using (public.is_crow_admin());
+    create policy "Solo el equipo Crow elimina relaciones cómic-personaje"
+      on public.comic_characters for delete
+      to authenticated
+      using (public.is_crow_admin());
+  end if;
+end
+$$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 6. RELACIONES CAPÍTULO-PERSONAJE: escritura solo admin
+-- 6. RELACIONES CAPÍTULO-PERSONAJE: escritura solo admin (SOLO si la tabla existe)
 -- ─────────────────────────────────────────────────────────────────────────────
-drop policy if exists "Solo administradores pueden insertar relaciones capítulo-personaje" on public.chapter_characters;
-drop policy if exists "Solo administradores pueden eliminar relaciones capítulo-personaje" on public.chapter_characters;
+do $$
+begin
+  if to_regclass('public.chapter_characters') is not null then
+    drop policy if exists "Solo administradores pueden insertar relaciones capítulo-personaje" on public.chapter_characters;
+    drop policy if exists "Solo administradores pueden eliminar relaciones capítulo-personaje" on public.chapter_characters;
+    drop policy if exists "Solo el equipo Crow inserta relaciones capítulo-personaje" on public.chapter_characters;
+    drop policy if exists "Solo el equipo Crow elimina relaciones capítulo-personaje" on public.chapter_characters;
 
-create policy "Solo el equipo Crow inserta relaciones capítulo-personaje"
-  on public.chapter_characters for insert
-  to authenticated
-  with check (public.is_crow_admin());
+    create policy "Solo el equipo Crow inserta relaciones capítulo-personaje"
+      on public.chapter_characters for insert
+      to authenticated
+      with check (public.is_crow_admin());
 
-create policy "Solo el equipo Crow elimina relaciones capítulo-personaje"
-  on public.chapter_characters for delete
-  to authenticated
-  using (public.is_crow_admin());
+    create policy "Solo el equipo Crow elimina relaciones capítulo-personaje"
+      on public.chapter_characters for delete
+      to authenticated
+      using (public.is_crow_admin());
+  end if;
+end
+$$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 7. COMENTARIOS: todos comentan, cada uno edita solo lo suyo, el admin modera
@@ -152,6 +179,11 @@ create policy "Solo el equipo Crow elimina relaciones capítulo-personaje"
 drop policy if exists "Solo usuarios autenticados pueden insertar comentarios" on public.comments;
 drop policy if exists "Solo usuarios autenticados pueden actualizar comentarios" on public.comments;
 drop policy if exists "Solo usuarios autenticados pueden eliminar comentarios" on public.comments;
+drop policy if exists "Usuarios registrados comentan" on public.comments;
+drop policy if exists "Cada usuario edita solo sus comentarios" on public.comments;
+drop policy if exists "Cada usuario elimina solo sus comentarios" on public.comments;
+drop policy if exists "El equipo Crow modera todos los comentarios" on public.comments;
+drop policy if exists "El equipo Crow elimina cualquier comentario" on public.comments;
 
 create policy "Usuarios registrados comentan"
   on public.comments for insert
@@ -189,6 +221,12 @@ drop policy if exists "Solo usuarios autenticados pueden eliminar eventos" on pu
 drop policy if exists "Solo usuarios autenticados pueden crear items de eventos" on public.event_items;
 drop policy if exists "Solo usuarios autenticados pueden editar items de eventos" on public.event_items;
 drop policy if exists "Solo usuarios autenticados pueden eliminar items de eventos" on public.event_items;
+drop policy if exists "Solo el equipo Crow crea guías" on public.events;
+drop policy if exists "Solo el equipo Crow edita guías" on public.events;
+drop policy if exists "Solo el equipo Crow elimina guías" on public.events;
+drop policy if exists "Solo el equipo Crow crea items de guías" on public.event_items;
+drop policy if exists "Solo el equipo Crow edita items de guías" on public.event_items;
+drop policy if exists "Solo el equipo Crow elimina items de guías" on public.event_items;
 
 create policy "Solo el equipo Crow crea guías"
   on public.events for insert

@@ -14,10 +14,10 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
   return (
     <div
       onClick={() => onClick(comic)}
-      className="group relative flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-950/40 smooth-transition cursor-pointer transform hover:-tranzinc-y-1.5 animate-scale-in"
+      className="group relative flex flex-col bg-surface border border-line rounded-xl overflow-hidden hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/40 smooth-transition cursor-pointer transform hover:-translate-y-1.5 animate-scale-in"
     >
       {/* Portada con proporción fija aspect-[2/3] object-cover */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-950">
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
         <img
           src={comic.cover_url}
           alt={comic.title}
@@ -35,11 +35,11 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
         {/* Badges de Editorial y Etiqueta */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
           {comic.publisher && (
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-zinc-950/90 backdrop-blur-md text-amber-400 border border-amber-500/30 shadow-sm">
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-bg/90 backdrop-blur-md text-amber-400 border border-amber-500/30 shadow-sm">
               {comic.publisher}
             </span>
           )}
-          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-zinc-950/80 backdrop-blur-md text-red-400 border border-red-500/30 shadow-sm">
+          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-bg/80 backdrop-blur-md text-accent border border-accent/30 shadow-sm">
             {comic.tag}
           </span>
         </div>
@@ -50,8 +50,8 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
           <span
             className={`px-2 py-0.5 text-xs font-medium rounded-md backdrop-blur-md shadow-sm border ${
               comic.status === 'En curso'
-                ? 'bg-red-950/80 text-red-300 border-red-500/40'
-                : 'bg-zinc-900/80 text-zinc-300 border-zinc-700'
+                ? 'bg-accent/15 text-accent border-accent/40'
+                : 'bg-surface/80 text-mute border-line'
             }`}
           >
             {comic.status}
@@ -60,8 +60,8 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
 
         {/* Contador de capítulos en la esquina inferior de la imagen */}
         <div className="absolute bottom-2.5 right-2.5">
-          <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md bg-zinc-950/90 text-zinc-200 backdrop-blur-md border border-zinc-800">
-            <BookOpen className="w-3.5 h-3.5 text-red-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md bg-bg/90 text-ink backdrop-blur-md border border-line">
+            <BookOpen className="w-3.5 h-3.5 text-accent" />
             {chapterCount} {chapterCount === 1 ? 'cap.' : 'caps.'}
           </span>
         </div>
@@ -70,28 +70,28 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
       {/* Información del Comic */}
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
         <div>
-          <h3 className="font-bold text-zinc-100 text-base leading-snug line-clamp-1 group-hover:text-red-400 transition-colors">
+          <h3 className="font-bold text-ink text-base leading-snug line-clamp-1 group-hover:text-accent2 transition-colors">
             {comic.title}
           </h3>
           {comic.original_title && (
-            <p className="text-xs text-zinc-400 italic line-clamp-1 mt-0.5">
+            <p className="text-xs text-mute italic line-clamp-1 mt-0.5">
               {comic.original_title}
             </p>
           )}
         </div>
 
-        <div className="space-y-1.5 text-xs text-zinc-400 border-t border-zinc-800/80 pt-2.5">
+        <div className="space-y-1.5 text-xs text-mute border-t border-line/80 pt-2.5">
           <div className="flex items-center gap-1.5 truncate">
-            <Feather className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <Feather className="w-3.5 h-3.5 text-mute shrink-0" />
             <span className="truncate">
-              <strong className="text-zinc-300">Guion:</strong> {comic.writer}
+              <strong className="text-mute">Guion:</strong> {comic.writer}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 truncate">
-            <User className="w-3.5 h-3.5 text-red-400 shrink-0" />
+            <User className="w-3.5 h-3.5 text-accent shrink-0" />
             <span className="truncate">
-              <strong className="text-zinc-300">Maqueta:</strong> {comic.translator_typesetter}
+              <strong className="text-mute">Maqueta:</strong> {comic.translator_typesetter}
             </span>
           </div>
         </div>

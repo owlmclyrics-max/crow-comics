@@ -14,13 +14,12 @@ DROP POLICY IF EXISTS "Solo usuarios autenticados pueden insertar comentarios" O
 DROP POLICY IF EXISTS "Solo usuarios autenticados pueden actualizar comentarios" ON public.comments;
 DROP POLICY IF EXISTS "Solo usuarios autenticados pueden eliminar comentarios" ON public.comments;
 DROP POLICY IF EXISTS "Solo autenticados pueden comentar" ON public.comments;
+DROP POLICY IF EXISTS "Solo autenticados pueden eliminar sus comentarios" ON public.comments;
 
 CREATE POLICY "Solo autenticados pueden comentar"
 ON public.comments FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Solo autenticados pueden eliminar sus comentarios" ON public.comments;
 
 CREATE POLICY "Solo autenticados pueden eliminar sus comentarios"
 ON public.comments FOR DELETE

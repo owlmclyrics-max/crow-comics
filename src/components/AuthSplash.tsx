@@ -34,14 +34,14 @@ export const AuthSplash: React.FC = () => {
     <div className="fixed inset-x-0 top-6 z-[100] flex justify-center pointer-events-none px-4">
       <div
         role="status"
-        className="pointer-events-auto flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-zinc-900/95 border border-red-500/40 shadow-2xl shadow-red-950/60 backdrop-blur-md animate-fade-in"
+        className="pointer-events-auto flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-surface/95 border border-accent/30 shadow-2xl shadow-accent/30 backdrop-blur-md animate-fade-in"
       >
         <CheckCircle2
-          className="w-7 h-7 text-red-500 stroke-[2.5] check-pop drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+          className="w-7 h-7 text-accent stroke-[2.5] check-pop drop-shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/60%)]"
         />
         <div>
-          <p className="text-sm font-bold text-white leading-tight">Sesión iniciada</p>
-          <p className="text-[11px] text-zinc-400">Bienvenido, {user.email?.split('@')[0]}</p>
+          <p className="text-sm font-bold text-ink leading-tight">Sesión iniciada</p>
+          <p className="text-[11px] text-mute">Bienvenido, {user.email?.split('@')[0]}</p>
         </div>
       </div>
     </div>

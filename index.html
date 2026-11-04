@@ -11,8 +11,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
     <title>Crow Comics — Directorio & Maquetaciones</title>
+    <!-- Tema persistido: se aplica ANTES del primer pintado para evitar parpadeo -->
+    <script>
+      try {
+        var t = localStorage.getItem('crow_theme');
+        var h = localStorage.getItem('crow_accent_hue');
+        document.documentElement.dataset.theme = (t === 'light' || t === 'dark') ? t : 'dark';
+        if (h && Number(h) >= 0 && Number(h) <= 360) {
+          document.documentElement.style.setProperty('--crow-hue', h);
+        }
+      } catch (e) {}
+    </script>
   </head>
-  <body class="bg-[#0c0609] text-zinc-100 font-sans">
+  <body class="font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

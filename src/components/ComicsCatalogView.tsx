@@ -30,13 +30,13 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Sistema de Pestañas [ Volúmenes | Guías de Lectura ] */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-900/70 border border-zinc-800 w-fit max-w-full overflow-x-auto">
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-surface/70 border border-line w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setActiveTab('volumenes')}
           className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'volumenes'
-              ? 'bg-red-500 text-zinc-950 shadow-lg shadow-red-950/40'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              ? 'bg-accent text-onaccent shadow-lg shadow-accent/40'
+              : 'text-mute hover:text-ink hover:bg-raised'
           }`}
         >
           <LayoutGrid className="w-4 h-4" />
@@ -46,8 +46,8 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
           onClick={() => setActiveTab('guias')}
           className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'guias'
-              ? 'bg-red-500 text-zinc-950 shadow-lg shadow-red-950/40'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              ? 'bg-accent text-onaccent shadow-lg shadow-accent/40'
+              : 'text-mute hover:text-ink hover:bg-raised'
           }`}
         >
           <ListOrdered className="w-4 h-4" />
@@ -61,14 +61,14 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
         /* ======================================================== */
         <div className="space-y-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
               Crossovers y Sagas
             </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Guías de <span className="text-red-400">Lectura</span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-ink tracking-tight">
+              Guías de <span className="text-accent">Lectura</span>
             </h2>
-            <p className="text-sm text-zinc-400 max-w-2xl">
+            <p className="text-sm text-mute max-w-2xl">
               El orden correcto para leer sagas que cruzan varias series. Cada guía marca qué cómics ya están disponibles y cuáles esperan maquetación.
             </p>
           </div>
@@ -83,21 +83,21 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
 
       {/* Cabecera de la Sección Cómics */}
       <div className="space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5" />
           Archivo General de Maquetaciones
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Explorar por <span className="text-red-400">Editorial</span> & Sello
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-ink tracking-tight">
+          Explorar por <span className="text-accent">Editorial</span> & Sello
         </h2>
-        <p className="text-sm text-zinc-400 max-w-2xl">
+        <p className="text-sm text-mute max-w-2xl">
           Selecciona tu editorial favorita para filtrar los cómics disponibles o explora los proyectos de editoriales independientes y de culto.
         </p>
       </div>
 
       {/* Selector de Editoriales con Pills Grandes */}
-      <div className="space-y-3 p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800">
-        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block">
+      <div className="space-y-3 p-5 rounded-2xl bg-surface/70 border border-line">
+        <span className="text-xs font-bold text-mute uppercase tracking-wider block">
           Editorial / Sello Editorial:
         </span>
         <div className="flex flex-wrap gap-2">
@@ -114,13 +114,13 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
                   isSelected
                     ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-lg shadow-amber-500/25 scale-105'
-                    : 'bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
+                    : 'bg-bg/80 hover:bg-raised text-mute hover:text-ink border-line'
                 }`}
               >
                 <span>{pub}</span>
                 <span
                   className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
-                    isSelected ? 'bg-zinc-950/30 text-zinc-950 font-black' : 'bg-zinc-900 text-zinc-400'
+                    isSelected ? 'bg-zinc-950/30 text-zinc-950 font-black' : 'bg-surface text-mute'
                   }`}
                 >
                   {count}
@@ -134,9 +134,9 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
 
       {/* Resultados y Cuadrícula */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
+        <div className="flex items-center justify-between text-xs text-mute px-1">
           <span>
-            Mostrando <strong className="text-zinc-200">{filteredComics.length}</strong> cómics
+            Mostrando <strong className="text-ink">{filteredComics.length}</strong> cómics
             {selectedPublisher !== 'Todas' && (
               <> de <strong className="text-amber-400">{selectedPublisher}</strong></>
             )}
@@ -146,7 +146,7 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
               onClick={() => {
                 setSelectedPublisher('Todas');
               }}
-              className="text-xs text-red-400 hover:underline font-semibold"
+              className="text-xs text-accent hover:underline font-semibold"
             >
               Restablecer filtros
             </button>
@@ -154,14 +154,14 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
         </div>
 
         {filteredComics.length === 0 ? (
-          <div className="py-20 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-8 space-y-3">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-800 text-zinc-400">
+          <div className="py-20 text-center rounded-2xl bg-surface/40 border border-line/60 p-8 space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-raised text-mute">
               <BookOpen className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-white">
+            <h3 className="text-base font-bold text-ink">
               No hay cómics de {selectedPublisher} en esta categoría
             </h3>
-            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+            <p className="text-xs text-mute max-w-sm mx-auto">
               Puedes agregar nuevos títulos de {selectedPublisher} o probar con otra editorial.
             </p>
           </div>

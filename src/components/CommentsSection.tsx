@@ -69,20 +69,20 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-zinc-800 pb-4">
-        <h3 className="text-2xl font-black text-white flex items-center gap-2.5">
-          <MessageSquare className="w-6 h-6 text-red-400" />
+      <div className="border-b border-line pb-4">
+        <h3 className="text-2xl font-black text-ink flex items-center gap-2.5">
+          <MessageSquare className="w-6 h-6 text-accent" />
           <span>
             {heading} ({comments.length})
           </span>
         </h3>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-1">{subheading}</p>
+        <p className="text-xs sm:text-sm text-mute mt-1">{subheading}</p>
       </div>
 
-      <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 space-y-4">
+      <div className="bg-surface/60 border border-line rounded-2xl p-6 space-y-4">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="p-3.5 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 text-accent2" />
             <span>{error}</span>
           </div>
         )}
@@ -90,12 +90,12 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         {!user ? (
           /* Sprint 4: comentar requiere cuenta */
           <div className="py-4 flex flex-col items-center text-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center">
-              <LogIn className="w-4.5 h-4.5 text-red-400" />
+            <div className="w-10 h-10 rounded-xl bg-raised flex items-center justify-center">
+              <LogIn className="w-4.5 h-4.5 text-accent" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-bold text-white">Comenta con tu cuenta</p>
-              <p className="text-xs text-zinc-400 max-w-sm">
+              <p className="text-sm font-bold text-ink">Comenta con tu cuenta</p>
+              <p className="text-xs text-mute max-w-sm">
                 Inicia sesión para publicar opiniones y calificar. Tu comentario aparecerá con el
                 username de tu perfil.
               </p>
@@ -103,7 +103,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event(OPEN_AUTH_EVENT))}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/20 transition-all active:scale-95"
             >
               <LogIn className="w-4 h-4" />
               Entrar / Crear cuenta
@@ -116,13 +116,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               value={content}
               onChange={(event) => setContent(event.target.value)}
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-sm text-zinc-100 outline-none transition-colors resize-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors resize-none"
             />
 
             <div className="flex items-center justify-between flex-wrap gap-3">
               {showRatingInput && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400">Tu nota:</span>
+                  <span className="text-xs text-mute">Tu nota:</span>
                   <StarRating value={rating} onChange={onRatingChange} size="md" showValue />
                 </div>
               )}
@@ -131,7 +131,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting || !content.trim()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ml-auto"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ml-auto"
               >
                 <Send className="w-4 h-4" />
                 <span>{submitting ? 'Enviando...' : 'Publicar Comentario'}</span>
@@ -143,24 +143,24 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800 text-zinc-400 text-sm animate-fade-in">
+          <div className="p-8 text-center rounded-2xl bg-surface/40 border border-line text-mute text-sm animate-fade-in">
             Aún no hay comentarios. ¡Sé el primero en opinar!
           </div>
         ) : (
           comments.map((comment, index) => (
             <div
               key={comment.id}
-              className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-5 space-y-3 hover:border-zinc-700 smooth-transition animate-slide-in-left"
+              className="bg-surface/40 border border-line rounded-2xl p-5 space-y-3 hover:border-accent smooth-transition animate-slide-in-left"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                    <User className="w-4 h-4 text-red-400" />
+                  <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+                    <User className="w-4 h-4 text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-zinc-200">{comment.user_name}</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-sm font-bold text-ink">{comment.user_name}</p>
+                    <p className="text-xs text-faint">
                       {new Date(comment.created_at).toLocaleDateString('es-ES', {
                         day: 'numeric',
                         month: 'short',
@@ -171,7 +171,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 </div>
                 {comment.rating ? <StarRating value={comment.rating} readOnly size="sm" /> : null}
               </div>
-              <p className="text-sm text-zinc-300 leading-relaxed">{comment.content}</p>
+              <p className="text-sm text-mute leading-relaxed">{comment.content}</p>
             </div>
           ))
         )}

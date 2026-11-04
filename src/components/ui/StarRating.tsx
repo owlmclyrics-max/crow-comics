@@ -42,7 +42,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
           <Star
             key={star}
             className={`${SIZE_CLASSES[size]} ${
-              star <= value ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'
+              star <= value ? 'text-amber-400 fill-amber-400' : 'text-faint'
             }`}
           />
         ))}
@@ -65,7 +65,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
           >
             <Star
               className={`${SIZE_CLASSES[size]} ${
-                star <= activeValue ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'
+                star <= activeValue ? 'text-amber-400 fill-amber-400' : 'text-faint'
               }`}
             />
           </button>

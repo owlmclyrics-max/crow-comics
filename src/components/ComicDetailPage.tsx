@@ -127,9 +127,9 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors text-xs font-semibold group"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-colors text-xs font-semibold group"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-tranzinc-x-1 transition-transform text-red-400" />
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform text-accent" />
           <span>Volver al Directorio</span>
         </button>
 
@@ -137,16 +137,16 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onEdit?.(comic)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold transition-colors border border-zinc-700"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-raised text-ink text-xs font-semibold transition-colors border border-line"
             >
-              <Edit3 className="w-3.5 h-3.5 text-red-400" />
+              <Edit3 className="w-3.5 h-3.5 text-accent" />
               Editar Cómic y Tomos
             </button>
             <button
               onClick={() => onDelete?.(comic)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-semibold transition-colors border border-rose-800/80"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent/10 hover:bg-accent/15 text-accent2 text-xs font-semibold transition-colors border border-accent/30"
             >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <Trash2 className="w-3.5 h-3.5 text-accent2" />
               Eliminar Cómic
             </button>
           </div>
@@ -156,7 +156,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       {/* ======================================================== */}
       {/* HERO BANNER CON FICHA COMPLETA + DESCARGA + ESTRELLAS      */}
       {/* ======================================================== */}
-      <div className="relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-2xl smooth-transition-slow">
+      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl smooth-transition-slow">
         {/* Fondo con desenfoque de la misma portada con parallax */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
           <img
@@ -164,8 +164,8 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
             alt={comic.title}
             className="w-full h-full object-cover blur-3xl scale-125 opacity-30 parallax-layer animate-parallax-float"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/60 to-transparent" />
         </div>
 
         <div className="relative p-6 sm:p-10 md:p-12 flex flex-col md:flex-row items-center md:items-end gap-8 z-10 animate-slide-in-left">
@@ -181,15 +181,15 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 }
                 setAddListOpen(true);
               }}
-              className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-zinc-950/70 backdrop-blur-md border border-zinc-800 hover:border-red-500/50 active:scale-90 transition-all"
+              className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-bg/70 backdrop-blur-md border border-line hover:border-accent/50 active:scale-90 transition-all"
               title="Añadir a lista"
             >
-              <ListPlus className="w-5.5 h-5.5 text-zinc-300 hover:text-red-400 transition-colors" />
+              <ListPlus className="w-5.5 h-5.5 text-mute hover:text-accent transition-colors" />
             </button>
           </div>
 
           {/* Portada Principal Flotante 2:3 */}
-          <div className="relative aspect-[2/3] w-48 sm:w-60 md:w-64 rounded-2xl overflow-hidden border-2 border-zinc-700/80 shadow-2xl bg-zinc-950 shrink-0 transform -rotate-1 hover:rotate-0 smooth-transition">
+          <div className="relative aspect-[2/3] w-48 sm:w-60 md:w-64 rounded-2xl overflow-hidden border-2 border-line shadow-2xl bg-bg shrink-0 transform -rotate-1 hover:rotate-0 smooth-transition">
             <img
               src={comic.cover_url}
               alt={comic.title}
@@ -205,67 +205,67 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                   {comic.publisher}
                 </span>
               )}
-              <span className="px-3 py-1 text-xs font-semibold uppercase rounded-lg bg-zinc-900/90 text-red-400 border border-red-500/30">
+              <span className="px-3 py-1 text-xs font-semibold uppercase rounded-lg bg-surface/90 text-accent border border-accent/30">
                 {comic.tag}
               </span>
               <span
                 className={`px-3 py-1 text-xs font-medium rounded-lg border ${
                   comic.status === 'En curso'
-                    ? 'bg-red-950/90 text-red-300 border-red-500/40'
-                    : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                    ? 'bg-accent/10 text-accent border-accent/40'
+                    : 'bg-raised text-mute border-line'
                 }`}
               >
                 {comic.status}
               </span>
               {comic.year && (
-                <span className="px-3 py-1 text-xs text-zinc-300 bg-zinc-950/80 rounded-lg border border-zinc-800">
+                <span className="px-3 py-1 text-xs text-mute bg-bg/80 rounded-lg border border-line">
                   Año {comic.year}
                 </span>
               )}
             </div>
 
             <div>
-              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-md">
+              <h1 className="text-3xl sm:text-5xl font-black text-ink tracking-tight drop-shadow-md">
                 {comic.title}
               </h1>
               {comic.original_title && (
-                <p className="text-sm sm:text-base text-zinc-300 italic mt-1 drop-shadow-sm">
+                <p className="text-sm sm:text-base text-mute italic mt-1 drop-shadow-sm">
                   {comic.original_title}
                 </p>
               )}
             </div>
 
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl bg-zinc-950/60 p-4 sm:p-5 rounded-2xl border border-zinc-800/80 text-left">
+            <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-3xl bg-bg/60 p-4 sm:p-5 rounded-2xl border border-line text-left">
               {comic.synopsis}
             </p>
 
             {/* Ficha Técnica Rápida */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-xs text-zinc-300 pt-2 border-t border-zinc-800/80">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-xs text-mute pt-2 border-t border-line">
               <div className="flex items-center gap-1.5">
-                <Feather className="w-4 h-4 text-red-400" />
-                <span><strong className="text-zinc-400">Guion:</strong> {comic.writer}</span>
+                <Feather className="w-4 h-4 text-accent" />
+                <span><strong className="text-mute">Guion:</strong> {comic.writer}</span>
               </div>
               {comic.artist && (
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-red-400" />
-                  <span><strong className="text-zinc-400">Arte:</strong> {comic.artist}</span>
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <span><strong className="text-mute">Arte:</strong> {comic.artist}</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5">
-                <User className="w-4 h-4 text-red-400" />
-                <span><strong className="text-zinc-400">Maqueta / Fansub:</strong> <span className="text-red-400 font-bold">{comic.translator_typesetter}</span></span>
+                <User className="w-4 h-4 text-accent" />
+                <span><strong className="text-mute">Maqueta / Fansub:</strong> <span className="text-accent font-bold">{comic.translator_typesetter}</span></span>
               </div>
               {/* Rating Display */}
               {comic.average_rating !== undefined && comic.average_rating > 0 && (
                 <div className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  <span><strong className="text-zinc-400">Rating:</strong> <span className="text-amber-400 font-bold">{comic.average_rating.toFixed(1)}</span> <span className="text-zinc-500">({comic.total_ratings})</span></span>
+                  <span><strong className="text-mute">Rating:</strong> <span className="text-amber-400 font-bold">{comic.average_rating.toFixed(1)}</span> <span className="text-faint">({comic.total_ratings})</span></span>
                 </div>
               )}
               {comic.download_count !== undefined && comic.download_count > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <Download className="w-4 h-4 text-red-400" />
-                  <span><strong className="text-zinc-400">Descargas:</strong> <span className="text-red-400 font-bold">{comic.download_count.toLocaleString()}</span></span>
+                  <Download className="w-4 h-4 text-accent" />
+                  <span><strong className="text-mute">Descargas:</strong> <span className="text-accent font-bold">{comic.download_count.toLocaleString()}</span></span>
                 </div>
               )}
             </div>
@@ -278,7 +278,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   download
-                  className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-red-500 hover:bg-red-400 text-zinc-950 transition-all shadow-xl shadow-red-500/20 hover:scale-105 active:scale-95"
+                  className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-xl shadow-accent/20 hover:scale-105 active:scale-95"
                 >
                   <Download className="w-4 h-4" />
                   <span>Descargar Serie Completa</span>
@@ -287,8 +287,8 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
               )}
 
               {/* Calificación por estrellas inline */}
-              <div className="flex items-center gap-2 bg-zinc-950/60 px-4 py-2 rounded-xl border border-zinc-800">
-                <span className="text-xs text-zinc-300 font-medium">Calificar:</span>
+              <div className="flex items-center gap-2 bg-bg/60 px-4 py-2 rounded-xl border border-line">
+                <span className="text-xs text-mute font-medium">Calificar:</span>
                 <StarRating value={userRating} onChange={setUserRating} size="md" showValue />
               </div>
             </div>
@@ -300,29 +300,29 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       {/* SECCIÓN 1: FILA ÚNICA DE TOMOS INDIVIDUALES               */}
       {/* ======================================================== */}
       <div className="space-y-6">
-        <div className="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="border-b border-line pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-2xl font-black text-white flex items-center gap-2.5">
-              <Layers className="w-6 h-6 text-red-400" />
+            <h3 className="text-2xl font-black text-ink flex items-center gap-2.5">
+              <Layers className="w-6 h-6 text-accent" />
               <span>Tomos y Capítulos Individuales ({comic.chapters?.length || 0})</span>
             </h3>
           </div>
           {comic.chapters && comic.chapters.length > 1 && (
             <button
               onClick={() => setIsChaptersModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-400 text-zinc-950 border border-red-500/40 transition-all shadow-md shadow-red-950/40 group active:scale-95 shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/40 transition-all shadow-md shadow-accent/40 group active:scale-95 shrink-0"
             >
               <Layers className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span>Ver Todos los Capítulos</span>
             </button>
           )}
         </div>
-        <p className="text-xs sm:text-sm text-zinc-400">
+        <p className="text-xs sm:text-sm text-mute">
           Haz clic en cualquier tomo para ver su página exclusiva con detalles y descargas. Desliza con las flechas para explorar la colección completa.
         </p>
 
         {(!comic.chapters || comic.chapters.length === 0) ? (
-          <div className="p-12 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800 text-zinc-400 text-sm">
+          <div className="p-12 text-center rounded-3xl bg-surface/40 border border-line text-mute text-sm">
             Aún no se han publicado tomos individuales para este cómic.
           </div>
         ) : (
@@ -334,7 +334,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 onClick={() => scrollChapters(-1)}
                 disabled={!chapterScroll.left}
                 aria-label="Ver tomos anteriores"
-                className="shrink-0 p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 p-2 rounded-full bg-raised hover:bg-raised text-mute disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -348,21 +348,21 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 <div
                   key={chapter.id}
                   onClick={() => onOpenChapter?.(chapter, comic)}
-                  className="group relative w-40 sm:w-44 shrink-0 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-red-500/60 overflow-hidden shadow-xl smooth-transition flex flex-col cursor-pointer animate-scale-in"
+                  className="group relative w-40 sm:w-44 shrink-0 rounded-2xl bg-surface border border-line hover:border-accent/60 overflow-hidden shadow-xl smooth-transition flex flex-col cursor-pointer animate-scale-in"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   {/* Portada del Tomo Vertical 2:3 */}
-                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-950">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
                     <img
                       src={chapter.cover_url || comic.cover_url}
                       alt={chapter.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent opacity-80" />
 
                     {/* Número del Tomo */}
                     <div className="absolute top-3 left-3">
-                      <span className="px-2.5 py-1 text-xs font-black uppercase rounded-lg bg-zinc-950/90 text-red-400 border border-red-500/30 backdrop-blur-md">
+                      <span className="px-2.5 py-1 text-xs font-black uppercase rounded-lg bg-bg/90 text-accent border border-accent/30 backdrop-blur-md">
                         Tomo #{chapter.chapter_number}
                       </span>
                     </div>
@@ -374,7 +374,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                         Continúas aquí{chapterMarkers[chapter.id] ? ` · pág. ${chapterMarkers[chapter.id]}` : ''}
                       </span>
                     ) : chapterMarkers[chapter.id] ? (
-                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-zinc-950/90 text-amber-300 border border-amber-500/40 backdrop-blur-md">
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-bg/90 text-amber-300 border border-amber-500/40 backdrop-blur-md">
                         <Bookmark className="w-2.5 h-2.5" />
                         pág. {chapterMarkers[chapter.id]}
                       </span>
@@ -383,10 +383,10 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
 
                   {/* Título del Tomo */}
                   <div className="p-3 sm:p-4">
-                    <h4 className="font-bold text-white text-sm leading-snug line-clamp-2 group-hover:text-red-400 transition-colors">
+                    <h4 className="font-bold text-ink text-sm leading-snug line-clamp-2 group-hover:text-accent transition-colors">
                       {chapter.title}
                     </h4>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <p className="text-[11px] text-faint mt-1">
                       Haz clic para ver detalles
                     </p>
                   </div>
@@ -400,7 +400,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 onClick={() => scrollChapters(1)}
                 disabled={!chapterScroll.right}
                 aria-label="Ver más tomos"
-                className="shrink-0 p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 p-2 rounded-full bg-raised hover:bg-raised text-mute disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

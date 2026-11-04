@@ -96,8 +96,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
             onClick={() => onChange(avatar)}
             className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
               value === avatar
-                ? 'border-red-500 ring-2 ring-red-500/40'
-                : 'border-zinc-700 hover:border-zinc-500'
+                ? 'border-accent/30 ring-2 ring-accent/40'
+                : 'border-line hover:border-line'
             }`}
           >
             <img
@@ -111,8 +111,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
               }}
             />
             {value === avatar && (
-              <div className="absolute inset-0 bg-red-500/25 flex items-center justify-center">
-                <Check className="w-6 h-6 text-white drop-shadow" />
+              <div className="absolute inset-0 bg-accent/15 flex items-center justify-center">
+                <Check className="w-6 h-6 text-ink drop-shadow" />
               </div>
             )}
             {/* X de borrado: solo en modo dev, sobre cualquier avatar */}
@@ -131,7 +131,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
                   }
                 }}
                 title="Quitar de la galería"
-                className="absolute top-1 right-1 p-1 rounded-full bg-zinc-950/90 border border-zinc-600 text-zinc-300 hover:bg-red-500 hover:border-red-500 hover:text-zinc-950 transition-colors"
+                className="absolute top-1 right-1 p-1 rounded-full bg-bg/90 border border-line text-mute hover:bg-accent2 hover:border-accent/30 hover:text-onaccent transition-colors"
               >
                 <X className="w-3 h-3" />
               </span>
@@ -147,7 +147,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
             type="button"
             onClick={() => setDevOpen((v) => !v)}
             className={`inline-flex items-center gap-1.5 text-xs font-semibold transition-colors ${
-              devOpen ? 'text-red-400' : 'text-zinc-400 hover:text-white'
+              devOpen ? 'text-accent' : 'text-mute hover:text-ink'
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
@@ -155,8 +155,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
           </button>
 
           {devOpen && (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 space-y-3">
-              <p className="text-[10px] text-zinc-500 leading-relaxed">
+            <div className="rounded-xl border border-line bg-bg/60 p-3 space-y-3">
+              <p className="text-[10px] text-faint leading-relaxed">
                 Añade o QUITA avatares de la galería que eligen todos los usuarios (incluidos los 8
                 de fábrica). Lo que guardes aquí es lo que verá todo el sitio.
               </p>
@@ -170,13 +170,13 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
                     if (e.key === 'Enter') void handleAdd();
                   }}
                   placeholder="https://... (foto del personaje)"
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-bg border border-line focus:border-accent text-xs text-ink placeholder:text-faint outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => void handleAdd()}
                   disabled={busy || !newUrl.trim()}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Añadir
@@ -185,19 +185,19 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
 
               {/* Lista completa de la galería, editable aquí mismo */}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                <p className="text-[10px] font-bold text-mute uppercase tracking-wider">
                   Galería actual ({avatars.length})
                 </p>
                 <div className="space-y-1.5">
                   {avatars.map((url) => (
                     <div
                       key={url}
-                      className="flex items-center gap-2.5 p-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800"
+                      className="flex items-center gap-2.5 p-1.5 rounded-lg bg-surface/80 border border-line"
                     >
-                      <div className="w-9 h-9 rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800 shrink-0">
+                      <div className="w-9 h-9 rounded-lg overflow-hidden border border-line bg-raised shrink-0">
                         {broken[url] ? (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ImageOff className="w-4 h-4 text-zinc-600" />
+                            <ImageOff className="w-4 h-4 text-faint" />
                           </div>
                         ) : (
                           <img
@@ -209,11 +209,11 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
                           />
                         )}
                       </div>
-                      <span className="flex-1 min-w-0 text-[10px] text-zinc-400 truncate font-mono">
+                      <span className="flex-1 min-w-0 text-[10px] text-mute truncate font-mono">
                         {url}
                       </span>
                       {broken[url] && (
-                        <span className="text-[9px] text-rose-400 font-semibold shrink-0">
+                        <span className="text-[9px] text-accent2 font-semibold shrink-0">
                           imagen rota
                         </span>
                       )}
@@ -221,7 +221,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({ value, onChange }) =
                         type="button"
                         onClick={() => void handleRemove(url)}
                         title="Quitar de la galería"
-                        className="p-1 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-red-500 hover:border-red-500 hover:text-zinc-950 transition-colors shrink-0"
+                        className="p-1 rounded-md bg-raised border border-line text-mute hover:bg-accent2 hover:border-accent/30 hover:text-onaccent transition-colors shrink-0"
                       >
                         <X className="w-3 h-3" />
                       </button>

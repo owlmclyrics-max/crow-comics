@@ -55,9 +55,9 @@ export const FeaturedListsRow: React.FC<FeaturedListsRowProps> = ({ onSelectList
   return (
     <section className="space-y-4 animate-fade-in" aria-label="Colecciones del sitio">
       <div className="flex items-center gap-2.5">
-        <Sparkles className="w-5 h-5 text-red-400" />
-        <h3 className="text-lg font-black text-white tracking-tight">Colecciones del Sitio</h3>
-        <span className="text-[11px] text-zinc-500 ml-2">seleccionadas por el equipo de Crow</span>
+        <Sparkles className="w-5 h-5 text-accent" />
+        <h3 className="text-lg font-black text-ink tracking-tight">Colecciones del Sitio</h3>
+        <span className="text-[11px] text-faint ml-2">seleccionadas por el equipo de Crow</span>
       </div>
 
       <div className="-mx-1 flex gap-4 overflow-x-auto pb-3 px-1 snap-x snap-mandatory [scrollbar-width:thin]">

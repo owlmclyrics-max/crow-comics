@@ -17,22 +17,26 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- 3. Políticas para Perfiles
+DROP POLICY IF EXISTS "Los perfiles son públicos para lectura" ON public.profiles;
 CREATE POLICY "Los perfiles son públicos para lectura"
 ON public.profiles FOR SELECT
 TO anon, authenticated
 USING (true);
 
+DROP POLICY IF EXISTS "Los usuarios pueden insertar su propio perfil" ON public.profiles;
 CREATE POLICY "Los usuarios pueden insertar su propio perfil"
 ON public.profiles FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Los usuarios pueden actualizar su propio perfil" ON public.profiles;
 CREATE POLICY "Los usuarios pueden actualizar su propio perfil"
 ON public.profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Los usuarios pueden eliminar su propio perfil" ON public.profiles;
 CREATE POLICY "Los usuarios pueden eliminar su propio perfil"
 ON public.profiles FOR DELETE
 TO authenticated

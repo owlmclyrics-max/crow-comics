@@ -6,18 +6,21 @@ import { AuthProvider } from './context/AuthContext'
 import { ComicsProvider } from './context/ComicsContext'
 import { CharactersProvider } from './context/CharactersContext'
 import { FavoritesProvider } from './context/FavoritesContext'
+import { ThemeProvider } from './context/ThemeContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <FavoritesProvider>
-        <ComicsProvider>
-          <CharactersProvider>
-            <App />
-          </CharactersProvider>
-        </ComicsProvider>
-      </FavoritesProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <FavoritesProvider>
+          <ComicsProvider>
+            <CharactersProvider>
+              <App />
+            </CharactersProvider>
+          </ComicsProvider>
+        </FavoritesProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 )
 

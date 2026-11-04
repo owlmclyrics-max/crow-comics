@@ -1,5 +1,86 @@
 @import "tailwindcss";
 
+/* ============================================================
+   SISTEMA DE TEMAS CROW COMICS
+   - Tema: [data-theme="dark" | "light"] en <html>
+   - Acento: --crow-hue (0-360) en <html>; cualquier color se
+     personaliza cambiando ese único valor.
+   - Tokens disponibles como utilerías de Tailwind:
+     bg-bg / bg-surface / bg-raised / bg-accent ...
+     text-ink / text-mute / text-faint / text-accent ...
+     border-line / ring-accent / from-accent / to-accent2
+   ============================================================ */
+
+:root,
+[data-theme='dark'] {
+  /* Rugosidad del tema: la tinta del acento por defecto (luminosidades) */
+  --crow-hue: 25; /* rojo Crow */
+  --crow-accent-l: 0.63;
+  --crow-accent2-l: 0.53;
+  --crow-onaccent-l: 0.99;
+
+  color-scheme: dark;
+  --c-bg: oklch(0.135 0.012 var(--crow-hue)); /* negro-rojizo Crow */
+  --c-surface: oklch(0.18 0.014 var(--crow-hue));
+  --c-raised: oklch(0.245 0.016 var(--crow-hue));
+  --c-line: oklch(0.99 0 0 / 0.1);
+  --c-ink: oklch(0.98 0.003 var(--crow-hue));
+  --c-mute: oklch(0.73 0.008 var(--crow-hue));
+  --c-faint: oklch(0.56 0.008 var(--crow-hue));
+  --c-accent: oklch(var(--crow-accent-l) 0.21 var(--crow-hue));
+  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue));
+  --c-onaccent: oklch(var(--crow-onaccent-l) 0 0);
+  --c-overlay: oklch(0.08 0.01 var(--crow-hue) / 0.8);
+}
+
+[data-theme='light'] {
+  --crow-accent-l: 0.54;
+  --crow-accent2-l: 0.44;
+  --crow-onaccent-l: 0.99;
+
+  color-scheme: light;
+  --c-bg: oklch(0.977 0.006 var(--crow-hue)); /* blanco "papel" con tinte del acento */
+  --c-surface: oklch(1 0 0);
+  --c-raised: oklch(0.95 0.008 var(--crow-hue));
+  --c-line: oklch(0.15 0.01 var(--crow-hue) / 0.12);
+  --c-ink: oklch(0.21 0.012 var(--crow-hue));
+  --c-mute: oklch(0.42 0.015 var(--crow-hue));
+  --c-faint: oklch(0.58 0.01 var(--crow-hue));
+  --c-accent: oklch(var(--crow-accent-l) 0.21 var(--crow-hue));
+  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue));
+  --c-onaccent: oklch(var(--crow-onaccent-l) 0 0);
+  --c-overlay: oklch(0.2 0.02 var(--crow-hue) / 0.5);
+}
+
+/* Acentos "brillantes" (amarillos, verdes, cianes): el blanco sobre ellos
+   se pierde, así que bajamos la luminosidad del acento y oscurecemos el
+   texto que va encima. */
+[data-accent='bright'] {
+  --crow-accent-l: 0.52;
+  --crow-accent2-l: 0.43;
+  --crow-onaccent-l: 0.16;
+}
+[data-theme='dark'][data-accent='bright'] {
+  --crow-accent-l: 0.58;
+  --crow-accent2-l: 0.48;
+}
+
+/* Exportamos los tokens a Tailwind (con `inline` los utilities quedarán
+   ligados a las variables: alternan con el tema sin recargar nada) */
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-mute: var(--c-mute);
+  --color-faint: var(--c-faint);
+  --color-accent: var(--c-accent);
+  --color-accent2: var(--c-accent2);
+  --color-onaccent: var(--c-onaccent);
+  --color-overlay: var(--c-overlay);
+}
+
 @layer base {
   html {
     overflow-x: clip;
@@ -7,8 +88,8 @@
   }
 
   body {
-    background-color: #0c0609; /* negro-rojizo de fondo, acento Crow */
-    color: #f8fafc; /* zinc-50 */
+    background-color: var(--c-bg);
+    color: var(--c-ink);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     margin: 0;
     min-height: 100vh;
@@ -49,20 +130,73 @@
   }
 }
 
+::selection {
+  background-color: oklch(var(--crow-accent-l) 0.21 var(--crow-hue) / 0.35);
+}
+
+/* Tinte dinámico de logos: rota el tono rojo original hacia el acento activo.
+   El rojo de los PNG vive alrededor de oklch hue 25°; por eso restamos 25. */
+.logo-tint {
+  filter: hue-rotate(calc((var(--crow-hue, 25) - 25) * 1deg));
+  transition: filter 0.4s ease;
+}
+
+/* Fallback de transición de tema (navegadores sin View Transitions) */
+html.theme-anim *,
+html.theme-anim *::before,
+html.theme-anim *::after {
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    fill 0.4s ease,
+    stroke 0.4s ease !important;
+}
+
+/* Transición circular desde el botón que alterna el tema (Chromium) */
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: vt-circle-in 0.5s ease-in-out;
+}
+
+@keyframes vt-circle-in {
+  from {
+    clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  html.theme-anim *,
+  html.theme-anim *::before,
+  html.theme-anim *::after {
+    transition: none !important;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0c0a0b;
+  background: var(--c-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2125;
+  background: var(--c-raised);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3e3034;
+  background: var(--c-faint);
 }
 
 /* Animaciones personalizadas */

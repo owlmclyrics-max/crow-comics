@@ -55,14 +55,14 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         isLarge ? 'w-11 h-11' : 'w-7 h-7'
       } ${
         isFavorite
-          ? 'bg-red-950/90 border-red-500/60 shadow-md shadow-red-950/40'
-          : 'bg-zinc-950/70 border-zinc-800 hover:border-red-500/50'
+          ? 'bg-accent/15 border-accent/60 shadow-md shadow-accent/40'
+          : 'bg-bg/70 border-line hover:border-accent/50'
       } ${className}`}
     >
       <Heart
         key={pop}
         className={`${
-          isFavorite ? 'fill-red-500 text-red-500 heart-pop' : 'text-zinc-300 group-hover:text-red-400'
+          isFavorite ? 'fill-accent text-accent heart-pop' : 'text-mute group-hover:text-accent'
         } transition-colors ${isLarge ? 'w-5.5 h-5.5' : 'w-3.5 h-3.5'}`}
       />
     </button>

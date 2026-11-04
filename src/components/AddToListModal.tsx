@@ -119,22 +119,22 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({ isOpen, onClose,
         {/* Cabecera */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
-              <ListPlus className="w-4.5 h-4.5 text-red-400" />
+            <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+              <ListPlus className="w-4.5 h-4.5 text-accent" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-white truncate">Añadir a lista</h3>
-              <p className="text-[10px] text-zinc-400 truncate">{comic.title}</p>
+              <h3 className="text-sm font-bold text-ink truncate">Añadir a lista</h3>
+              <p className="text-[10px] text-mute truncate">{comic.title}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-mute hover:text-ink hover:bg-raised transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {error && (
-          <div className="p-2.5 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-[11px] flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+          <div className="p-2.5 rounded-xl bg-accent/10 border border-accent2/80 text-accent2 text-[11px] flex items-center gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-accent2" />
             <span>{error}</span>
           </div>
         )}
@@ -143,12 +143,12 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({ isOpen, onClose,
         <div className="max-h-64 overflow-y-auto space-y-1.5 pr-0.5">
           {loading && (
             <div className="py-6 flex justify-center">
-              <Loader2 className="w-5 h-5 text-red-400 animate-spin" />
+              <Loader2 className="w-5 h-5 text-accent animate-spin" />
             </div>
           )}
 
           {!loading && lists.length === 0 && (
-            <div className="py-6 text-center text-xs text-zinc-500">
+            <div className="py-6 text-center text-xs text-faint">
               Todavía no tienes listas. Crea la primera abajo ↓
             </div>
           )}
@@ -162,26 +162,26 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({ isOpen, onClose,
                 onClick={() => void handleToggle(list)}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl border text-left transition-all ${
                   belongs
-                    ? 'bg-red-950/40 border-red-500/40'
-                    : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-600'
+                    ? 'bg-accent/10 border-accent/40'
+                    : 'bg-surface/60 border-line hover:border-line'
                 }`}
               >
                 {/* Checkbox */}
                 <span
                   className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
-                    belongs ? 'bg-red-500 border-red-500 text-zinc-950' : 'border-zinc-600 bg-transparent'
+                    belongs ? 'bg-accent border-accent/30 text-onaccent' : 'border-line bg-transparent'
                   }`}
                 >
                   {belongs && <Check className="w-3.5 h-3.5 stroke-[3.5]" />}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-xs font-bold text-zinc-100 truncate">{list.name}</span>
+                  <span className="block text-xs font-bold text-ink truncate">{list.name}</span>
                   {list.description && (
-                    <span className="block text-[10px] text-zinc-400 truncate">{list.description}</span>
+                    <span className="block text-[10px] text-mute truncate">{list.description}</span>
                   )}
                 </span>
                 {list.is_public && (
-                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
+                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-raised text-mute border border-line shrink-0">
                     Pública
                   </span>
                 )}
@@ -191,20 +191,20 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({ isOpen, onClose,
         </div>
 
         {/* Crear nueva lista al vuelo */}
-        <div className="pt-3 border-t border-zinc-800 flex items-center gap-2">
+        <div className="pt-3 border-t border-line flex items-center gap-2">
           <input
             type="text"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') void handleCreate(); }}
             placeholder="Nueva lista (ej. Pendientes de leer)"
-            className="flex-1 px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors"
+            className="flex-1 px-3 py-2 rounded-xl bg-bg border border-line focus:border-accent/30 text-xs text-ink placeholder:text-faint outline-none transition-colors"
           />
           <button
             type="button"
             onClick={() => void handleCreate()}
             disabled={creating || !newListName.trim()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 text-xs font-bold transition-all shadow-md shadow-red-500/20 disabled:opacity-40 active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20 disabled:opacity-40 active:scale-95"
           >
             {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 stroke-[3]" />}
             Crear

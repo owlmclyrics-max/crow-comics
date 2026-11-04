@@ -55,33 +55,33 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ label, value
 
   return (
     <div className="space-y-2">
-      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">{label}</label>
+      <label className="text-[11px] font-semibold text-mute uppercase tracking-wide">{label}</label>
       <input
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="block w-full min-w-0 rounded-xl border border-dashed border-red-500/40 bg-red-950/20 px-3 py-3 text-xs text-zinc-300 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-red-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-zinc-950 hover:border-red-400/70"
+        className="block w-full min-w-0 rounded-xl border border-dashed border-accent/30 bg-accent/10 px-3 py-3 text-xs text-mute file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-2 file:text-xs file:font-bold file:text-onaccent hover:border-accent/70"
         onChange={event => void handleUpload(event.target.files?.[0])}
       />
-      <p className="text-[10px] text-zinc-500">Elige un archivo de tu celular o computadora (JPG, PNG o WebP; máximo 10 MB).</p>
+      <p className="text-[10px] text-faint">Elige un archivo de tu celular o computadora (JPG, PNG o WebP; máximo 10 MB).</p>
       <div className="flex flex-col sm:flex-row gap-2">
         <button
           type="button"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-200 transition-colors hover:bg-red-500/20 disabled:opacity-60 sm:w-auto"
+          className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2.5 text-xs font-bold text-accent transition-colors hover:bg-accent/15 disabled:opacity-60 sm:w-auto"
         >
           {uploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
           {uploading ? 'Subiendo archivo...' : 'Subir portada desde archivo'}
         </button>
-        <span className="hidden self-center text-[10px] uppercase tracking-wider text-zinc-600 sm:inline">o pega un enlace</span>
+        <span className="hidden self-center text-[10px] uppercase tracking-wider text-faint sm:inline">o pega un enlace</span>
         <input
           type="text"
           value={value}
           onChange={event => onChange(event.target.value)}
           placeholder="URL de imagen (opcional)"
           aria-label={`${label} por URL`}
-          className="w-full min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors focus:border-red-500"
+          className="w-full min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-accent"
         />
       </div>
       {value && (
@@ -89,11 +89,11 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ label, value
           key={value}
           src={value}
           alt={`Vista previa: ${label}`}
-          className="h-28 w-20 rounded-lg border border-zinc-700 bg-zinc-950 object-cover"
+          className="h-28 w-20 rounded-lg border border-line bg-bg object-cover"
           onError={event => { event.currentTarget.style.display = 'none'; }}
         />
       )}
-      {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-xs text-accent2">{error}</p>}
     </div>
   );
 };

@@ -67,12 +67,12 @@ const Field: React.FC<{
   col2?: boolean;
 }> = ({ label, children, col2 }) => (
   <div className={`space-y-1 ${col2 ? 'md:col-span-2' : ''}`}>
-    <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">{label}</label>
+    <label className="text-[11px] font-semibold text-mute uppercase tracking-wide">{label}</label>
     {children}
   </div>
 );
 
-const inputCls = 'w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 focus:border-red-500 text-sm text-zinc-100 outline-none transition-colors';
+const inputCls = 'w-full px-3 py-2 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors';
 
 /* ══════════════════════════════════════════════════
    EDITOR DE UN CAPÍTULO (panel derecho)
@@ -127,21 +127,21 @@ const ChapterEditor: React.FC<{
         value={chapter.pdf_url ?? ''}
         onChange={e => onUpdate('pdf_url', e.target.value)}
         placeholder="https://drive.google.com/file/d/FILE_ID/preview"
-        className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-sky-800/50 focus:border-sky-400 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-600"
+        className="w-full px-3 py-2 rounded-xl bg-bg border border-sky-800/50 focus:border-sky-400 text-sm text-ink outline-none transition-colors placeholder:text-faint"
       />
-      <p className="text-[10px] text-zinc-500">
+      <p className="text-[10px] text-faint">
         Google Drive: archivo → Compartir → cambia <code className="text-sky-500">/view</code> por <code className="text-sky-500">/preview</code>
       </p>
     </div>
 
     {/* Links de descarga */}
-    <div className="rounded-xl border border-red-800/40 bg-red-950/20 p-3.5 space-y-3">
+    <div className="rounded-xl border border-accent/30 bg-accent/10 p-3.5 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Download className="w-3.5 h-3.5 text-red-400" />
-          <span className="text-[11px] font-bold text-red-300 uppercase tracking-wide">Links de Descarga</span>
+          <Download className="w-3.5 h-3.5 text-accent" />
+          <span className="text-[11px] font-bold text-accent uppercase tracking-wide">Links de Descarga</span>
           {(chapter.links ?? []).length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30">
+            <span className="px-1.5 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-bold border border-accent/30">
               {(chapter.links ?? []).length}
             </span>
           )}
@@ -149,16 +149,16 @@ const ChapterEditor: React.FC<{
         <button
           type="button"
           onClick={onAddLink}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[11px] font-semibold transition-colors border border-red-500/30"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/15 hover:bg-accent2/20 text-accent text-[11px] font-semibold transition-colors border border-accent/30"
         >
           <Plus className="w-3 h-3" /> Añadir
         </button>
       </div>
 
       {(chapter.links ?? []).length === 0 ? (
-        <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg bg-zinc-950/40 border border-zinc-700/30">
-          <Link2 className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-          <p className="text-[11px] text-zinc-500 italic">Sin links. Añade Mega, Drive, Mediafire…</p>
+        <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg bg-bg/40 border border-line/30">
+          <Link2 className="w-3.5 h-3.5 text-faint shrink-0" />
+          <p className="text-[11px] text-faint italic">Sin links. Añade Mega, Drive, Mediafire…</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -169,26 +169,26 @@ const ChapterEditor: React.FC<{
                 value={link.name}
                 onChange={e => onUpdateLink(li, 'name', e.target.value)}
                 placeholder="Servidor"
-                className="col-span-3 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 focus:border-red-500 text-xs text-zinc-100 outline-none"
+                className="col-span-3 px-2.5 py-1.5 rounded-lg bg-surface border border-line focus:border-accent text-xs text-ink outline-none"
               />
               <input
                 type="text"
                 value={link.url}
                 onChange={e => onUpdateLink(li, 'url', e.target.value)}
                 placeholder="https://mega.nz/..."
-                className="col-span-6 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 focus:border-red-500 text-xs text-zinc-100 outline-none"
+                className="col-span-6 px-2.5 py-1.5 rounded-lg bg-surface border border-line focus:border-accent text-xs text-ink outline-none"
               />
               <select
                 value={link.type ?? 'cloud'}
                 onChange={e => onUpdateLink(li, 'type', e.target.value as ChapterLink['type'])}
-                className="col-span-2 px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 focus:border-red-500 text-xs text-zinc-100 outline-none"
+                className="col-span-2 px-2 py-1.5 rounded-lg bg-surface border border-line focus:border-accent text-xs text-ink outline-none"
               >
                 {LINK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
               <button
                 type="button"
                 onClick={() => onRemoveLink(li)}
-                className="col-span-1 flex justify-center p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 transition-colors border border-rose-800/60"
+                className="col-span-1 flex justify-center p-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent2 transition-colors border border-accent/30"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -363,18 +363,18 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
             <Package className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Pack Completo</p>
-            <p className="text-[10px] text-zinc-500">Descargar toda la serie de golpe</p>
+            <p className="text-sm font-bold text-ink">Pack Completo</p>
+            <p className="text-[10px] text-faint">Descargar toda la serie de golpe</p>
           </div>
         </div>
         <Field label="Etiqueta del Pack">
           <input type="text" value={totalIssuesLabel} onChange={e => setTotalIssuesLabel(e.target.value)}
             placeholder="#1-4 Serie Completa"
-            className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-amber-800/40 focus:border-amber-500 text-sm text-zinc-100 outline-none" />
+            className="w-full px-3 py-2 rounded-xl bg-bg border border-amber-800/40 focus:border-amber-500 text-sm text-ink outline-none" />
         </Field>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide">Links del pack</span>
+            <span className="text-[11px] font-semibold text-faint uppercase tracking-wide">Links del pack</span>
             <button type="button" onClick={addPackLink}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-[11px] font-semibold border border-amber-500/30 transition-colors">
               <Plus className="w-3 h-3" /> Agregar
@@ -383,11 +383,11 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           {fullDownloadLinks.map((link, i) => (
             <div key={link.id} className="flex gap-2 items-center">
               <input type="text" value={link.name} onChange={e => updatePackLink(i, 'name', e.target.value)}
-                placeholder="Servidor" className="flex-1 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-700 focus:border-amber-500 text-sm text-zinc-100 outline-none" />
+                placeholder="Servidor" className="flex-1 px-3 py-1.5 rounded-xl bg-bg border border-line focus:border-amber-500 text-sm text-ink outline-none" />
               <input type="text" value={link.url} onChange={e => updatePackLink(i, 'url', e.target.value)}
-                placeholder="URL del pack" className="flex-[2] px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-700 focus:border-amber-500 text-sm text-zinc-100 outline-none" />
+                placeholder="URL del pack" className="flex-[2] px-3 py-1.5 rounded-xl bg-bg border border-line focus:border-amber-500 text-sm text-ink outline-none" />
               <button type="button" onClick={() => removePackLink(i)}
-                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/60 transition-colors">
+                className="p-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent2 border border-accent/30 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -406,13 +406,13 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       {/* ── COLUMNA IZQUIERDA: lista compacta ── */}
       <div className="w-full md:w-52 md:shrink-0 flex flex-col gap-2">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
+          <span className="text-[11px] font-bold text-mute uppercase tracking-wide">
             Tomos ({chapters.length})
           </span>
           <button
             type="button"
             onClick={addChapter}
-            className="p-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
+            className="p-1 rounded-lg bg-accent/15 hover:bg-accent2/20 text-accent border border-accent/30 transition-colors"
             title="Agregar capítulo"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -421,8 +421,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
 
         <div className="flex gap-2 overflow-x-auto md:flex-col md:overflow-x-visible md:overflow-y-auto pr-0.5 md:max-h-[380px]">
           {chapters.length === 0 && (
-            <div className="py-8 text-center rounded-xl bg-zinc-950/60 border border-dashed border-zinc-700">
-              <p className="text-[11px] text-zinc-500">Sin capítulos</p>
+            <div className="py-8 text-center rounded-xl bg-bg/60 border border-dashed border-line">
+              <p className="text-[11px] text-faint">Sin capítulos</p>
             </div>
           )}
           {chapters.map((ch, i) => {
@@ -435,24 +435,24 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
                 onClick={() => setSelectedChapterIdx(i)}
                 className={`min-w-[180px] md:min-w-0 md:w-full text-left px-3 py-2.5 rounded-xl border transition-all group flex items-center gap-2 ${
                   i === selectedChapterIdx
-                    ? 'bg-red-500/15 border-red-500/40 text-white'
-                    : 'bg-zinc-900/50 border-zinc-700/40 text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                    ? 'bg-accent/10 border-accent/30 text-ink'
+                    : 'bg-surface/50 border-line/40 text-mute hover:text-ink hover:bg-raised/60'
                 }`}
               >
                 <span className={`w-5 h-5 shrink-0 rounded-md text-[10px] font-bold flex items-center justify-center ${
-                  i === selectedChapterIdx ? 'bg-red-500 text-zinc-950' : 'bg-zinc-700 text-zinc-300'
+                  i === selectedChapterIdx ? 'bg-accent text-onaccent' : 'bg-line text-mute'
                 }`}>
                   {ch.chapter_number}
                 </span>
                 <span className="flex-1 text-xs font-semibold truncate">{ch.title}</span>
                 <div className="flex gap-0.5 shrink-0">
                   {hasPdf  && <span title="PDF" className="w-2 h-2 rounded-full bg-sky-400" />}
-                  {hasLinks && <span title="Links" className="w-2 h-2 rounded-full bg-red-400" />}
+                  {hasLinks && <span title="Links" className="w-2 h-2 rounded-full bg-accent" />}
                 </div>
                 <button
                   type="button"
                   onClick={e => { e.stopPropagation(); removeChapter(i); }}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-rose-400 hover:text-rose-300 transition-all"
+                  className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-accent2 hover:text-accent2 transition-all"
                   title="Eliminar"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -463,30 +463,30 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         </div>
 
         {/* Leyenda */}
-        <div className="mt-2 p-2.5 rounded-xl bg-zinc-950/40 border border-zinc-800 space-y-1.5 shrink-0">
-          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+        <div className="mt-2 p-2.5 rounded-xl bg-bg/40 border border-line space-y-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 text-[10px] text-faint">
             <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" /> PDF online
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" /> Links descarga
+          <div className="flex items-center gap-1.5 text-[10px] text-faint">
+            <span className="w-2 h-2 rounded-full bg-accent shrink-0" /> Links descarga
           </div>
         </div>
       </div>
 
       {/* ── Divisor ── */}
-      <div className="hidden md:block w-px bg-zinc-800 shrink-0" />
+      <div className="hidden md:block w-px bg-line shrink-0" />
 
       {/* ── COLUMNA DERECHA: editor ── */}
       <div className="flex-1 min-w-0 md:overflow-y-auto">
         {selectedChapter ? (
           <div className="space-y-1 mb-3">
             <div className="flex items-center gap-2">
-              <Edit3 className="w-3.5 h-3.5 text-red-400" />
-              <p className="text-xs font-bold text-white">
-                Editando: <span className="text-red-400">{selectedChapter.title}</span>
+              <Edit3 className="w-3.5 h-3.5 text-accent" />
+              <p className="text-xs font-bold text-ink">
+                Editando: <span className="text-accent">{selectedChapter.title}</span>
               </p>
             </div>
-            <p className="text-[10px] text-zinc-500 ml-5">
+            <p className="text-[10px] text-faint ml-5">
               Los cambios se guardan al presionar "Guardar Cómic".
             </p>
           </div>
@@ -494,9 +494,9 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
 
         {chapters.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
-            <Layers className="w-10 h-10 text-zinc-700" />
-            <p className="text-sm text-zinc-500 text-center">
-              Usa el botón <strong className="text-zinc-400">+</strong> de la izquierda para añadir el primer capítulo.
+            <Layers className="w-10 h-10 text-faint" />
+            <p className="text-sm text-faint text-center">
+              Usa el botón <strong className="text-mute">+</strong> de la izquierda para añadir el primer capítulo.
             </p>
           </div>
         ) : selectedChapter ? (
@@ -516,23 +516,23 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line">
         <div>
-          <h2 className="text-xl font-black text-white">
+          <h2 className="text-xl font-black text-ink">
             {comicToEdit ? 'Editar Cómic' : 'Nuevo Cómic'}
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="text-xs text-faint mt-0.5">
             Paso {stepIndex + 1} de {steps.length} — {steps[stepIndex].desc}
           </p>
         </div>
         <button onClick={onClose}
-          className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors">
+          className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Wizard tabs */}
-      <div className="flex border-b border-zinc-800">
+      <div className="flex border-b border-line">
         {steps.map((step, i) => {
           const isActive   = currentStep === step.id;
           const isComplete = i < stepIndex;
@@ -542,16 +542,16 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
               onClick={() => !isDisabled && setCurrentStep(step.id)}
               disabled={isDisabled}
               className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-semibold transition-all ${
-                isActive   ? 'text-red-400 bg-red-500/5' :
-                isComplete ? 'text-zinc-300 hover:text-white hover:bg-zinc-800/50' :
-                             'text-zinc-600 cursor-not-allowed'
+                isActive   ? 'text-accent bg-accent/5' :
+                isComplete ? 'text-mute hover:text-ink hover:bg-raised/50' :
+                             'text-faint cursor-not-allowed'
               }`}
             >
-              {isActive && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 rounded-full" />}
+              {isActive && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />}
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
-                isActive   ? 'bg-red-500 border-red-500 text-zinc-950' :
-                isComplete ? 'bg-zinc-700 border-zinc-600 text-zinc-300' :
-                             'bg-transparent border-zinc-700 text-zinc-600'
+                isActive   ? 'bg-accent border-accent text-onaccent' :
+                isComplete ? 'bg-line border-line text-mute' :
+                             'bg-transparent border-line text-faint'
               }`}>
                 {isComplete ? <Check className="w-3 h-3" /> : i + 1}
               </span>
@@ -565,8 +565,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       {/* Content */}
       <div className={`flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5 ${currentStep === 'chapters' ? 'md:overflow-hidden' : ''}`}>
         {errorMsg && (
-          <div className="mb-4 p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-200 text-xs flex items-center gap-3">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="mb-4 p-3.5 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-3">
+            <AlertCircle className="w-4 h-4 shrink-0 text-accent2" />
             <p>{errorMsg}</p>
           </div>
         )}
@@ -575,16 +575,16 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 bg-zinc-900/20">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4 border-t border-line bg-surface/20">
         <button type="button" onClick={handleBack} disabled={stepIndex === 0}
-          className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <ChevronLeft className="w-4 h-4" /> Anterior
         </button>
 
         <div className="flex items-center gap-1.5">
           {steps.map((_, i) => (
             <span key={i} className={`h-1.5 rounded-full transition-all ${
-              i === stepIndex ? 'w-5 bg-red-400' : 'w-1.5 bg-zinc-700'
+              i === stepIndex ? 'w-5 bg-accent' : 'w-1.5 bg-line'
             }`} />
           ))}
         </div>
@@ -592,13 +592,13 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         {isLastStep ? (
           <button type="button" onClick={handleSave}
             disabled={saving || !title.trim() || !coverUrl.trim() || !synopsis.trim() || !writer.trim() || !translatorTypesetter.trim()}
-            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
             <Save className="w-4 h-4" />
             {saving ? 'Guardando...' : 'Guardar Cómic'}
           </button>
         ) : (
           <button type="button" onClick={handleNext}
-            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-zinc-950 font-bold text-xs shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95">
+            className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95">
             Siguiente <ChevronRight className="w-4 h-4" />
           </button>
         )}

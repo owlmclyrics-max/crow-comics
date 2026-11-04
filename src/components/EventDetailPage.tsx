@@ -64,9 +64,9 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
       <div>
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors text-xs font-semibold group"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface hover:bg-raised text-mute text-ink border border-line transition-colors text-xs font-semibold group"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-tranzinc-x-1 transition-transform text-red-400" />
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform text-accent" />
           <span>Volver a las Guías</span>
         </button>
       </div>
@@ -74,7 +74,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
       {/* ======================================================== */}
       {/* HEADER CON PORTADA, TÍTULO Y DESCRIPCIÓN                  */}
       {/* ======================================================== */}
-      <div className="relative rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-2xl">
+      <div className="relative rounded-3xl overflow-hidden border border-line bg-surface shadow-2xl">
         {/* Fondo con desenfoque de la portada */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {event.cover_url ? (
@@ -84,17 +84,17 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
               className="w-full h-full object-cover blur-3xl scale-125 opacity-30"
             />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
         </div>
 
         <div className="relative p-6 sm:p-10 flex flex-col md:flex-row items-center md:items-end gap-8 z-10">
           {/* Portada panoramica del evento */}
-          <div className="relative w-full max-w-md md:w-96 aspect-video rounded-2xl overflow-hidden border-2 border-zinc-700/80 shadow-2xl bg-zinc-950 shrink-0">
+          <div className="relative w-full max-w-md md:w-96 aspect-video rounded-2xl overflow-hidden border-2 border-line/80 shadow-2xl bg-bg shrink-0">
             {event.cover_url ? (
               <img src={event.cover_url} alt={event.title} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-red-950/30">
-                <ListOrdered className="w-14 h-14 text-zinc-700" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg via-surface to-accent/30">
+                <ListOrdered className="w-14 h-14 text-faint" />
               </div>
             )}
           </div>
@@ -111,41 +111,41 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                 className={`px-3 py-1 text-xs font-semibold uppercase rounded-lg border ${
                   event.is_complete
                     ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
-                    : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                    : 'bg-raised text-mute border-line'
                 }`}
               >
                 {event.is_complete ? 'Saga completa' : 'En curso'}
               </span>
               {event.year && (
-                <span className="px-3 py-1 text-xs text-zinc-300 bg-zinc-950/80 rounded-lg border border-zinc-800">
+                <span className="px-3 py-1 text-xs text-mute bg-bg/80 rounded-lg border border-line">
                   Año {event.year}
                 </span>
               )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">
+            <h1 className="text-3xl sm:text-4xl font-black text-ink tracking-tight drop-shadow-md">
               {event.title}
             </h1>
 
             {event.description && (
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl bg-zinc-950/60 p-4 rounded-2xl border border-zinc-800/80">
+              <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-2xl bg-bg/60 p-4 rounded-2xl border border-line/80">
                 {event.description}
               </p>
             )}
 
             {/* Ficha rápida */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-xs text-zinc-300 pt-2 border-t border-zinc-800/80">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-xs text-mute pt-2 border-t border-line/80">
               <div className="flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-red-400" />
-                <span><strong className="text-zinc-400">Números:</strong> {items.length}</span>
+                <Layers className="w-4 h-4 text-accent" />
+                <span><strong className="text-mute">Números:</strong> {items.length}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-red-400" />
-                <span><strong className="text-zinc-400">Esenciales:</strong> {items.filter((item) => !item.is_optional).length}</span>
+                <Star className="w-4 h-4 text-accent" />
+                <span><strong className="text-mute">Esenciales:</strong> {items.filter((item) => !item.is_optional).length}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-red-400" />
-                <span><strong className="text-zinc-400">Disponibles:</strong> <span className="text-red-400 font-bold">{availableCount}</span>/{items.length}</span>
+                <BookOpen className="w-4 h-4 text-accent" />
+                <span><strong className="text-mute">Disponibles:</strong> <span className="text-accent font-bold">{availableCount}</span>/{items.length}</span>
               </div>
             </div>
           </div>
@@ -157,9 +157,9 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
       {/* ======================================================== */}
       <div className="space-y-5">
         {/* Cabecera + interruptor "Mostrar solo esenciales" */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
-          <h3 className="text-2xl font-black text-white flex items-center gap-2.5">
-            <MapPin className="w-6 h-6 text-red-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
+          <h3 className="text-2xl font-black text-ink flex items-center gap-2.5">
+            <MapPin className="w-6 h-6 text-accent" />
             <span>Orden de Lectura</span>
           </h3>
 
@@ -167,18 +167,18 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
           <button
             type="button"
             onClick={() => setShowEssentialsOnly((prev) => !prev)}
-            className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-red-500/40 transition-colors shrink-0"
+            className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-surface border border-line hover:border-accent/40 transition-colors shrink-0"
             aria-pressed={showEssentialsOnly}
           >
-            <span className="text-xs font-bold text-zinc-300">Mostrar solo esenciales</span>
+            <span className="text-xs font-bold text-mute">Mostrar solo esenciales</span>
             <span
               className={`relative w-9 h-5 rounded-full transition-colors ${
-                showEssentialsOnly ? 'bg-red-500' : 'bg-zinc-700'
+                showEssentialsOnly ? 'bg-accent' : 'bg-line'
               }`}
             >
               <span
                 className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                  showEssentialsOnly ? 'tranzinc-x-4' : ''
+                  showEssentialsOnly ? 'translate-x-4' : ''
                 }`}
               />
             </span>
@@ -187,12 +187,12 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
 
         {loading ? (
           <div className="flex items-center gap-3 py-8 justify-center">
-            <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-zinc-400">Cargando orden de lectura...</p>
+            <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-mute">Cargando orden de lectura...</p>
           </div>
         ) : visibleItems.length === 0 ? (
           <div
-            className="p-12 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800 text-zinc-400 text-sm"
+            className="p-12 text-center rounded-3xl bg-surface/40 border border-line text-mute text-sm"
             key="empty-items"
           >
             {items.length === 0
@@ -209,21 +209,21 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                 <div
                   key={item.id}
                   onClick={() => comic && onSelectComic(comic)}
-                  className={`relative flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 rounded-2xl bg-zinc-900/60 border transition-all animate-scale-in ${
+                  className={`relative flex flex-col sm:flex-row sm:items-center gap-4 p-3 sm:p-4 rounded-2xl bg-surface/60 border transition-all animate-scale-in ${
                     isAvailable
-                      ? 'border-zinc-800 hover:border-red-500/50 cursor-pointer hover:bg-zinc-900'
-                      : 'border-zinc-800/60 opacity-70 cursor-default'
+                      ? 'border-line hover:border-accent/50 cursor-pointer hover:bg-surface'
+                      : 'border-line/60 opacity-70 cursor-default'
                   }`}
                 >
                   {/* Número de orden */}
-                  <div className="w-12 h-12 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 sm:order-first">
-                    <span className="text-xl font-black text-red-400 font-mono">
+                  <div className="w-12 h-12 rounded-xl bg-bg border border-line flex items-center justify-center shrink-0 sm:order-first">
+                    <span className="text-xl font-black text-accent font-mono">
                       {String(item.position).padStart(2, '0')}
                     </span>
                   </div>
 
                   {/* Miniatura del cómic (une event_items con comics) */}
-                  <div className="relative w-14 h-20 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-950 shrink-0">
+                  <div className="relative w-14 h-20 rounded-lg overflow-hidden border border-line bg-bg shrink-0">
                     {comic ? (
                       <img
                         src={comic.cover_url}
@@ -232,9 +232,9 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-zinc-950">
-                        <Lock className="w-4 h-4 text-zinc-600" />
-                        <Layers className="w-5 h-5 text-zinc-700" />
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-bg">
+                        <Lock className="w-4 h-4 text-faint" />
+                        <Layers className="w-5 h-5 text-faint" />
                       </div>
                     )}
                   </div>
@@ -243,7 +243,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                   <div className="flex-1 min-w-0">
                     <h4
                       className={`font-bold text-sm leading-snug line-clamp-1 ${
-                        isAvailable ? 'text-white group-hover:text-red-400' : 'text-zinc-400'
+                        isAvailable ? 'text-ink group-hover:text-accent' : 'text-mute'
                       }`}
                     >
                       {getEventItemLabel(item, comic?.title)}
@@ -251,7 +251,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                     <span
                       className={`mt-1 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-md border ${
                         item.is_optional
-                          ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700'
+                          ? 'bg-raised/80 text-mute border-line'
                           : 'bg-amber-500/10 text-amber-300 border-amber-500/40'
                       }`}
                     >
@@ -267,14 +267,14 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                         e.stopPropagation();
                         onSelectComic(comic);
                       }}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-400 text-zinc-950 border border-red-500/40 transition-all shadow-md shadow-red-950/40 active:scale-95 shrink-0"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/30 transition-all shadow-md shadow-accent/40 active:scale-95 shrink-0"
                       title={`Abrir ${comic.title}`}
                     >
                       <BookOpen className="w-4 h-4" />
                       <span>Leer</span>
                     </button>
                   ) : (
-                    <div className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 text-zinc-500 border border-zinc-800 shrink-0">
+                    <div className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-surface text-faint border border-line shrink-0">
                       <Lock className="w-4 h-4" />
                       <span>Próximamente</span>
                     </div>

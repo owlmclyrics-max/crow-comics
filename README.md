@@ -16,10 +16,10 @@ Aplicación web moderna y segura diseñada para catalogar cómic independiente, 
    - Información técnica completa: guionista, dibujante, maquetador, año de publicación y sinopsis.
    - Cada capítulo cuenta con botones independientes para distintos formatos y servidores: *PDF Online*, *Mega*, *Google Drive*, *Mediafire*, etc.
 
-3. **Seguridad y Control de Acceso (Resuelve vulnerabilidades de versiones anteriores)**:
+3. **Seguridad y Control de Acceso**:
    - **Cero contraseñas en el frontend**: Sin contraseñas en texto plano ni comprobaciones inseguras en el navegador.
-   - **Row Level Security (RLS)**: Las tablas en PostgreSQL/Supabase tienen políticas activas donde visitantes anónimos solo pueden leer (`SELECT`), impidiendo que alguien mediante consola o peticiones HTTP cree, modifique o borre registros.
-   - **Botones protegidos**: Las acciones de *Crear Cómic*, *Editar Ficha* y *Eliminar Cómic* solo se renderizan y ejecutan cuando se detecta un token o sesión de administrador verificado.
+   - **Row Level Security (RLS)**: Los scripts de endurecimiento permiten leer el catálogo públicamente y reservan las escrituras de contenido al admin y al colaborador autorizado.
+   - **Roles separados**: El colaborador puede gestionar cómics, tomos y personajes, pero no reportes, guías/eventos ni funciones administrativas.
 
 ---
 
@@ -53,15 +53,17 @@ Para tener persistencia real en la nube y autenticación de usuarios segura con 
 
 1. Entra a [https://supabase.com](https://supabase.com) y crea una cuenta gratuita.
 2. Crea un nuevo proyecto (por ejemplo: `crow-comics`).
-3. Ve a **SQL Editor** en el panel de Supabase y pega todo el contenido de [`supabase-schema.sql`](./supabase-schema.sql). Dale a **Run** para crear las tablas y las políticas de seguridad RLS.
-4. En Supabase ve a **Authentication** -> **Users** y añade tu usuario administrador con su correo y contraseña.
-5. Ve a **Project Settings** -> **API** y copia tu `Project URL` y la llave `anon / public`.
-6. Crea un archivo `.env` en la raíz de este proyecto con tus credenciales:
+3. Ve a **SQL Editor** en el panel de Supabase y ejecuta [`supabase-schema.sql`](./supabase-schema.sql) para crear las tablas.
+4. Ejecuta [`hardening-admin-rls.sql`](./hardening-admin-rls.sql) y después [`content-collaborator-rls.sql`](./content-collaborator-rls.sql). El segundo script autoriza `crow.comics.01@gmail.com` como colaborador de contenido; los permisos también quedan protegidos en la base de datos.
+5. En Supabase ve a **Authentication** -> **Providers** y habilita Google. El colaborador debe iniciar sesión en la app con ese mismo Gmail para que Supabase cree su cuenta; no hace falta asignarle rol de administrador.
+6. Ve a **Project Settings** -> **API** y copia tu `Project URL` y la llave `anon / public`.
+7. Crea un archivo `.env` en la raíz de este proyecto con tus credenciales:
    ```env
    VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
    VITE_SUPABASE_ANON_KEY=tu-anon-public-key
    ```
-7. Reinicia tu servidor de desarrollo (`npm run dev`) y tu directorio ya estará conectado a la nube en tiempo real.
+8. Reinicia tu servidor de desarrollo (`npm run dev`) y tu directorio ya estará conectado a la nube en tiempo real.
+9. Para subir portadas desde el formulario de cómics y tomos, ejecuta [`add-comic-image-storage.sql`](./add-comic-image-storage.sql) en el SQL Editor de Supabase. Las imágenes JPG, PNG y WebP (hasta 10 MB) quedan públicas para lectura; solo las cuentas admin y colaboradora pueden subirlas.
 
 ---
 

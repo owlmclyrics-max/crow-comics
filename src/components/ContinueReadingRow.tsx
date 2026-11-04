@@ -77,9 +77,9 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
     <section className="space-y-4 animate-fade-in" aria-label="Continuar leyendo">
       {/* Encabezado */}
       <div className="flex items-center gap-2.5">
-        <History className="w-5 h-5 text-red-400" />
-        <h3 className="text-lg font-black text-white tracking-tight">Continuar Leyendo</h3>
-        <span className="text-[11px] text-zinc-500 ml-2">últimos capítulos que abriste</span>
+        <History className="w-5 h-5 text-accent" />
+        <h3 className="text-lg font-black text-ink tracking-tight">Continuar Leyendo</h3>
+        <span className="text-[11px] text-faint ml-2">últimos capítulos que abriste</span>
       </div>
 
       {/* Carrusel horizontal con scroll tipo Netflix */}
@@ -99,10 +99,10 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
               <button
                 type="button"
                 onClick={() => handleContinue({ comic, chapter })}
-                className="group flex w-full flex-col text-left rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-red-500/50 overflow-hidden transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-red-950/40 cursor-pointer"
+                className="group flex w-full flex-col text-left rounded-2xl bg-surface border border-line hover:border-accent/50 overflow-hidden transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/40 cursor-pointer"
               >
                 {/* Portada del capítulo (no la de la serie); fallback a la del cómic */}
-                <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-950">
+                <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
                   <img
                     src={chapter?.cover_url || comic.cover_url}
                     alt={chapter ? chapter.title : comic.title}
@@ -116,7 +116,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
 
                   {/* Número de tomo flotante */}
-                  <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-black uppercase rounded-md bg-red-500 text-zinc-950 shadow-md">
+                  <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-black uppercase rounded-md bg-accent text-onaccent shadow-md">
                     Tomo {row.chapter_number}
                   </span>
 
@@ -124,15 +124,15 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                       serie, mostramos el número de tomo grande en su lugar */}
                   {isTitleDuplicate ? (
                     <p className="absolute bottom-2 left-2.5 right-2.5 drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">
-                      <span className="block text-base font-black text-white leading-tight">
+                      <span className="block text-base font-black text-ink leading-tight">
                         Tomo #{row.chapter_number}
                       </span>
-                      <span className="block text-[10px] text-zinc-300 truncate">
+                      <span className="block text-[10px] text-mute truncate">
                         {comic.title}
                       </span>
                     </p>
                   ) : (
-                    <p className="absolute bottom-2 left-2.5 right-2.5 text-[11px] font-bold text-white line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">
+                    <p className="absolute bottom-2 left-2.5 right-2.5 text-[11px] font-bold text-ink line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">
                       {chapterTitle}
                     </p>
                   )}
@@ -141,8 +141,8 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                 {/* Pie: serie a la que pertenece + recordatorio del tomo + botón Continuar */}
                 <div className="p-2.5 space-y-1.5 flex flex-col flex-1">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <BookX className="w-3 h-3 text-zinc-500 shrink-0" />
-                    <p className="text-[11px] text-zinc-400 truncate">
+                    <BookX className="w-3 h-3 text-faint shrink-0" />
+                    <p className="text-[11px] text-mute truncate">
                       {comic.title}
                     </p>
                   </div>
@@ -153,7 +153,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                       Quedaste en la página {row.page_number}
                     </p>
                   )}
-                  <div className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl bg-red-500 group-hover:bg-red-400 text-zinc-950 text-[11px] font-bold transition-all active:scale-95">
+                  <div className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl bg-accent group-hover:bg-accent2 text-onaccent text-[11px] font-bold transition-all active:scale-95">
                     <Play className="w-3 h-3 fill-current" />
                     <span>Continuar</span>
                   </div>
@@ -170,7 +170,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                 }}
                 title="Quitar de Continuar Leyendo"
                 aria-label={`Quitar ${comic.title} Tomo ${row.chapter_number} de Continuar Leyendo`}
-                className="absolute top-1.5 right-1.5 z-10 p-1.5 rounded-full bg-zinc-950/85 border border-zinc-700 text-zinc-300 hover:bg-red-500 hover:border-red-500 hover:text-zinc-950 transition-all shadow-lg opacity-0 group-hover/card:opacity-100 focus:opacity-100 active:scale-90"
+                className="absolute top-1.5 right-1.5 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent hover:text-onaccent transition-all shadow-lg opacity-0 group-hover/card:opacity-100 focus:opacity-100 active:scale-90"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

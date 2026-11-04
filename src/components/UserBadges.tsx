@@ -92,8 +92,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({ profile }) => {
 
   const getColorClasses = (color: string) => {
     const colors = {
-      red: 'bg-red-500/20 text-red-400 border-red-500/50',
-      rose: 'bg-rose-500/20 text-rose-400 border-rose-500/50',
+      red: 'bg-accent/15 text-accent border-accent/50',
+      rose: 'bg-accent/15 text-accent2 border-accent2/50',
       amber: 'bg-amber-500/20 text-amber-400 border-amber-500/50',
       purple: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
       blue: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
@@ -104,8 +104,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({ profile }) => {
   if (loading) {
     return (
       <div className="flex items-center gap-2">
-        <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs text-zinc-400">Cargando insignias...</span>
+        <div className="w-4 h-4 border-2 border-accent/30 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs text-mute">Cargando insignias...</span>
       </div>
     );
   }
@@ -115,8 +115,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({ profile }) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Award className="w-4 h-4 text-red-400" />
-        <span className="text-xs font-semibold text-zinc-300">
+        <Award className="w-4 h-4 text-accent" />
+        <span className="text-xs font-semibold text-mute">
           Insignias ({unlockedBadges.length}/{badges.length})
         </span>
       </div>
@@ -127,7 +127,7 @@ export const UserBadges: React.FC<UserBadgesProps> = ({ profile }) => {
             className={`group relative px-3 py-1.5 rounded-lg border-2 transition-all ${
               badge.unlocked
                 ? getColorClasses(badge.color)
-                : 'bg-zinc-950/60 text-zinc-600 border-zinc-800 opacity-50'
+                : 'bg-bg/60 text-faint border-line opacity-50'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -135,11 +135,11 @@ export const UserBadges: React.FC<UserBadgesProps> = ({ profile }) => {
               <span className="text-xs font-semibold">{badge.name}</span>
             </div>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -tranzinc-x-1/2 mb-2 px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-zinc-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-bg border border-line text-xs text-mute whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
               <p className="font-semibold">{badge.name}</p>
-              <p className="text-zinc-400 mt-1">{badge.description}</p>
+              <p className="text-mute mt-1">{badge.description}</p>
               {!badge.unlocked && (
-                <p className="text-rose-400 mt-1 text-[10px]">🔒 Bloqueado</p>
+                <p className="text-accent2 mt-1 text-[10px]">🔒 Bloqueado</p>
               )}
             </div>
           </div>

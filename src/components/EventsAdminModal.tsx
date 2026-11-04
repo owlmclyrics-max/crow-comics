@@ -268,19 +268,19 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+      <div className="flex items-center justify-between p-6 border-b border-line">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30">
-            <ListOrdered className="w-5 h-5 text-red-400" />
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center border border-accent/30">
+            <ListOrdered className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-white">Gestionar Guías de Lectura</h2>
-            <p className="text-xs text-zinc-400">Crea crossovers y define el orden paso a paso</p>
+            <h2 className="text-xl font-black text-ink">Gestionar Guías de Lectura</h2>
+            <p className="text-xs text-mute">Crea crossovers y define el orden paso a paso</p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-raised hover:bg-line text-mute text-ink transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -289,48 +289,48 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
       {/* Contenido en dos paneles */}
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
         {/* Panel izquierdo: lista de guías existentes */}
-        <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-zinc-800 flex flex-col">
+        <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-line flex flex-col">
           <div className="p-4 space-y-2 overflow-y-auto flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-faint px-1">
               Guías existentes
             </p>
             {loadingEvents ? (
-              <div className="flex items-center gap-2 p-3 text-xs text-zinc-400">
-                <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+              <div className="flex items-center gap-2 p-3 text-xs text-mute">
+                <Loader2 className="w-4 h-4 animate-spin text-accent" />
                 Cargando...
               </div>
             ) : events.length === 0 ? (
-              <p className="text-xs text-zinc-500 p-3">Aún no hay guías creadas.</p>
+              <p className="text-xs text-faint p-3">Aún no hay guías creadas.</p>
             ) : (
               events.map((event) => (
                 <div
                   key={event.id}
                   className={`p-3 rounded-xl border transition-colors ${
                     editingEventId === event.id
-                      ? 'bg-zinc-800/80 border-red-500/50'
-                      : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-600'
+                      ? 'bg-raised/80 border-accent/30'
+                      : 'bg-bg/60 border-line hover:border-line'
                   }`}
                 >
                   <button
                     onClick={() => loadEventForEdit(event)}
                     className="w-full text-left"
                   >
-                    <p className="text-xs font-bold text-zinc-200 line-clamp-1">{event.title}</p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                    <p className="text-xs font-bold text-ink line-clamp-1">{event.title}</p>
+                    <p className="text-[10px] text-faint mt-0.5">
                       {event.publisher ?? 'Sin editorial'} {event.year ? `· ${event.year}` : ''}
                     </p>
                   </button>
                   <div className="flex items-center gap-1 mt-2">
                     <button
                       onClick={() => loadEventForEdit(event)}
-                      className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+                      className="p-1.5 rounded-lg bg-raised hover:bg-line text-mute text-ink transition-colors"
                       title="Editar"
                     >
                       <Pencil className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDelete(event)}
-                      className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 transition-colors"
+                      className="p-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent2 transition-colors"
                       title="Eliminar guía"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -340,10 +340,10 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
               ))
             )}
           </div>
-          <div className="p-4 border-t border-zinc-800">
+          <div className="p-4 border-t border-line">
             <button
               onClick={resetEditor}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-400 text-zinc-950 transition-all shadow-md shadow-red-950/40 active:scale-95"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/40 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               Nueva Guía
@@ -354,7 +354,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
         {/* Panel derecho: editor */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-200 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
             </div>
@@ -362,17 +362,17 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
 
           {/* Datos del evento */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-mute">
               {editingEventId ? 'Editando guía' : 'Nueva guía'}
             </h3>
 
             <div className="flex gap-3">
               {/* Preview de portada */}
-              <div className="w-28 aspect-video rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shrink-0 flex items-center justify-center">
+              <div className="w-28 aspect-video rounded-xl overflow-hidden border border-line bg-bg shrink-0 flex items-center justify-center">
                 {form.cover_url ? (
                   <img src={form.cover_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <ImageIcon className="w-6 h-6 text-zinc-700" />
+                  <ImageIcon className="w-6 h-6 text-faint" />
                 )}
               </div>
 
@@ -382,13 +382,13 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                   value={form.title}
                   onChange={(e) => updateField('title', e.target.value)}
                   placeholder="Título de la guía (ej. La Muerte de Superman)"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/60 text-sm text-ink placeholder:text-faint outline-none transition-colors"
                 />
                 <div className="grid grid-cols-2 gap-2.5">
                   <select
                     value={form.publisher}
                     onChange={(e) => updateField('publisher', e.target.value)}
-                    className="px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-sm text-zinc-200 outline-none transition-colors"
+                    className="px-3 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/60 text-sm text-ink outline-none transition-colors"
                   >
                     <option value="">Editorial...</option>
                     {PUBLISHERS.map((publisher) => (
@@ -400,7 +400,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                     value={form.year}
                     onChange={(e) => updateField('year', e.target.value)}
                     placeholder="Año"
-                    className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-colors"
+                    className="px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/60 text-sm text-ink placeholder:text-faint outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -411,25 +411,25 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
               value={form.cover_url}
               onChange={(e) => updateField('cover_url', e.target.value)}
               placeholder="URL de la imagen panorámica (16:9 recomendado)"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/60 text-sm text-ink placeholder:text-faint outline-none transition-colors"
             />
             <textarea
               value={form.description}
               onChange={(e) => updateField('description', e.target.value)}
               placeholder="Descripción de la saga (qué cruza, por qué importa...)"
               rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-colors resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent/60 text-sm text-ink placeholder:text-faint outline-none transition-colors resize-none"
             />
 
             {/* Interruptor "Saga completa" */}
             <button
               type="button"
               onClick={() => updateField('is_complete', !form.is_complete)}
-              className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-red-500/40 transition-colors"
+              className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-surface border border-line hover:border-accent/40 transition-colors"
               aria-pressed={form.is_complete}
             >
-              <span className="text-xs font-bold text-zinc-300">Saga completa</span>
-              <span className={`relative w-9 h-5 rounded-full transition-colors ${form.is_complete ? 'bg-red-500' : 'bg-zinc-700'}`}>
+              <span className="text-xs font-bold text-mute">Saga completa</span>
+              <span className={`relative w-9 h-5 rounded-full transition-colors ${form.is_complete ? 'bg-accent' : 'bg-line'}`}>
                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.is_complete ? 'translate-x-4' : ''}`} />
               </span>
             </button>
@@ -438,20 +438,20 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
           {/* Orden de lectura */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-mute">
                 Orden de lectura ({sortedItems.length} pasos)
               </h3>
               <button
                 onClick={openPickerForNew}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-raised hover:bg-line text-ink border border-line transition-colors active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5 text-red-400" />
+                <Plus className="w-3.5 h-3.5 text-accent" />
                 Añadir paso
               </button>
             </div>
 
             {sortedItems.length === 0 ? (
-              <div className="p-6 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800 text-zinc-500 text-xs">
+              <div className="p-6 text-center rounded-2xl bg-surface/40 border border-line text-faint text-xs">
                 Sin pasos todavía. Añade el primero con "Añadir paso".
               </div>
             ) : (
@@ -459,11 +459,11 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                 {sortedItems.map((item, index) => (
                   <div
                     key={item.key}
-                    className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2"
+                    className="p-3 rounded-xl bg-surface/60 border border-line space-y-2"
                   >
                     <div className="flex items-center gap-2">
                       {/* Número de orden */}
-                      <span className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 text-sm font-black text-red-400 font-mono">
+                      <span className="w-10 h-10 rounded-lg bg-bg border border-line flex items-center justify-center shrink-0 text-sm font-black text-accent font-mono">
                         {String(item.position).padStart(2, '0')}
                       </span>
 
@@ -473,8 +473,8 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         onClick={() => setPickerTarget(item.key)}
                         className={`flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1.5 rounded-lg border transition-all text-left active:scale-[0.98] ${
                           item.comic_id && comicById.has(item.comic_id)
-                            ? 'bg-zinc-950 border-zinc-800 hover:border-red-500/50'
-                            : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-600 border-dashed'
+                            ? 'bg-bg border-line hover:border-accent/50'
+                            : 'bg-bg/60 border-line hover:border-line border-dashed'
                         }`}
                         title="Elegir cómic del catálogo"
                       >
@@ -483,18 +483,18 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                             <img
                               src={comicById.get(item.comic_id)!.cover_url}
                               alt=""
-                              className="w-8 h-11 object-cover rounded-md border border-zinc-800 shrink-0"
+                              className="w-8 h-11 object-cover rounded-md border border-line shrink-0"
                             />
-                            <span className="flex-1 min-w-0 text-xs font-bold text-zinc-200 truncate">
+                            <span className="flex-1 min-w-0 text-xs font-bold text-ink truncate">
                               {comicById.get(item.comic_id)!.title}
                             </span>
                           </>
                         ) : (
                           <>
-                            <span className="w-8 h-11 rounded-md bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
-                              <Lock className="w-3.5 h-3.5 text-zinc-500" />
+                            <span className="w-8 h-11 rounded-md bg-surface border border-line flex items-center justify-center shrink-0">
+                              <Lock className="w-3.5 h-3.5 text-faint" />
                             </span>
-                            <span className="flex-1 min-w-0 text-xs font-semibold text-zinc-500 truncate">
+                            <span className="flex-1 min-w-0 text-xs font-semibold text-faint truncate">
                               {item.title || 'Sin cómic (Próximamente) — clic para elegir'}
                             </span>
                           </>
@@ -506,7 +506,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         <button
                           onClick={() => moveItem(item.key, -1)}
                           disabled={index === 0}
-                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                          className="p-1.5 rounded-lg bg-raised hover:bg-line text-mute text-ink disabled:opacity-30 transition-colors"
                           title="Subir"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -514,14 +514,14 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         <button
                           onClick={() => moveItem(item.key, 1)}
                           disabled={index === sortedItems.length - 1}
-                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                          className="p-1.5 rounded-lg bg-raised hover:bg-line text-mute text-ink disabled:opacity-30 transition-colors"
                           title="Bajar"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => removeItem(item.key)}
-                          className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 transition-colors"
+                          className="p-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent2 transition-colors"
                           title="Quitar paso"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -536,7 +536,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         value={item.title}
                         onChange={(e) => updateItem(item.key, { title: e.target.value })}
                         placeholder={item.comic_id ? 'Etiqueta del paso (opcional)' : 'Título del número futuro (ej. Superman #75)'}
-                        className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 focus:border-red-500/60 text-xs text-zinc-200 placeholder-zinc-600 outline-none transition-colors"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-bg border border-line focus:border-accent/60 text-xs text-ink placeholder:text-faint outline-none transition-colors"
                       />
                       {/* Toggle opcional */}
                       <button
@@ -544,7 +544,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         onClick={() => updateItem(item.key, { is_optional: !item.is_optional })}
                         className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase border transition-colors shrink-0 ${
                           item.is_optional
-                            ? 'bg-zinc-800 text-zinc-300 border-zinc-600'
+                            ? 'bg-raised text-mute border-line'
                             : 'bg-amber-500/10 text-amber-300 border-amber-500/40'
                         }`}
                         title="Los opcionales se ocultan con 'Mostrar solo esenciales'"
@@ -562,17 +562,17 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-3 p-5 border-t border-zinc-800">
+      <div className="flex items-center justify-end gap-3 p-5 border-t border-line">
         <button
           onClick={onClose}
-          className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+          className="px-5 py-2.5 rounded-xl bg-raised hover:bg-line text-mute text-xs font-semibold transition-colors"
         >
           Cerrar
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-400 text-zinc-950 transition-all shadow-md shadow-red-950/40 active:scale-95 disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/40 active:scale-95 disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? 'Guardando...' : editingEventId ? 'Guardar cambios' : 'Crear Guía'}

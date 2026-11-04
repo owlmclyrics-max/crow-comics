@@ -15,6 +15,18 @@ CREATE TABLE IF NOT EXISTS public.characters (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Agregar columna name_spanish si no existe (para tablas ya creadas)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'characters' AND column_name = 'name_spanish'
+    ) THEN
+        ALTER TABLE public.characters ADD COLUMN name_spanish TEXT;
+    END IF;
+END
+$$;
+
 -- 2. Crear Tabla de Relación Personaje-Capítulo (Solo por tomo)
 CREATE TABLE IF NOT EXISTS public.chapter_characters (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

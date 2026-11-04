@@ -162,7 +162,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0609] text-zinc-100 flex flex-col font-sans selection:bg-red-600 selection:text-zinc-950">
+    <div className="min-h-screen bg-bg text-ink flex flex-col font-sans selection:bg-accent selection:text-onaccent">
       {/* Notificaciones globales (Sprint 2.5) */}
       <ToastHost />
       {/* Splash "Sesión iniciada" (aparece al autentificarse en cualquier vista) */}
@@ -220,8 +220,8 @@ export const App: React.FC = () => {
 
         {loading ? (
           <div className="py-24 flex flex-col items-center justify-center space-y-3">
-            <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-zinc-400">Cargando catálogo...</p>
+            <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-mute">Cargando catálogo...</p>
           </div>
         ) : currentView === 'comic-detail' && selectedComic ? (
           /* ======================================================== */
@@ -362,20 +362,20 @@ export const App: React.FC = () => {
 
               {/* Cuadrícula de Cómics */}
               {filteredHomeComics.length === 0 ? (
-                <div className="py-20 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/60 p-8 space-y-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-800 text-zinc-400">
+                <div className="py-20 text-center rounded-3xl bg-surface/40 border border-line/60 p-8 space-y-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-raised text-mute">
                     <BookOpen className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">No hay cómics en esta categoría</h3>
-                    <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                    <h3 className="text-base font-bold text-ink">No hay cómics en esta categoría</h3>
+                    <p className="text-xs text-mute max-w-sm mx-auto">
                       Prueba seleccionando otra categoría para explorar más títulos.
                     </p>
                   </div>
                   {selectedCategory !== 'All' && (
                     <button
                       onClick={() => setSelectedCategory('All')}
-                      className="text-xs text-red-400 font-semibold hover:underline"
+                      className="text-xs text-accent font-semibold hover:underline"
                     >
                       Ver todos
                     </button>
@@ -398,12 +398,12 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-zinc-800/80 bg-zinc-950 py-8 text-center text-xs text-zinc-400">
+      <footer className="mt-auto border-t border-line/80 bg-bg py-8 text-center text-xs text-mute">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p className="flex items-center justify-center gap-1.5 text-zinc-400">
-            Desarrollado para la comunidad de cómics con <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400 inline" />
+          <p className="flex items-center justify-center gap-1.5 text-mute">
+            Desarrollado para la comunidad de cómics con <Heart className="w-3.5 h-3.5 text-accent fill-accent inline" />
           </p>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] text-mute">
             Todas las maquetaciones y traducciones pertenecen a sus respectivos fansubs y equipos de scanlation.
           </p>
         </div>
