@@ -18,7 +18,7 @@ import { AccentPicker } from './ui/AccentPicker';
 // ==============================================================================
 
 // Ruta de assets que respeta la base del host (import.meta.env.BASE_URL).
-// En Vercel/Netlify es "/" (igual que antes); en GitHub Pages con VITE_BASE
+// En Cloudflare Pages/Vercel es "/" (igual que antes); en GitHub Pages con VITE_BASE
 // configurado apunta automáticamente a la subcarpeta.
 const BASE_URL = import.meta.env.BASE_URL || '/';
 
