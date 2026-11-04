@@ -46,7 +46,7 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-line">
+      <div className="shrink-0 flex items-center justify-between p-6 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
             <User className="w-5 h-5 text-accent" />
@@ -74,7 +74,7 @@ export const CharactersAdminModal: React.FC<CharactersAdminModalProps> = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
         {/* Buscador */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute" />

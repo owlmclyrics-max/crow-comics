@@ -42,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-surface border border-line rounded-2xl sm:rounded-3xl shadow-2xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-hidden flex flex-col animate-scale-in ${className}`}
+        className={`bg-surface border border-line rounded-2xl sm:rounded-3xl shadow-2xl w-full max-h-[calc(100dvh_-_1rem)] sm:max-h-[90dvh] overflow-hidden flex flex-col animate-scale-in ${className}`}
       >
         {children}
       </div>

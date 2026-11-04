@@ -359,7 +359,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
       {/* ── Header con ambiente Crow ── */}
-      <div className="relative border-b border-line overflow-hidden">
+      <div className="relative shrink-0 border-b border-line overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-accent/15 via-transparent to-transparent pointer-events-none" />
         <div className="crow-dots absolute inset-0 opacity-40 pointer-events-none" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
@@ -387,7 +387,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
       </div>
 
       {/* ── Contenido: formulario + preview ── */}
-      <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-6 items-start">
           <div className="space-y-6">
             {error && (
@@ -548,7 +548,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
       </div>
 
       {/* ── Footer de acciones ── */}
-      <div className="flex items-center justify-between gap-3 p-4 border-t border-line bg-raised/40">
+      <div className="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-line bg-raised/40">
         <p className="hidden sm:block text-[10px] text-faint">
           Los campos con <span className="text-accent">*</span> son obligatorios · el resto es la
           mini-wiki

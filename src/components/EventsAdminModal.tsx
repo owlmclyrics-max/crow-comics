@@ -352,7 +352,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
         </div>
 
         {/* Panel derecho: editor */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
           {error && (
             <div className="p-3 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />

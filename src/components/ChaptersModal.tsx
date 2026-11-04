@@ -100,7 +100,7 @@ export const ChaptersModal: React.FC<ChaptersModalProps> = ({
         </div>
 
         {/* Contenido */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
           {filteredChapters.length === 0 ? (
             <div className="p-12 text-center rounded-2xl bg-surface/60 border border-line">
               <p className="text-sm text-mute">
