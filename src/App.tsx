@@ -44,6 +44,9 @@ const ProfilePage = lazy(() =>
 const PublicProfilePage = lazy(() =>
   import('./components/PublicProfilePage').then((m) => ({ default: m.PublicProfilePage })),
 );
+const RoadmapView = lazy(() =>
+  import('./components/RoadmapView').then((m) => ({ default: m.RoadmapView })),
+);
 const ListDetailPage = lazy(() =>
   import('./components/ListDetailPage').then((m) => ({ default: m.ListDetailPage })),
 );
@@ -425,6 +428,11 @@ export const App: React.FC = () => {
               setForceOnboarding(true);
             }}
           />
+        ) : currentView === 'roadmap' ? (
+          /* ======================================================== */
+          /* VISTA 8: ROADMAP INTERACTIVO (por versión, persistente)    */
+          /* ======================================================== */
+          <RoadmapView onBack={() => handleNavigate('inicio')} />
         ) : currentView === 'comics' ? (
           /* ======================================================== */
           /* VISTA 2: SECCIÓN CÓMICS (POR EDITORIALES MARVEL, DC, ETC) */

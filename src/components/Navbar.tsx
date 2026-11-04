@@ -21,6 +21,7 @@ import {
   Menu,
   Moon,
   Sun,
+  Map as MapIcon,
 } from 'lucide-react';
 import type { Comic, LinkReport, Profile } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -32,12 +33,13 @@ import { searchProfiles } from '../lib/profiles';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'profile' | 'historial' | 'public-profile';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
 
 const NAV_ITEMS = [
   { view: 'inicio', label: 'Inicio', icon: Home },
   { view: 'comics', label: 'Cómics', icon: BookOpen },
   { view: 'personajes', label: 'Personajes', icon: User },
+  { view: 'roadmap', label: 'Roadmap', icon: MapIcon },
   // Historial solo se muestra para usuarios con cuenta (se filtra abajo).
   { view: 'historial', label: 'Historial', icon: History },
 ] as const;
