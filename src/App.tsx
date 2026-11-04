@@ -16,6 +16,7 @@ import { OnboardingWizard } from './components/OnboardingWizard';
 import { useAuth } from './context/AuthContext';
 import { ComicAdminFormModal } from './components/ComicAdminFormModal';
 import { CharactersAdminModal } from './components/CharactersAdminModal';
+import { CharacterFormModal } from './components/CharacterFormModal';
 import { ChapterCharactersModal } from './components/ChapterCharactersModal';
 import { AuthModal } from './components/AuthModal';
 import { LandingPage } from './components/LandingPage';
@@ -68,7 +69,8 @@ export const App: React.FC = () => {
   const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
   const [isAdminFormOpen, setIsAdminFormOpen] = useState(false);
   const [isCharactersModalOpen, setIsCharactersModalOpen] = useState(false);
-  const [charactersModalEditId, setCharactersModalEditId] = useState<string | null>(null);
+  const [isCharacterFormOpen, setIsCharacterFormOpen] = useState(false);
+  const [characterFormTargetId, setCharacterFormTargetId] = useState<string | null>(null);
   const [isChapterCharactersModalOpen, setIsChapterCharactersModalOpen] = useState(false);
   const [chapterCharactersUpdatedCallback, setChapterCharactersUpdatedCallback] = useState<(() => void) | null>(null);
   const [comicToEdit, setComicToEdit] = useState<Comic | null>(null);
@@ -315,9 +317,10 @@ export const App: React.FC = () => {
           /* VISTA 5: PÁGINA DE PERSONAJES                              */
           /* ======================================================== */
           <CharactersPage
-            onOpenManageModal={() => {
-              setCharactersModalEditId(null);
-              setIsCharactersModalOpen(true);
+            onOpenManageModal={() => setIsCharactersModalOpen(true)}
+            onOpenCreateModal={() => {
+              setCharacterFormTargetId(null);
+              setIsCharacterFormOpen(true);
             }}
             onSelectCharacter={(character) => {
               setSelectedCharacter(character);
@@ -334,9 +337,9 @@ export const App: React.FC = () => {
             onSelectComic={handleOpenComicDetail}
             onSelectChapter={handleOpenChapterDetail}
             onOpenManageModal={() => {
-              // Aterriza el modal con ESTE personaje en modo edición
-              setCharactersModalEditId(selectedCharacter.id);
-              setIsCharactersModalOpen(true);
+              // Modal de ficha dedicado, precargado con ESTE personaje
+              setCharacterFormTargetId(selectedCharacter.id);
+              setIsCharacterFormOpen(true);
             }}
           />
         ) : currentView === 'profile' || currentView === 'historial' ? (
@@ -473,15 +476,25 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Modal de Gestión de Personajes */}
+      {/* Modal de Gestión de Personajes (lista) */}
       {isCharactersModalOpen && (
         <CharactersAdminModal
           isOpen={isCharactersModalOpen}
-          onClose={() => {
+          onClose={() => setIsCharactersModalOpen(false)}
+          onOpenForm={(id) => {
             setIsCharactersModalOpen(false);
-            setCharactersModalEditId(null);
+            setCharacterFormTargetId(id);
+            setIsCharacterFormOpen(true);
           }}
-          editTargetId={charactersModalEditId}
+        />
+      )}
+
+      {/* Modal de Ficha de Personaje (crear / editar con mini-wiki) */}
+      {isCharacterFormOpen && (
+        <CharacterFormModal
+          isOpen={isCharacterFormOpen}
+          onClose={() => setIsCharacterFormOpen(false)}
+          characterId={characterFormTargetId}
         />
       )}
 

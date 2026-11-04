@@ -1,17 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
 import { CrowAmbience } from './ui/CrowAmbience';
-import { User, Search, Edit3 } from 'lucide-react';
+import { User, Search, Edit3, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCharactersContext } from '../context/CharactersContext';
 import { matchesCharacterSearch } from '../lib/comicUtils';
 
 interface CharactersPageProps {
   onOpenManageModal: () => void;
+  onOpenCreateModal: () => void;
   onSelectCharacter: (character: Character) => void;
 }
 
-export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModal, onSelectCharacter }) => {
+export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModal, onOpenCreateModal, onSelectCharacter }) => {
   const { canManageContent } = useAuth();
   const { characters, loading } = useCharactersContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,13 +48,22 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ onOpenManageModa
         </div>
 
         {canManageContent && (
-          <button
-            onClick={onOpenManageModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>Gestionar Personajes</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenManageModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface hover:bg-raised text-ink text-xs font-semibold border border-line transition-colors"
+            >
+              <Edit3 className="w-4 h-4 text-accent" />
+              <span>Gestionar</span>
+            </button>
+            <button
+              onClick={onOpenCreateModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Crear Personaje</span>
+            </button>
+          </div>
         )}
         </div>
       </div>
