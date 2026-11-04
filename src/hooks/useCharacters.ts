@@ -32,6 +32,7 @@ const sortByName = (characters: Character[]): Character[] =>
  * (listas con un elemento por línea) y viajan como null si quedan vacíos.
  */
 const WIKI_FIELDS = [
+  'alignment',
   'aliases',
   'species',
   'universe',

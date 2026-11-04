@@ -13,8 +13,10 @@ import {
   Skull,
   Zap,
   IdCard,
+  ChevronDown,
 } from 'lucide-react';
 import type { Character } from '../types/comic';
+import { CHARACTER_ALIGNMENTS, PUBLISHERS, getAlignmentBadgeClass } from '../lib/constants';
 import { useCharactersContext } from '../context/CharactersContext';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
@@ -34,6 +36,7 @@ interface CharacterFormState {
   description: string;
   firstAppearance: string;
   publisher: string;
+  alignment: string; // Rol: Héroe, Villano, Anti-héroe...
   // Mini-wiki
   species: string;
   universe: string;
@@ -53,6 +56,7 @@ const EMPTY_FORM: CharacterFormState = {
   description: '',
   firstAppearance: '',
   publisher: '',
+  alignment: '',
   species: '',
   universe: '',
   originPlace: '',
@@ -71,6 +75,7 @@ const toForm = (character: Character): CharacterFormState => ({
   description: character.description ?? '',
   firstAppearance: character.first_appearance ?? '',
   publisher: character.publisher ?? '',
+  alignment: character.alignment ?? '',
   species: character.species ?? '',
   universe: character.universe ?? '',
   originPlace: character.origin_place ?? '',
@@ -143,6 +148,35 @@ const SectionTitle: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon,
   </div>
 );
 
+const SelectField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  emptyLabel?: string;
+}> = ({ label, value, onChange, options, emptyLabel = '— Seleccionar —' }) => (
+  <div className="space-y-1">
+    <label className="text-xs font-semibold text-mute">{label}</label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${inputClass} appearance-none pr-9 cursor-pointer ${
+          value ? 'text-ink' : 'text-faint'
+        }`}
+      >
+        <option value="">{emptyLabel}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
+    </div>
+  </div>
+);
+
 /* ── Vista previa en vivo de la ficha ──────────────────────────────────── */
 
 const WikiPreview: React.FC<{ form: CharacterFormState }> = ({ form }) => {
@@ -193,8 +227,13 @@ const WikiPreview: React.FC<{ form: CharacterFormState }> = ({ form }) => {
             </div>
           </div>
 
-          {(form.publisher || form.species || form.universe || form.firstAppearance) && (
+          {(form.publisher || form.alignment || form.species || form.universe || form.firstAppearance) && (
             <div className="flex flex-wrap gap-1.5">
+              {form.alignment && (
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border ${getAlignmentBadgeClass(form.alignment)}`}>
+                  {form.alignment}
+                </span>
+              )}
               {form.publisher && (
                 <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-amber-500 text-zinc-950">
                   {form.publisher}
@@ -331,6 +370,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
       description: form.description,
       first_appearance: form.firstAppearance,
       publisher: form.publisher,
+      alignment: form.alignment,
       species: form.species,
       universe: form.universe,
       origin_place: form.originPlace,
@@ -420,13 +460,25 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                   value={form.realName}
                   onChange={(value) => updateField('realName', value)}
                 />
-                <TextInput
+                <SelectField
                   label="Editorial"
-                  placeholder="ej: Marvel"
                   value={form.publisher}
                   onChange={(value) => updateField('publisher', value)}
+                  options={
+                    form.publisher && !(PUBLISHERS as readonly string[]).includes(form.publisher)
+                      ? [form.publisher, ...PUBLISHERS]
+                      : PUBLISHERS
+                  }
+                  emptyLabel="— Sin editorial —"
                 />
               </div>
+              <SelectField
+                label="Rol en la historia"
+                value={form.alignment}
+                onChange={(value) => updateField('alignment', value)}
+                options={CHARACTER_ALIGNMENTS}
+                emptyLabel="— Sin clasificar —"
+              />
             </div>
 
             {/* Sección: Ficha wiki */}

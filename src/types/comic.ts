@@ -73,6 +73,7 @@ export interface Character {
   description?: string;
   first_appearance?: string;
   publisher?: string;
+  alignment?: string;  // Rol: Héroe, Villano, Anti-héroe, Antagonista, etc.
   // ── MINI-WIKI (ficha estilo Marvel) ──
   aliases?: string;       // Alias, uno por línea (ej. "Rey de Negro\nDios de los Simbiontes")
   species?: string;       // Especie (ej. "Entidad cósmica primordial")

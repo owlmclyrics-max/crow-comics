@@ -13,6 +13,7 @@ ALTER TABLE public.characters ADD COLUMN IF NOT EXISTS creators TEXT;
 ALTER TABLE public.characters ADD COLUMN IF NOT EXISTS enemies TEXT;
 ALTER TABLE public.characters ADD COLUMN IF NOT EXISTS powers TEXT;
 ALTER TABLE public.characters ADD COLUMN IF NOT EXISTS weapon TEXT;
+ALTER TABLE public.characters ADD COLUMN IF NOT EXISTS alignment TEXT;
 
 -- weapon: ej. "All-Black, la Necroespada"
 -- aliases: uno por línea (ej. "Rey de Negro\nDios de los Simbiontes")

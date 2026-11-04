@@ -53,6 +53,7 @@ export const matchesCharacterSearch = (character: Character, query: string): boo
     character.name_spanish,
     character.real_name,
     character.publisher,
+    character.alignment,
     character.aliases,
     character.species,
     character.universe,
