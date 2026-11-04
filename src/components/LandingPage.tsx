@@ -4,6 +4,7 @@ import type { Comic } from '../types/comic';
 import { useComics } from '../context/ComicsContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { AccentPicker } from './ui/AccentPicker';
 
 // ==============================================================================
 // PANTALLA DE BIENVENIDA (LANDING)
@@ -184,7 +185,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <img
               src={`${BASE_URL}crow-logo.png`}
               alt="Crow Comics"
-              className="logo-tint h-9 max-w-[38vw] object-contain object-left sm:h-14 md:h-16 sm:max-w-none w-auto drop-shadow-[0_2px_12px_oklch(0.63_0.21_var(--crow-hue)/45%)] transition-transform group-hover:scale-105"
+              className="logo-tint h-8 max-w-[38vw] object-contain object-left sm:h-14 md:h-16 sm:max-w-none w-auto drop-shadow-[0_2px_12px_oklch(0.63_0.21_var(--crow-hue)/45%)] transition-transform group-hover:scale-105"
               onError={(e) => {
                 // Fallback: si no existe crow-logo.png, mostramos el texto estilizado
                 const target = e.currentTarget;
@@ -202,7 +203,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button
               type="button"
               onClick={handleThemeToggle}
-              className="rounded-full border border-line/40 bg-bg/70 p-2 text-ink shadow-lg backdrop-blur-md transition-all hover:bg-raised active:scale-90 sm:p-2.5"
+              className="rounded-full border border-white/15 bg-black/35 p-2 text-white shadow-lg backdrop-blur-md transition-all hover:bg-black/50 active:scale-90 sm:p-2.5"
               title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
             >
               {theme === 'dark'
@@ -210,31 +211,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
 
+            {/* Selector de color de acento (mismo control que el Navbar) */}
+            <AccentPicker variant="pill" />
+
             {user ? (
               /* Ya con sesión: botón bonito directo al perfil */
               <button
                 onClick={onOpenProfile}
-                className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-3 py-2 text-xs font-bold text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
-              title="Ir a mi perfil"
-            >
-              <span className="w-7 h-7 rounded-full bg-onaccent/10 flex items-center justify-center text-[11px] font-black uppercase shrink-0">
-                {(user.email ?? '?').slice(0, 2)}
-              </span>
-              <span className="sm:hidden">Mi perfil</span>
-              <span className="hidden sm:inline">Mi Perfil</span>
-            </button>
+                className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-2.5 py-1.5 text-[11px] font-bold text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
+                title="Ir a mi perfil"
+              >
+                <span className="w-6 h-6 rounded-full bg-onaccent/10 flex items-center justify-center text-[10px] font-black uppercase shrink-0 sm:w-7 sm:h-7 sm:text-[11px]">
+                  {(user.email ?? '?').slice(0, 2)}
+                </span>
+                <span className="sm:hidden">Perfil</span>
+                <span className="hidden sm:inline">Mi Perfil</span>
+              </button>
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-4">
               <button
                 onClick={onOpenSignIn}
-                className="rounded-full border border-line/40 bg-bg/70 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink shadow-lg backdrop-blur-md transition-all hover:border-mute/60 hover:bg-raised sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
+                className="rounded-full border border-white/15 bg-black/35 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-lg backdrop-blur-md transition-all hover:bg-black/50 sm:px-7 sm:py-2.5 sm:text-base sm:tracking-wider"
               >
                 <span className="sm:hidden">Entrar</span>
                 <span className="hidden sm:inline">Iniciar sesión</span>
               </button>
               <button
                 onClick={onOpenSignUp}
-                className="rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 sm:px-7 sm:py-2.5 sm:text-base sm:font-landing sm:tracking-wider"
+                className="rounded-full px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide shadow-lg shadow-accent/50 bg-gradient-to-b from-accent to-accent2 border border-accent/30 text-onaccent transition-all active:scale-95 sm:px-7 sm:py-2.5 sm:text-base sm:tracking-wider"
               >
                 <span className="sm:hidden">Crear cuenta</span>
                 <span className="hidden sm:inline">Registrarse</span>
@@ -245,11 +249,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Centro: emblema + titular + CTA */}
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6 sm:px-6 sm:py-0">
+        <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 py-4 sm:px-6 sm:py-0">
           {/* Tarjeta siempre "dark glass": el fondo es la foto de portadas con
               viñeta negra en AMBOS temas, así el texto claro es fijo y legible */}
-          <div className="relative flex w-full max-w-2xl flex-col items-center gap-3.5 rounded-[2rem] border border-white/10 bg-black/35 px-5 py-5 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-5 sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-accent sm:text-[10px]">
+          <div className="relative flex w-full max-w-2xl flex-col items-center gap-3 rounded-[1.5rem] border border-white/10 bg-black/35 px-4 py-4 text-center shadow-[0_25px_100px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:gap-5 sm:rounded-[2rem] sm:border-0 sm:bg-transparent sm:px-6 sm:py-8 sm:shadow-none sm:backdrop-blur-0">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.22em] text-accent sm:px-3 sm:py-1.5 sm:text-[10px]">
             <Sparkles className="h-3 w-3 text-accent" />
             Tu universo de cómics
           </div>
@@ -275,24 +279,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Titular estilo cómic — texto claro FIJO: el fondo del héroe es
               la foto de portadas con viñeta (oscura en ambos temas) */}
-          <h1 className="max-w-xl font-landing text-3xl font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
+          <h1 className="max-w-xl font-landing text-2xl font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)] sm:text-4xl md:text-5xl">
             Lee, guarda tus <span className="text-accent">cómics</span>
           </h1>
-          <p className="max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
+          <p className="max-w-md text-xs leading-relaxed text-white/80 sm:text-base">
             Descubre nuevas historias, sigue tus lecturas y encuentra a tus personajes favoritos.
           </p>
 
           {/* Botón principal */}
           <button
             onClick={onEnterLibrary}
-            className="group flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-5 py-3.5 shadow-xl shadow-accent/70 transition-all hover:from-accent2 hover:to-accent2 hover:scale-[1.03] active:scale-95 sm:w-auto sm:gap-4 sm:px-10 sm:py-4"
+            className="group flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-5 py-2.5 shadow-xl shadow-accent/70 transition-all hover:from-accent2 hover:to-accent2 hover:scale-[1.03] active:scale-95 sm:gap-4 sm:px-10 sm:py-4"
           >
-            <span className="font-landing text-lg font-black uppercase tracking-[0.12em] text-onaccent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-2xl sm:tracking-wider">
+            <span className="font-landing text-base font-black uppercase tracking-[0.12em] text-onaccent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-2xl sm:tracking-wider">
               Explorar cómics
             </span>
-            <ArrowRight className="h-5 w-5 text-onaccent transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
+            <ArrowRight className="h-4 w-4 text-onaccent transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
           </button>
-          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">
+          <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-white/60 sm:text-[10px]">
             Historias para descubrir · Lecturas para guardar
           </span>
           </div>

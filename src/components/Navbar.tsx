@@ -21,12 +21,12 @@ import {
   Menu,
   Moon,
   Sun,
-  Palette,
 } from 'lucide-react';
 import type { Comic, LinkReport, Profile } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
-import { useTheme, ACCENT_PRESETS } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import { AccentPicker } from './ui/AccentPicker';
 import { filterComicsByQuery } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
 import { GoogleIcon } from './ui/GoogleIcon';
@@ -65,22 +65,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { user, profile, isAdmin, canManageContent, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
   const { getLinkReports, updateLinkReportStatus } = useComics();
-  const { theme, toggleTheme, accentHue: currentHue, setAccentHue } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
-  // Popover del selector de acento (paleta + línea de tono)
-  const [isAccentOpen, setIsAccentOpen] = useState(false);
-  const accentRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (accentRef.current && !accentRef.current.contains(e.target as Node)) {
-        setIsAccentOpen(false);
-      }
-    };
-    if (isAccentOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [isAccentOpen]);
-
+  // Cambio de tema con transición circular desde el botón
   const handleToggleTheme = (e: React.MouseEvent) => {
     toggleTheme({ x: e.clientX, y: e.clientY });
   };
@@ -319,7 +306,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
-          <div className="relative flex items-center gap-2" ref={accentRef}>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleToggleTheme}
@@ -330,81 +317,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setIsAccentOpen((v) => !v)}
-              aria-label="Cambiar color de acento"
-              aria-expanded={isAccentOpen}
-              title="Color de acento"
-              className="p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all active:scale-90"
-            >
-              <Palette className="w-4 h-4" style={{ color: 'oklch(0.63 0.21 var(--crow-hue))' }} />
-            </button>
-
-            {isAccentOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-line bg-surface p-4 shadow-2xl animate-fade-in z-50">
-                <p className="text-[11px] font-bold text-ink uppercase tracking-wider">Color de acento</p>
-                <p className="text-[10px] text-mute mt-0.5">Pinta logo, botones y detalles de la web.</p>
-
-                {/* Preajustes */}
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  {ACCENT_PRESETS.map((preset) => {
-                    const isActive = Math.round(currentHue) === preset.hue;
-                    return (
-                      <button
-                        key={preset.hue}
-                        type="button"
-                        title={preset.name}
-                        onClick={() => setAccentHue(preset.hue, true)}
-                        className={`h-8 rounded-xl border-2 transition-transform active:scale-90 ${
-                          isActive ? 'border-ink scale-105' : 'border-transparent hover:scale-105'
-                        }`}
-                        style={{ backgroundColor: 'oklch(0.6 0.21 ' + preset.hue + ')' }}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Línea de tono personalizado */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-semibold text-mute uppercase tracking-wider">
-                      Tono personalizado
-                    </label>
-                    <span className="text-[10px] font-mono text-faint">{Math.round(currentHue)}°</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={359}
-                    value={Math.round(currentHue)}
-                    onChange={(e) => setAccentHue(Number(e.target.value))}
-                    className="mt-2 w-full h-3 rounded-full appearance-none cursor-pointer touch-none
-                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5
-                      [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full
-                      [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md
-                      [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink
-                      [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full
-                      [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-ink"
-                    style={{
-                      background:
-                        'linear-gradient(to right, oklch(0.63 0.21 0), oklch(0.63 0.21 60), oklch(0.63 0.21 120), oklch(0.63 0.21 180), oklch(0.63 0.21 240), oklch(0.63 0.21 300), oklch(0.63 0.21 360))',
-                    }}
-                  />
-                </div>
-
-                {/* Vista previa */}
-                <div className="mt-4 flex items-center gap-2 rounded-xl bg-raised p-2.5">
-                  <span
-                    className="w-6 h-6 rounded-lg shrink-0"
-                    style={{ backgroundColor: 'oklch(0.6 0.21 var(--crow-hue))' }}
-                  />
-                  <span className="text-xs font-black text-ink uppercase">
-                    CROW <span className="text-accent">COMICS</span>
-                  </span>
-                </div>
-              </div>
-            )}
+            <AccentPicker variant="box" />
           </div>
 
           {/* Lupa / Input Expandible */}
