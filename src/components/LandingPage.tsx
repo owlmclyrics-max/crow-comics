@@ -4,6 +4,7 @@ import type { Comic } from '../types/comic';
 import { useComics } from '../context/ComicsContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useUserAvatar } from './ui/UserAvatar';
 import { AccentPicker } from './ui/AccentPicker';
 
 // ==============================================================================
@@ -76,6 +77,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const comics: Comic[] = useComics().comics;
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { src: avatarSrc, initials: avatarInitials } = useUserAvatar();
 
   // Cambio de tema con transición circular desde el botón
   const handleThemeToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -221,8 +223,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-2.5 py-1.5 text-[11px] font-bold text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
                 title="Ir a mi perfil"
               >
-                <span className="w-6 h-6 rounded-full bg-onaccent/10 flex items-center justify-center text-[10px] font-black uppercase shrink-0 sm:w-7 sm:h-7 sm:text-[11px]">
-                  {(user.email ?? '?').slice(0, 2)}
+                <span className="relative w-6 h-6 rounded-full bg-onaccent/10 overflow-hidden flex items-center justify-center text-[10px] font-black uppercase shrink-0 sm:w-7 sm:h-7 sm:text-[11px]">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    avatarInitials
+                  )}
                 </span>
                 <span className="sm:hidden">Perfil</span>
                 <span className="hidden sm:inline">Mi Perfil</span>
