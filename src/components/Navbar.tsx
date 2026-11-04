@@ -30,6 +30,7 @@ import { AccentPicker } from './ui/AccentPicker';
 import { filterComicsByQuery } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
 import { GoogleIcon } from './ui/GoogleIcon';
+import { useUserAvatar } from './ui/UserAvatar';
 
 export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'profile' | 'historial' | 'public-profile';
 
@@ -66,6 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user, profile, isAdmin, canManageContent, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
   const { getLinkReports, updateLinkReportStatus } = useComics();
   const { theme, toggleTheme } = useTheme();
+  const { src: avatarSrc, initials: avatarInitials } = useUserAvatar();
 
   // Cambio de tema con transición circular desde el botón
   const handleToggleTheme = (e: React.MouseEvent) => {
@@ -86,6 +88,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (isUserMenuOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [isUserMenuOpen]);
+
+  // La barra inferior móvil (MobileBottomNav) abre ESTE menú con "Más":
+  // despachan un evento para no replicar el estado en dos componentes.
+  useEffect(() => {
+    const toggle = () => setIsMobileNavOpen((open) => !open);
+    window.addEventListener('crow:toggle-mobile-nav', toggle);
+    return () => window.removeEventListener('crow:toggle-mobile-nav', toggle);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -467,15 +477,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                   title="Mi cuenta"
                 >
-                  <div className="relative w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-br from-accent to-accent2 text-onaccent flex items-center justify-center text-[11px] font-black shrink-0">
-                    {(user.email ?? '?').slice(0, 2).toUpperCase()}
-                    {profile?.avatar_url && (
+                  <div className="relative w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-br from-accent to-accent2 text-onaccent flex items-center justify-center text-[11px] font-black shrink-0 ring-2 ring-accent/20">
+                    {avatarSrc ? (
                       <img
-                        src={profile.avatar_url}
-                        alt=""
+                        src={avatarSrc}
+                        alt="Mi avatar"
                         className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
+                    ) : (
+                      avatarInitials
                     )}
                   </div>
                   <span className="hidden md:inline text-xs font-bold text-ink max-w-[120px] truncate">
@@ -489,14 +500,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* Info de cuenta */}
                     <div className="px-4 py-3 border-b border-line flex items-center gap-3">
                       <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-accent to-accent2 text-onaccent flex items-center justify-center text-xs font-black shrink-0">
-                        {(user.email ?? '?').slice(0, 2).toUpperCase()}
-                        {profile?.avatar_url && (
+                        {avatarSrc ? (
                           <img
-                            src={profile.avatar_url}
+                            src={avatarSrc}
                             alt=""
                             className="absolute inset-0 w-full h-full object-cover"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
                           />
+                        ) : (
+                          avatarInitials
                         )}
                       </div>
                       <div className="min-w-0">
@@ -705,7 +717,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
       {isMobileNavOpen && (
-        <nav className="absolute right-3 top-[calc(100%+0.5rem)] z-[60] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-line/80 bg-bg/90 p-2 shadow-2xl shadow-black/60 backdrop-blur-xl md:hidden">
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in"
+          onClick={() => setIsMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {isMobileNavOpen && (
+        <nav className="absolute right-3 top-[calc(100%+0.5rem)] z-[60] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-line/80 bg-bg/90 p-2 shadow-2xl shadow-black/60 backdrop-blur-xl md:hidden animate-fade-in">
           <div className="mb-2 flex items-center justify-between border-b border-line px-3 py-2">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">Explorar</span>
             <span className="text-[10px] font-semibold text-accent">CROW COMICS</span>

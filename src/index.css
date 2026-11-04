@@ -1,6 +1,35 @@
 @import "tailwindcss";
 
 /* ============================================================
+   MEJORAS GLOBALES DE MÓVIL / TÁCTIL
+   ============================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    /* Sin flash naranja al tocar botones/links en Android iOS */
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  /* iPhone moderno: el input lupa nunca hace zoom forzado al usar la app */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  @media (min-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: inherit;
+    }
+  }
+}
+
+/* ============================================================
    SISTEMA DE TEMAS CROW COMICS
    - Tema: [data-theme="dark" | "light"] en <html>
    - Acento: --crow-hue (0-360) en <html>; cualquier color se

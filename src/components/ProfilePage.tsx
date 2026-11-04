@@ -167,7 +167,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   // Datos derivados del encabezado (con fallbacks si aún no corre el SQL de profiles)
   const displayName =
     profile?.username?.trim() || (user.email ?? 'lector').split('@')[0] || 'lector';
-  const handleAvatar = (user.email ?? '?').slice(0, 2).toUpperCase();
+  // Iniciales del username como último recurso; si no hay avatar elegido,
+  // usamos la foto de la cuenta de Google.
+  const googlePhoto =
+    (user.user_metadata as Record<string, string | undefined> | undefined)?.avatar_url
+    ?? (user.user_metadata as Record<string, string | undefined> | undefined)?.picture
+    ?? null;
+  const avatarSrc = profile?.avatar_url?.trim() || googlePhoto || null;
+  const handleAvatar = displayName.slice(0, 2).toUpperCase();
 
   const favoriteComics = favorites
     .map((fav) => comics.find((comic) => comic.id === fav.comic_id))
@@ -274,9 +281,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             {/* Avatar grande que sobresale del banner */}
             <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-3xl overflow-hidden border-4 border-bg shadow-xl shadow-black/60 bg-surface">
-              {profile?.avatar_url ? (
+              {avatarSrc ? (
                 <img
-                  src={profile.avatar_url}
+                  src={avatarSrc}
                   alt={displayName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -286,7 +293,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 />
               ) : null}
               <span
-                className={`w-full h-full flex items-center justify-center text-3xl font-black text-ink bg-gradient-to-br from-accent to-accent2 ${profile?.avatar_url ? 'hidden' : ''}`}
+                className={`w-full h-full flex items-center justify-center text-3xl font-black text-ink bg-gradient-to-br from-accent to-accent2 ${avatarSrc ? 'hidden' : ''}`}
               >
                 {handleAvatar}
               </span>

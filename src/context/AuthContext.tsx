@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        void ensureProfile(session.user);
       }
       setLoading(false);
     });
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        void ensureProfile(session.user);
       } else {
         setProfile(null);
       }
@@ -74,6 +74,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  /**
+   * Garantiza que cada cuenta (Google incluida) tenga su fila en `profiles`.
+   * Si la cuenta fue creada ANTES de que existiera la tabla/trigger, no tendrá
+   * fila: la creamos al vuelo usando username y avatar de Google. Sin esto, la
+   * navbar muestra iniciales del correo y el wizard de onboarding nunca carga.
+   */
+  const ensureProfile = async (userSession: User) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userSession.id)
+        .single();
+
+      if (!error && data) {
+        setProfile(data);
+        return;
+      }
+
+      // No existe fila (o la tabla falló por otra razón distinta a RLS):
+      // creamos el perfil con nombre e imagen de Google si están disponibles.
+      const meta = (userSession.user_metadata ?? {}) as Record<string, unknown>;
+      const metaName = (meta.user_name || meta.name || userSession.email?.split('@')[0] || 'lector') as string;
+      const safeName =
+        metaName.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 24) || 'lector';
+      const googleAvatar = (meta.avatar_url || meta.picture || null) as string | null;
+
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: userSession.id,
+            username: safeName,
+            avatar_url: googleAvatar,
+          },
+          { onConflict: 'id' },
+        );
+      if (insertError) throw insertError;
+      await fetchProfile(userSession.id);
+    } catch (err) {
+      console.error('Error garantizando el perfil:', err);
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -88,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(data);
     } catch (err) {
       console.error('Error cargando perfil:', err);
+      setProfile(null);
     }
   };
 
