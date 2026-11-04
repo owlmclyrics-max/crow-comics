@@ -140,14 +140,20 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
         </span>
       </div>
 
-      {/* Fondo cinemático desenfocado dinámico del cómic activo con parallax */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
-        <img
-          key={current.id}
-          src={current.cover_url || current.comic_cover_url}
-          alt={current.title}
-          className="w-full h-full object-cover blur-2xl scale-125 opacity-25 transition-all duration-700 ease-out parallax-layer animate-parallax-float"
-        />
+      {/* Fondo cinemático: TODAS las portadas apiladas con crossfade.
+          Nada se desmonta al cambiar de slide (remounts sobre capas con
+          blur/transform salen como "fantasmas" en Chromium). */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {recentChapters.map((chapter, idx) => (
+          <img
+            key={chapter.id}
+            src={chapter.cover_url || chapter.comic_cover_url}
+            alt=""
+            className={`absolute inset-0 w-full h-full object-cover blur-2xl scale-125 transition-opacity duration-700 ease-out ${
+              currentIndex === idx ? 'opacity-25' : 'opacity-0'
+            }`}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-surface/80 to-bg/60" />
       </div>
 
@@ -179,17 +185,24 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
       )}
 
       <div className="relative p-5 sm:p-8 md:p-10 flex flex-col lg:flex-row gap-6 sm:gap-8 items-center z-10 animate-fade-in">
-        {/* LADO IZQUIERDO: Portada Principal Vertical con badge de Novedad */}
+        {/* LADO IZQUIERDO: Portada Principal Vertical (crossfade entre tomos,
+            sin remounts: la capa nunca se destruye al navegar) */}
         <div
-          key={current.id}
           onClick={() => onSelectChapter?.(current)}
-          className="relative aspect-[2/3] w-48 sm:w-56 md:w-64 rounded-2xl overflow-hidden border-2 border-accent/30 shadow-2xl bg-bg shrink-0 cursor-pointer group/cover transform hover:scale-[1.03] smooth-transition animate-scale-in"
+          className="relative aspect-[2/3] w-48 sm:w-56 md:w-64 rounded-2xl overflow-hidden border-2 border-accent/30 shadow-2xl bg-bg shrink-0 cursor-pointer group/cover transform hover:scale-[1.03] smooth-transition"
         >
-          <img
-            src={current.cover_url || current.comic_cover_url}
-            alt={current.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover/cover:scale-105"
-          />
+          <div className="absolute inset-0 transition-transform duration-500 group-hover/cover:scale-105">
+            {recentChapters.map((chapter, idx) => (
+              <img
+                key={chapter.id}
+                src={chapter.cover_url || chapter.comic_cover_url}
+                alt={currentIndex === idx ? current.title : ''}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out ${
+                  currentIndex === idx ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+          </div>
 
           {/* Badge de Novedad / Destacado estilo Steam */}
           <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
@@ -211,8 +224,10 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           </div>
         </div>
 
-        {/* LADO DERECHO: Información, Sinopsis, Tomos y Botones (re-anima al cambiar de slide) */}
-        <div key={current.id} className="flex-1 space-y-4 text-center lg:text-left animate-fade-in">
+        {/* LADO DERECHO: Información, Sinopsis, Tomos y Botones (el texto
+            re-anima al cambiar de slide, sin recrear imágenes) */}
+        <div className="flex-1 text-center lg:text-left">
+          <div key={current.id} className="space-y-4 animate-fade-in">
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
@@ -279,6 +294,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
               <span>Ver por Editoriales</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
           </div>
         </div>
       </div>
