@@ -68,6 +68,7 @@ export const App: React.FC = () => {
   const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
   const [isAdminFormOpen, setIsAdminFormOpen] = useState(false);
   const [isCharactersModalOpen, setIsCharactersModalOpen] = useState(false);
+  const [charactersModalEditId, setCharactersModalEditId] = useState<string | null>(null);
   const [isChapterCharactersModalOpen, setIsChapterCharactersModalOpen] = useState(false);
   const [chapterCharactersUpdatedCallback, setChapterCharactersUpdatedCallback] = useState<(() => void) | null>(null);
   const [comicToEdit, setComicToEdit] = useState<Comic | null>(null);
@@ -314,7 +315,10 @@ export const App: React.FC = () => {
           /* VISTA 5: PÁGINA DE PERSONAJES                              */
           /* ======================================================== */
           <CharactersPage
-            onOpenManageModal={() => setIsCharactersModalOpen(true)}
+            onOpenManageModal={() => {
+              setCharactersModalEditId(null);
+              setIsCharactersModalOpen(true);
+            }}
             onSelectCharacter={(character) => {
               setSelectedCharacter(character);
               setCurrentView('character-detail');
@@ -329,7 +333,11 @@ export const App: React.FC = () => {
             onBack={() => setCurrentView('personajes')}
             onSelectComic={handleOpenComicDetail}
             onSelectChapter={handleOpenChapterDetail}
-            onOpenManageModal={() => setIsCharactersModalOpen(true)}
+            onOpenManageModal={() => {
+              // Aterriza el modal con ESTE personaje en modo edición
+              setCharactersModalEditId(selectedCharacter.id);
+              setIsCharactersModalOpen(true);
+            }}
           />
         ) : currentView === 'profile' || currentView === 'historial' ? (
           /* ======================================================== */
@@ -469,7 +477,11 @@ export const App: React.FC = () => {
       {isCharactersModalOpen && (
         <CharactersAdminModal
           isOpen={isCharactersModalOpen}
-          onClose={() => setIsCharactersModalOpen(false)}
+          onClose={() => {
+            setIsCharactersModalOpen(false);
+            setCharactersModalEditId(null);
+          }}
+          editTargetId={charactersModalEditId}
         />
       )}
 

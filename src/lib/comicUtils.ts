@@ -41,13 +41,24 @@ export const filterComicsByQuery = (comics: Comic[], query: string): Comic[] => 
 };
 
 /**
- * Búsqueda de personajes por nombre, nombre en español, nombre real o editorial.
+ * Búsqueda de personajes: nombre (EN/ES), real, editorial y toda la mini-wiki
+ * (alias, especie, universo, creadores, enemigos, arma...).
  */
 export const matchesCharacterSearch = (character: Character, query: string): boolean => {
   const term = normalize(query);
   if (!term) return true;
 
-  return [character.name, character.name_spanish, character.real_name, character.publisher].some(
-    (value) => value?.toLowerCase().includes(term),
-  );
+  return [
+    character.name,
+    character.name_spanish,
+    character.real_name,
+    character.publisher,
+    character.aliases,
+    character.species,
+    character.universe,
+    character.origin_place,
+    character.creators,
+    character.enemies,
+    character.weapon,
+  ].some((value) => value?.toLowerCase().includes(term));
 };

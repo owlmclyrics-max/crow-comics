@@ -73,6 +73,15 @@ export interface Character {
   description?: string;
   first_appearance?: string;
   publisher?: string;
+  // ── MINI-WIKI (ficha estilo Marvel) ──
+  aliases?: string;       // Alias, uno por línea (ej. "Rey de Negro\nDios de los Simbiontes")
+  species?: string;       // Especie (ej. "Entidad cósmica primordial")
+  universe?: string;      // Universo (ej. "Tierra-616")
+  origin_place?: string;  // Lugar de origen (ej. "Vacío primordial")
+  creators?: string;      // Creadores (ej. "Donny Cates y Ryan Stegman")
+  enemies?: string;       // Enemigos principales, uno por línea
+  powers?: string;        // Poderes y habilidades, uno por línea
+  weapon?: string;        // Arma principal (ej. "All-Black, la Necroespada")
   created_at?: string;
 }
 

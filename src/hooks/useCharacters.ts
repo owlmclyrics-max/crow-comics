@@ -27,6 +27,46 @@ const writeLocalCharacters = (characters: Character[]): void =>
 const sortByName = (characters: Character[]): Character[] =>
   [...characters].sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
+/**
+ * Campos de la mini-wiki (ficha estilo Marvel). Se guardan como TEXT
+ * (listas con un elemento por línea) y viajan como null si quedan vacíos.
+ */
+const WIKI_FIELDS = [
+  'aliases',
+  'species',
+  'universe',
+  'origin_place',
+  'creators',
+  'enemies',
+  'powers',
+  'weapon',
+] as const;
+
+type WikiField = (typeof WIKI_FIELDS)[number];
+
+const wikiPayload = (input: Partial<Character>): Partial<Record<WikiField, string | null>> =>
+  Object.fromEntries(
+    WIKI_FIELDS.map((field) => [field, clean(input[field]) ?? null]),
+  );
+
+/** Igual que wikiPayload, pero con `undefined` (formato del modo local). */
+const wikiLocal = (input: Partial<Character>): Partial<Record<WikiField, string>> =>
+  Object.fromEntries(
+    WIKI_FIELDS.map((field) => [field, clean(input[field])]).filter(([, value]) => value !== undefined),
+  ) as Partial<Record<WikiField, string>>;
+
+/** Campos completos en formato local (string | undefined, sin nulls). */
+const toLocalInput = (input: CharacterInput): Omit<Character, 'id' | 'created_at'> => ({
+  name: input.name.trim(),
+  name_spanish: clean(input.name_spanish),
+  real_name: clean(input.real_name),
+  photo_url: clean(input.photo_url),
+  description: clean(input.description),
+  first_appearance: clean(input.first_appearance),
+  publisher: clean(input.publisher),
+  ...wikiLocal(input),
+});
+
 export const useCharacters = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +115,7 @@ export const useCharacters = () => {
         description: clean(input.description) ?? null,
         first_appearance: clean(input.first_appearance) ?? null,
         publisher: clean(input.publisher) ?? null,
+        ...wikiPayload(input),
       };
 
       if (isSupabaseConfigured && supabase) {
@@ -85,20 +126,30 @@ export const useCharacters = () => {
           await fetchCharacters();
           return { success: true };
         } catch (err: unknown) {
+          // Si la base aún no tiene las columnas de la mini-wiki, reintentar
+          // con los campos clásicos para no bloquear la creación.
+          const msg = getErrorMessage(err);
+          if (/column|aliases|species|universe|origin_place|creators|enemies|powers|weapon/i.test(msg)) {
+            try {
+              const { error: retryError } = await supabase
+                .from('characters')
+                .insert([{ ...payload, ...Object.fromEntries(WIKI_FIELDS.map((f) => [f, null])) }]);
+              if (retryError) throw retryError;
+              await fetchCharacters();
+              return { success: true };
+            } catch (retryErr) {
+              console.error('Error agregando personaje (retry sin wiki):', retryErr);
+              return { success: false, error: getErrorMessage(retryErr) };
+            }
+          }
           console.error('Error agregando personaje:', err);
-          return { success: false, error: getErrorMessage(err) };
+          return { success: false, error: msg };
         }
       }
 
       const newCharacter: Character = {
         id: `char_${Date.now()}`,
-        name,
-        name_spanish: clean(input.name_spanish),
-        real_name: clean(input.real_name),
-        photo_url: clean(input.photo_url),
-        description: clean(input.description),
-        first_appearance: clean(input.first_appearance),
-        publisher: clean(input.publisher),
+        ...toLocalInput(input),
         created_at: new Date().toISOString(),
       };
 
@@ -126,6 +177,7 @@ export const useCharacters = () => {
         description: clean(input.description) ?? null,
         first_appearance: clean(input.first_appearance) ?? null,
         publisher: clean(input.publisher) ?? null,
+        ...wikiPayload(input),
       };
 
       if (isSupabaseConfigured && supabase) {
@@ -139,8 +191,25 @@ export const useCharacters = () => {
           await fetchCharacters();
           return { success: true };
         } catch (err: unknown) {
+          const msg = getErrorMessage(err);
+          // Resiliencia: si la base aún no tiene las columnas de la mini-wiki,
+          // guardar solo los campos clásicos para no perder la edición.
+          if (/column|aliases|species|universe|origin_place|creators|enemies|powers|weapon/i.test(msg)) {
+            try {
+              const { error: retryError } = await supabase
+                .from('characters')
+                .update({ ...payload, ...Object.fromEntries(WIKI_FIELDS.map((f) => [f, null])) })
+                .eq('id', id);
+              if (retryError) throw retryError;
+              await fetchCharacters();
+              return { success: true };
+            } catch (retryErr) {
+              console.error('Error actualizando personaje (retry sin wiki):', retryErr);
+              return { success: false, error: getErrorMessage(retryErr) };
+            }
+          }
           console.error('Error actualizando personaje:', err);
-          return { success: false, error: getErrorMessage(err) };
+          return { success: false, error: msg };
         }
       }
 
@@ -148,16 +217,7 @@ export const useCharacters = () => {
         const next = sortByName(
           current.map((character) =>
             character.id === id
-              ? {
-                  ...character,
-                  name,
-                  name_spanish: clean(input.name_spanish),
-                  real_name: clean(input.real_name),
-                  photo_url: clean(input.photo_url),
-                  description: clean(input.description),
-                  first_appearance: clean(input.first_appearance),
-                  publisher: clean(input.publisher),
-                }
+              ? { ...character, ...toLocalInput(input) }
               : character,
           ),
         );
