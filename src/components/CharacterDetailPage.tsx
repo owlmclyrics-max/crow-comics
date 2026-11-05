@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
+import { useCharactersContext } from '../context/CharactersContext';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
 
 interface CharacterDetailPageProps {
@@ -29,6 +30,8 @@ interface CharacterDetailPageProps {
   onSelectComic: (comic: Comic) => void;
   onSelectChapter: (chapter: Chapter, comic: Comic) => void;
   onOpenManageModal: () => void;
+  /** Abre la ficha de otro personaje (ej: al hacer clic en un enemigo). */
+  onSelectCharacter?: (character: Character) => void;
 }
 
 export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
@@ -36,10 +39,12 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   onBack,
   onSelectComic,
   onSelectChapter,
-  onOpenManageModal
+  onOpenManageModal,
+  onSelectCharacter,
 }) => {
   const { canManageContent } = useAuth();
   const { comics: allComics } = useComics();
+  const { characters: allCharacters } = useCharactersContext();
   const [chapterIds, setChapterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   // Cómic seleccionado: al hacer clic en una serie, se despliegan sus tomos
@@ -97,6 +102,24 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   const enemies = (character.enemies ?? '').split('\n').map((v) => v.trim()).filter(Boolean);
   const powers = (character.powers ?? '').split('\n').map((v) => v.trim()).filter(Boolean);
 
+  // Enemigos resueltos contra el wiki: los que tienen ficha van como reparto
+  // clicable; los que no, quedan como chips de texto.
+  const enemyEntries = useMemo(
+    () =>
+      enemies.map((enemy) => ({
+        name: enemy,
+        match: allCharacters.find(
+          (c) =>
+            c.id !== character.id &&
+            (c.name.toLowerCase() === enemy.toLowerCase() ||
+              (c.name_spanish ?? '').toLowerCase() === enemy.toLowerCase()),
+        ),
+      })),
+    [enemies, allCharacters, character.id],
+  );
+  const matchedEnemies = enemyEntries.filter((entry) => entry.match);
+  const unmatchedEnemies = enemyEntries.filter((entry) => !entry.match);
+
   // Filas de datos del infobox (solo se muestran si tienen contenido)
   const infoRows = [
     { icon: <BookOpen className="w-4 h-4" />, label: 'Primera aparición', value: character.first_appearance },
@@ -132,7 +155,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
       {/* ═══ WIKI: infobox a la derecha · contenido a la izquierda ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem] xl:grid-cols-[1fr_22rem] gap-6 items-start">
         {/* ── INFOBOX: ficha a la derecha con retrato circular con brillo ── */}
-        <aside className="lg:order-2 lg:sticky lg:top-6 rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl">
+        <aside className="lg:order-2 lg:sticky lg:top-20 self-start rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           {/* Retrato circular centrado, como la vista anterior */}
           <div className="relative bg-bg overflow-hidden">
             {/* Resplandor radial detrás de la foto */}
@@ -273,23 +296,63 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
             </section>
           )}
 
-          {/* Enemigos principales */}
+          {/* Enemigos principales: fila horizontal estilo reparto */}
           {enemies.length > 0 && (
             <section className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
               <h3 className="flex items-center gap-2.5 text-xl font-black text-ink pb-4">
                 <Skull className="w-5 h-5 text-accent" />
                 Enemigos principales
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {enemies.map((enemy) => (
-                  <span
-                    key={enemy}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-raised text-ink border border-line"
-                  >
-                    {enemy}
-                  </span>
-                ))}
-              </div>
+
+              {/* Los que tienen ficha: círculos clicables como el reparto */}
+              {matchedEnemies.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {matchedEnemies.map(({ name, match }) => (
+                    <button
+                      type="button"
+                      key={name}
+                      onClick={() => match && onSelectCharacter?.(match)}
+                      className={`group/enemy flex w-24 shrink-0 flex-col items-center gap-2 text-center focus:outline-none ${
+                        onSelectCharacter ? 'cursor-pointer' : 'cursor-default'
+                      }`}
+                      aria-label={`Ver la ficha de ${name}`}
+                      title={onSelectCharacter ? `Ir a la ficha de ${name}` : name}
+                    >
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover/enemy:border-red-400/70 bg-bg shrink-0 transition-colors shadow-lg">
+                        {match?.photo_url ? (
+                          <img
+                            src={match.photo_url}
+                            alt={name}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover/enemy:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Skull className="w-8 h-8 text-faint" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-ink leading-tight line-clamp-2 group-hover/enemy:text-red-400 transition-colors">
+                        {name}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Los que no tienen ficha: chips de texto */}
+              {unmatchedEnemies.length > 0 && (
+                <div className={`flex flex-wrap gap-2 ${matchedEnemies.length > 0 ? 'pt-3 border-t border-line' : ''}`}>
+                  {unmatchedEnemies.map(({ name }) => (
+                    <span
+                      key={name}
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-raised text-ink border border-line"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

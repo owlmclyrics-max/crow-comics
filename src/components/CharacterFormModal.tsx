@@ -92,6 +92,19 @@ const splitLines = (value: string): string[] =>
     .map((line) => line.trim())
     .filter(Boolean);
 
+/** Busca un personaje del wiki por nombre (inglés o español). */
+const findCharacterByName = (
+  name: string,
+  list: Character[],
+  excludeId?: string | null,
+): Character | undefined =>
+  list.find(
+    (c) =>
+      c.id !== excludeId &&
+      (c.name.toLowerCase() === name.toLowerCase() ||
+        (c.name_spanish ?? '').toLowerCase() === name.toLowerCase()),
+  );
+
 const inputClass =
   'w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint';
 
@@ -179,7 +192,10 @@ const SelectField: React.FC<{
 
 /* ── Vista previa en vivo de la ficha ──────────────────────────────────── */
 
-const WikiPreview: React.FC<{ form: CharacterFormState }> = ({ form }) => {
+const WikiPreview: React.FC<{ form: CharacterFormState; characters: Character[] }> = ({
+  form,
+  characters,
+}) => {
   const aliases = splitLines(form.aliases);
   const enemies = splitLines(form.enemies);
   const powers = splitLines(form.powers);
@@ -284,15 +300,25 @@ const WikiPreview: React.FC<{ form: CharacterFormState }> = ({ form }) => {
               <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-mute">
                 <Skull className="w-3 h-3 text-accent" /> Enemigos
               </p>
-              <div className="flex flex-wrap gap-1">
-                {enemies.map((enemy) => (
-                  <span
-                    key={enemy}
-                    className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-raised text-ink border border-line"
-                  >
-                    {enemy}
-                  </span>
-                ))}
+              {/* Mini círculos estilo reparto; los sin ficha quedan como chip */}
+              <div className="flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {enemies.map((enemy) => {
+                  const match = findCharacterByName(enemy, characters);
+                  return (
+                    <div key={enemy} className="shrink-0 flex flex-col items-center gap-0.5 w-12">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-line bg-bg">
+                        {match?.photo_url ? (
+                          <img src={match.photo_url} alt={enemy} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Skull className="w-4 h-4 text-faint" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="w-full text-[9px] text-mute truncate text-center">{enemy}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -342,6 +368,31 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   const prefilledRef = useRef(false);
 
   const isEdit = Boolean(characterId);
+
+  // ── Enemigos: elegir personajes del wiki o escribirlos a mano ──
+  const enemyNames = splitLines(form.enemies);
+  const addEnemy = (name: string) => {
+    if (!name || enemyNames.some((enemy) => enemy.toLowerCase() === name.toLowerCase())) return;
+    updateField('enemies', [...enemyNames, name].join('\n'));
+  };
+  const removeEnemy = (name: string) => {
+    updateField(
+      'enemies',
+      enemyNames.filter((enemy) => enemy !== name).join('\n'),
+    );
+  };
+  // Personajes del wiki que aún no son enemigos de este (y no es él mismo)
+  const enemyOptions = characters
+    .filter(
+      (c) =>
+        c.id !== characterId &&
+        !enemyNames.some(
+          (enemy) =>
+            enemy.toLowerCase() === c.name.toLowerCase() ||
+            enemy.toLowerCase() === (c.name_spanish ?? '').toLowerCase(),
+        ),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const updateField = <K extends keyof CharacterFormState>(field: K, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -535,14 +586,83 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                 onChange={(value) => updateField('aliases', value)}
                 rows={3}
               />
-              <TextArea
-                label="Enemigos principales"
-                hint="Uno por línea"
-                placeholder={'Venom\nThor\nSilver Surfer'}
-                value={form.enemies}
-                onChange={(value) => updateField('enemies', value)}
-                rows={3}
-              />
+              {/* Enemigos: círculos estilo reparto + selector del wiki + manual */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-mute">Enemigos principales</label>
+                  {enemyNames.length > 0 && (
+                    <span className="text-[10px] text-faint">Toca un círculo para quitarlo</span>
+                  )}
+                </div>
+
+                {/* Fila horizontal de círculos (como el reparto) */}
+                {enemyNames.length > 0 && (
+                  <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {enemyNames.map((enemy) => {
+                      const match = findCharacterByName(enemy, characters, characterId);
+                      return (
+                        <button
+                          key={enemy}
+                          type="button"
+                          onClick={() => removeEnemy(enemy)}
+                          title={`Quitar a ${enemy}`}
+                          className="group/enemy relative shrink-0 flex flex-col items-center gap-1 cursor-pointer focus:outline-none"
+                        >
+                          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-line group-hover/enemy:border-red-400/80 bg-bg transition-colors">
+                            {match?.photo_url ? (
+                              <img
+                                src={match.photo_url}
+                                alt={enemy}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Skull className="w-5 h-5 text-faint" />
+                              </div>
+                            )}
+                          </div>
+                          {/* X de quitar, aparece al hover */}
+                          <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/enemy:flex">
+                            <X className="w-3 h-3 text-red-400" />
+                          </span>
+                          <p className="w-14 text-[10px] text-mute truncate group-hover/enemy:text-red-400 transition-colors">
+                            {enemy}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Elegir del wiki */}
+                <div className="relative">
+                  <select
+                    value=""
+                    onChange={(event) => {
+                      if (event.target.value) addEnemy(event.target.value);
+                    }}
+                    className={`${inputClass} appearance-none pr-9 cursor-pointer text-faint`}
+                  >
+                    <option value="">+ Elegir personaje del wiki...</option>
+                    {enemyOptions.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                        {c.name_spanish ? ` — ${c.name_spanish}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
+                </div>
+
+                {/* Manual: uno por línea */}
+                <textarea
+                  value={form.enemies}
+                  onChange={(event) => updateField('enemies', event.target.value)}
+                  rows={2}
+                  placeholder="O escríbelos a mano, uno por línea (ej: Venom)"
+                  className={`${inputClass} resize-none leading-relaxed`}
+                />
+              </div>
               <TextArea
                 label="Poderes y habilidades"
                 hint="Un poder por línea"
@@ -594,7 +714,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
 
           {/* Preview en vivo */}
           <div className="xl:sticky xl:top-0">
-            <WikiPreview form={form} />
+            <WikiPreview form={form} characters={characters} />
           </div>
         </div>
       </div>

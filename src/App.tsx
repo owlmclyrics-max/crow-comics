@@ -75,6 +75,19 @@ const ViewFallback: React.FC = () => (
   </div>
 );
 
+// ── Restaurar la vista al recargar la página ──
+// Snapshot de navegación por pestaña (sessionStorage).
+const CROW_VIEW_STATE_KEY = 'crow_view_state';
+interface CrowViewState {
+  view: CurrentView;
+  comicId: string | null;
+  chapterId: string | null;
+  profileId: string | null;
+  character: Character | null;
+  list: ReadingListRow | null;
+  event: ReadingEvent | null;
+}
+
 export const App: React.FC = () => {
   const { comics, loading, error, saveComic, deleteComic } = useComics();
   const { user, profile, refreshProfile } = useAuth();
@@ -97,21 +110,72 @@ export const App: React.FC = () => {
   );
 
   // Navegación de vistas: 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'profile'
-  const [currentView, setCurrentView] = useState<CurrentView>('landing');
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [currentView, setCurrentView] = useState<CurrentView>((): CurrentView => {
+    // Recargar la página devuelve a donde estabas (sesión de la pestaña)
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      const saved = raw ? (JSON.parse(raw) as CrowViewState) : null;
+      return saved?.view && saved.view !== 'landing' ? saved.view : 'landing';
+    } catch {
+      return 'landing';
+    }
+  });
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).character ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Estados de filtros y modales
   const [selectedCategory, setSelectedCategory] = useState<ComicTag | 'All'>('All');
   
   // Cómic seleccionado para la página completa de detalle
-  const [selectedComicId, setSelectedComicId] = useState<string | null>(null);
-  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [selectedComicId, setSelectedComicId] = useState<string | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).comicId ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).chapterId ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
   // Sprint 3: lista abierta en la vista de detalle (ListDetailPage)
-  const [selectedList, setSelectedList] = useState<ReadingListRow | null>(null);
+  const [selectedList, setSelectedList] = useState<ReadingListRow | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).list ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
   // Sprint 5: evento (guía de lectura) abierto en EventDetailPage
-  const [selectedEvent, setSelectedEvent] = useState<ReadingEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ReadingEvent | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).event ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
   // Perfil PÚBLICO abierto desde el buscador de personas
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+      return raw ? ((JSON.parse(raw) as CrowViewState).profileId ?? null) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
   const [isAdminFormOpen, setIsAdminFormOpen] = useState(false);
@@ -145,6 +209,30 @@ export const App: React.FC = () => {
     }
     prevUserRef.current = user;
   }, [user]);
+
+  // ── Recargar la página devuelve a donde estabas ──
+  // La vista viva queda en sessionStorage (muere al cerrar la pestaña).
+  React.useEffect(() => {
+    const state: CrowViewState = {
+      view: currentView,
+      comicId: selectedComicId,
+      chapterId: selectedChapterId,
+      profileId: selectedProfileId,
+      character: selectedCharacter,
+      list: selectedList,
+      event: selectedEvent,
+    };
+    try {
+      sessionStorage.setItem(CROW_VIEW_STATE_KEY, JSON.stringify(state));
+    } catch { /* noop */ }
+  }, [currentView, selectedComicId, selectedChapterId, selectedProfileId, selectedCharacter, selectedList, selectedEvent]);
+
+  // Al recuperar la vista tras recargar, empezar desde arriba.
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    // Intencional: solo al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Derivamos los detalles del catálogo para que las ediciones y los ratings
   // se reflejen sin guardar copias obsoletas en el estado.
@@ -393,6 +481,7 @@ export const App: React.FC = () => {
             onBack={() => setCurrentView('personajes')}
             onSelectComic={handleOpenComicDetail}
             onSelectChapter={handleOpenChapterDetail}
+            onSelectCharacter={(next) => setSelectedCharacter(next)}
             onOpenManageModal={() => {
               // Modal de ficha dedicado, precargado con ESTE personaje
               setCharacterFormTargetId(selectedCharacter.id);
