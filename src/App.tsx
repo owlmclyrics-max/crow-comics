@@ -8,6 +8,7 @@ import { ComicCard } from './components/ComicCard';
 import { SteamHeroCarousel } from './components/SteamHeroCarousel';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { useAuth } from './context/AuthContext';
+import { useCharactersContext } from './context/CharactersContext';
 import { AuthModal } from './components/AuthModal';
 import { LandingPage } from './components/LandingPage';
 import { AuthSplash } from './components/AuthSplash';
@@ -76,7 +77,9 @@ const ViewFallback: React.FC = () => (
 );
 
 // ── Restaurar la vista al recargar la página ──
-// Snapshot de navegación por pestaña (sessionStorage).
+// Dos capas: 1) el hash de la URL (#/vista?comic=..&chapter=..) que vive
+// incluso si el PWA se cierra y reabre; 2) sessionStorage para los objetos
+// completos (ficha de personaje, lista, evento) que no caben en un hash.
 const CROW_VIEW_STATE_KEY = 'crow_view_state';
 interface CrowViewState {
   view: CurrentView;
@@ -88,9 +91,65 @@ interface CrowViewState {
   event: ReadingEvent | null;
 }
 
+const VALID_VIEWS: CurrentView[] = [
+  'landing', 'inicio', 'comics', 'personajes', 'character-detail', 'comic-detail',
+  'chapter-detail', 'list-detail', 'event-detail', 'profile', 'historial',
+  'public-profile', 'roadmap',
+];
+
+/** Lee la vista e IDs desde el hash actual (#/vista?comic=..). */
+const readHashState = (): {
+  view: CurrentView | null;
+  comicId: string | null;
+  chapterId: string | null;
+  profileId: string | null;
+  characterId: string | null;
+} => {
+  try {
+    const raw = window.location.hash.replace(/^#\/?/, '');
+    if (!raw) {
+      return { view: null, comicId: null, chapterId: null, profileId: null, characterId: null };
+    }
+    const [path, qs] = raw.split('?');
+    const params = new URLSearchParams(qs ?? '');
+    const view = VALID_VIEWS.includes(path as CurrentView) ? (path as CurrentView) : null;
+    return {
+      view,
+      comicId: params.get('comic'),
+      chapterId: params.get('chapter'),
+      profileId: params.get('profile'),
+      characterId: params.get('character'),
+    };
+  } catch {
+    return { view: null, comicId: null, chapterId: null, profileId: null, characterId: null };
+  }
+};
+
+/** Lee el snapshot completo de sessionStorage. */
+const readSavedState = (): CrowViewState | null => {
+  try {
+    const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
+    return raw ? (JSON.parse(raw) as CrowViewState) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Construye el hash correspondiente a un estado de navegación. */
+const viewToHash = (state: CrowViewState): string => {
+  const params = new URLSearchParams();
+  if (state.comicId) params.set('comic', state.comicId);
+  if (state.chapterId) params.set('chapter', state.chapterId);
+  if (state.profileId) params.set('profile', state.profileId);
+  if (state.character) params.set('character', state.character.id);
+  const qs = params.toString();
+  return `#/${state.view}${qs ? `?${qs}` : ''}`;
+};
+
 export const App: React.FC = () => {
   const { comics, loading, error, saveComic, deleteComic } = useComics();
   const { user, profile, refreshProfile } = useAuth();
+  const { characters, loading: charactersLoading } = useCharactersContext();
 
   // Sprint 4: wizard de onboarding para cuentas nuevas. Se muestra solo si el
   // perfil EXISTE y aún no completó el onboarding (si la tabla profiles no
@@ -110,45 +169,49 @@ export const App: React.FC = () => {
   );
 
   // Navegación de vistas: 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'profile'
+  // Restaurar tras recargar: primero el hash de la URL (sobrevive incluso a
+  // cerrar y reabrir el PWA) y como respaldo el snapshot de sessionStorage.
+  const initialHash = useMemo(() => readHashState(), []);
+  const initialSaved = useMemo(() => readSavedState(), []);
   const [currentView, setCurrentView] = useState<CurrentView>((): CurrentView => {
-    // Recargar la página devuelve a donde estabas (sesión de la pestaña)
-    try {
-      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
-      const saved = raw ? (JSON.parse(raw) as CrowViewState) : null;
-      return saved?.view && saved.view !== 'landing' ? saved.view : 'landing';
-    } catch {
-      return 'landing';
+    const view =
+      initialHash.view && initialHash.view !== 'landing'
+        ? initialHash.view
+        : initialSaved?.view && initialSaved.view !== 'landing'
+          ? initialSaved.view
+          : 'landing';
+    // Sin el objeto completo no se puede reconstruir el detalle.
+    if (view === 'list-detail' && !initialSaved?.list) return 'inicio';
+    if (view === 'event-detail' && !initialSaved?.event) return 'inicio';
+    // La ficha de personaje sí se puede resolver luego desde el catálogo.
+    if (view === 'character-detail' && !initialSaved?.character && !initialHash.characterId) {
+      return 'personajes';
     }
+    return view;
   });
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(() => {
-    try {
-      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
-      return raw ? ((JSON.parse(raw) as CrowViewState).character ?? null) : null;
-    } catch {
+    const snapshot = initialSaved?.character ?? null;
+    // Si el hash pide OTRA ficha, ignorar el snapshot y resolverla después.
+    if (
+      initialHash.view === 'character-detail' &&
+      initialHash.characterId &&
+      snapshot?.id !== initialHash.characterId
+    ) {
       return null;
     }
+    return snapshot;
   });
 
   // Estados de filtros y modales
   const [selectedCategory, setSelectedCategory] = useState<ComicTag | 'All'>('All');
   
   // Cómic seleccionado para la página completa de detalle
-  const [selectedComicId, setSelectedComicId] = useState<string | null>(() => {
-    try {
-      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
-      return raw ? ((JSON.parse(raw) as CrowViewState).comicId ?? null) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(() => {
-    try {
-      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
-      return raw ? ((JSON.parse(raw) as CrowViewState).chapterId ?? null) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [selectedComicId, setSelectedComicId] = useState<string | null>(
+    () => initialHash.comicId ?? initialSaved?.comicId ?? null,
+  );
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(
+    () => initialHash.chapterId ?? initialSaved?.chapterId ?? null,
+  );
   // Sprint 3: lista abierta en la vista de detalle (ListDetailPage)
   const [selectedList, setSelectedList] = useState<ReadingListRow | null>(() => {
     try {
@@ -168,14 +231,9 @@ export const App: React.FC = () => {
     }
   });
   // Perfil PÚBLICO abierto desde el buscador de personas
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(() => {
-    try {
-      const raw = sessionStorage.getItem(CROW_VIEW_STATE_KEY);
-      return raw ? ((JSON.parse(raw) as CrowViewState).profileId ?? null) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
+    () => initialHash.profileId ?? initialSaved?.profileId ?? null,
+  );
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
   const [isAdminFormOpen, setIsAdminFormOpen] = useState(false);
@@ -211,7 +269,8 @@ export const App: React.FC = () => {
   }, [user]);
 
   // ── Recargar la página devuelve a donde estabas ──
-  // La vista viva queda en sessionStorage (muere al cerrar la pestaña).
+  // Doble capa: snapshot en sessionStorage (objetos completos) + hash en la
+  // URL (IDs mínimos, sobrevive a cerrar y reabrir el PWA).
   React.useEffect(() => {
     const state: CrowViewState = {
       view: currentView,
@@ -225,7 +284,25 @@ export const App: React.FC = () => {
     try {
       sessionStorage.setItem(CROW_VIEW_STATE_KEY, JSON.stringify(state));
     } catch { /* noop */ }
+    try {
+      history.replaceState(null, '', viewToHash(state));
+    } catch { /* noop */ }
   }, [currentView, selectedComicId, selectedChapterId, selectedProfileId, selectedCharacter, selectedList, selectedEvent]);
+
+  // Ficha pedida por el hash pero sin snapshot (ej: PWA cerrada y reabierta):
+  // resolverla contra el catálogo en cuanto cargue.
+  React.useEffect(() => {
+    if (currentView !== 'character-detail' || selectedCharacter) return;
+    if (charactersLoading) return;
+    if (!initialHash.characterId) return;
+    const match = characters.find((c) => c.id === initialHash.characterId);
+    if (match) {
+      setSelectedCharacter(match);
+    } else {
+      // El personaje ya no existe (o el hash está viejo): llevar al wiki.
+      setCurrentView('personajes');
+    }
+  }, [currentView, selectedCharacter, characters, charactersLoading, initialHash]);
 
   // Al recuperar la vista tras recargar, empezar desde arriba.
   React.useEffect(() => {

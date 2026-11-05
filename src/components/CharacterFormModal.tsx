@@ -20,6 +20,7 @@ import { CHARACTER_ALIGNMENTS, PUBLISHERS, getAlignmentBadgeClass } from '../lib
 import { useCharactersContext } from '../context/CharactersContext';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
+import { EnemyPickerModal } from './EnemyPickerModal';
 
 interface CharacterFormModalProps {
   isOpen: boolean;
@@ -365,6 +366,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   const [form, setForm] = useState<CharacterFormState>(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEnemyPickerOpen, setIsEnemyPickerOpen] = useState(false);
   const prefilledRef = useRef(false);
 
   const isEdit = Boolean(characterId);
@@ -381,18 +383,6 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
       enemyNames.filter((enemy) => enemy !== name).join('\n'),
     );
   };
-  // Personajes del wiki que aún no son enemigos de este (y no es él mismo)
-  const enemyOptions = characters
-    .filter(
-      (c) =>
-        c.id !== characterId &&
-        !enemyNames.some(
-          (enemy) =>
-            enemy.toLowerCase() === c.name.toLowerCase() ||
-            enemy.toLowerCase() === (c.name_spanish ?? '').toLowerCase(),
-        ),
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
 
   const updateField = <K extends keyof CharacterFormState>(field: K, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -448,7 +438,8 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
       {/* ── Header con ambiente Crow ── */}
       <div className="relative shrink-0 border-b border-line overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-accent/15 via-transparent to-transparent pointer-events-none" />
@@ -634,25 +625,15 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                   </div>
                 )}
 
-                {/* Elegir del wiki */}
-                <div className="relative">
-                  <select
-                    value=""
-                    onChange={(event) => {
-                      if (event.target.value) addEnemy(event.target.value);
-                    }}
-                    className={`${inputClass} appearance-none pr-9 cursor-pointer text-faint`}
-                  >
-                    <option value="">+ Elegir personaje del wiki...</option>
-                    {enemyOptions.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                        {c.name_spanish ? ` — ${c.name_spanish}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
-                </div>
+                {/* Elegir del wiki: abre el modal de búsqueda */}
+                <button
+                  type="button"
+                  onClick={() => setIsEnemyPickerOpen(true)}
+                  className={`${inputClass} flex items-center justify-between text-left cursor-pointer hover:border-accent/50`}
+                >
+                  <span className="text-faint">+ Elegir personaje del wiki...</span>
+                  <ChevronDown className="w-4 h-4 text-mute" />
+                </button>
 
                 {/* Manual: uno por línea */}
                 <textarea
@@ -744,6 +725,17 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
           </button>
         </div>
       </div>
-    </Modal>
+      </Modal>
+
+      {/* Selector de enemigos del wiki (modal sobre el formulario) */}
+      <EnemyPickerModal
+        isOpen={isEnemyPickerOpen}
+        onClose={() => setIsEnemyPickerOpen(false)}
+        characters={characters}
+        excludeId={characterId}
+        existingEnemies={enemyNames}
+        onPick={addEnemy}
+      />
+    </>
   );
 };
