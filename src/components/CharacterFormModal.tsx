@@ -371,7 +371,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
 
   const isEdit = Boolean(characterId);
 
-  // ── Enemigos: elegir personajes del wiki o escribirlos a mano ──
+  // ── Enemigos: solo se eligen del wiki ──
   const enemyNames = splitLines(form.enemies);
   const addEnemy = (name: string) => {
     if (!name || enemyNames.some((enemy) => enemy.toLowerCase() === name.toLowerCase())) return;
@@ -577,7 +577,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                 onChange={(value) => updateField('aliases', value)}
                 rows={3}
               />
-              {/* Enemigos: círculos estilo reparto + selector del wiki + manual */}
+              {/* Enemigos: solo desde el wiki — círculos estilo reparto + modal de búsqueda */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-mute">Enemigos principales</label>
@@ -634,15 +634,6 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                   <span className="text-faint">+ Elegir personaje del wiki...</span>
                   <ChevronDown className="w-4 h-4 text-mute" />
                 </button>
-
-                {/* Manual: uno por línea */}
-                <textarea
-                  value={form.enemies}
-                  onChange={(event) => updateField('enemies', event.target.value)}
-                  rows={2}
-                  placeholder="O escríbelos a mano, uno por línea (ej: Venom)"
-                  className={`${inputClass} resize-none leading-relaxed`}
-                />
               </div>
               <TextArea
                 label="Poderes y habilidades"

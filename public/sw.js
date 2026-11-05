@@ -12,7 +12,7 @@
 //   cae al respaldo local del catálogo (localStorage) por su cuenta.
 // ============================================================================
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL_CACHE = `crow-shell-${VERSION}`;
 const RUNTIME_CACHE = `crow-runtime-${VERSION}`;
 
