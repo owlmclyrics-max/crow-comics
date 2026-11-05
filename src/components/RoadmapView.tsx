@@ -301,10 +301,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
               <div
                 key={version.version}
                 onClick={() => {
-                  if (locked) {
-                    showToast('🔒 Esta versión todavía es secreto — solo el admin puede verla');
-                    return;
-                  }
+                  // Navegar siempre: el secreto lo guarda el overlay, no el foco.
                   if (!isActive) focusCard(index);
                 }}
                 className={`group relative shrink-0 w-[19.5rem] flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
@@ -315,10 +312,6 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      if (locked) {
-                        showToast('🔒 Esta versión todavía es secreto — solo el admin puede verla');
-                        return;
-                      }
                       focusCard(index);
                     }}
                     title={`Ir a ${version.version}`}
