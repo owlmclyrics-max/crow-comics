@@ -14,6 +14,7 @@ import {
   Sparkles,
   User,
   Users,
+  Lock,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -21,6 +22,7 @@ import {
   type RoadmapTask,
 } from '../data/roadmap';
 import { showToast } from './ui/Toast';
+import { useAuth } from '../context/AuthContext';
 
 // ============================================================================
 // VISTA: ROADMAP INTERACTIVO
@@ -80,6 +82,7 @@ interface VersionProgress {
 }
 
 export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
+  const { isAdmin } = useAuth();
   const [progress, setProgress] = useState<ProgressMap>((): ProgressMap => loadProgress());
 
   // ── Efecto foco: qué tarjeta está centrada en el carril ──
@@ -150,6 +153,13 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
   const completedVersions = useMemo(
     () => ROADMAP_VERSIONS.filter((v) => versionProgress[v.version]?.complete).length,
+    [versionProgress],
+  );
+
+  // Versión "en construcción": la primera incompleta. Los usuarios normales
+  // solo ven en detalle esta y las completadas; las futuras quedan en secreto.
+  const currentVersionIndex = useMemo(
+    () => ROADMAP_VERSIONS.findIndex((v) => !versionProgress[v.version]?.complete),
     [versionProgress],
   );
 
@@ -242,8 +252,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
               </h2>
               <p className="text-xs sm:text-sm text-mute max-w-xl">
                 El mapa de campaña de Crow Comics: cada tarjeta es una versión.
-                Toca una tarjeta lateral para enfocarla; las casillas se marcan
-                en la tarjeta enfocada — tu progreso se guarda en este navegador.
+                Desliza con libertad — la tarjeta del centro toma el foco y ahí
+                se marcan las casillas. Tu progreso se guarda en este navegador.
               </p>
             </div>
             <div className="flex items-center gap-4 shrink-0">
@@ -271,11 +281,11 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* ── Línea de tiempo con efecto foco ── */}
+      {/* ── Línea de tiempo con efecto foco (scroll libre: el foco sigue al centro) ── */}
       <div
         ref={railRef}
         onScroll={handleRailScroll}
-        className="relative overflow-x-auto pb-4 [scrollbar-width:thin] snap-x snap-mandatory"
+        className="relative overflow-x-auto pb-4 [scrollbar-width:thin]"
       >
         <div className="flex gap-5 min-w-max px-1 py-2 items-stretch">
           {ROADMAP_VERSIONS.map((version, index) => {
@@ -283,14 +293,21 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
             const info = versionProgress[version.version] ?? { checked: 0, total: version.tasks.length, complete: false };
             const percent = info.total ? Math.round((info.checked / info.total) * 100) : 0;
             const isActive = index === activeIndex;
+            const isFuture = !info.complete && index !== currentVersionIndex;
+            // Los usuarios normales no pueden leer versiones futuras; el admin ve todo.
+            const locked = isFuture && !isAdmin;
 
             return (
               <div
                 key={version.version}
                 onClick={() => {
+                  if (locked) {
+                    showToast('🔒 Esta versión todavía es secreto — solo el admin puede verla');
+                    return;
+                  }
                   if (!isActive) focusCard(index);
                 }}
-                className={`shrink-0 w-[19.5rem] snap-center flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
+                className={`group relative shrink-0 w-[19.5rem] flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
               >
                 {/* Conector: punto + tramo de línea hacia la siguiente tarjeta */}
                 <div className="flex items-center gap-2 min-h-[1rem]">
@@ -393,8 +410,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                             role="checkbox"
                             aria-checked={checked}
                             onClick={() => {
-                              if (isActive) toggleTask(task.id);
-                              // En tarjetas laterales el clic burbujea y centra la tarjeta.
+                              if (locked) return;
+                              // Admin puede marcar en cualquier tarjeta; usuarios solo en la enfocada.
+                              if (isActive || isAdmin) toggleTask(task.id);
                             }}
                             className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
                               checked ? 'bg-emerald-500/[0.06]' : 'hover:bg-raised/50'
@@ -434,6 +452,23 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                     </p>
                   </div>
                 </article>
+
+                {/* Overlay de secreto: usuarios no pueden leer versiones futuras */}
+                {locked && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 top-7 rounded-3xl bg-bg/55 backdrop-blur-md border border-line/50 flex flex-col items-center justify-center gap-3 text-center p-6">
+                    <span className="w-12 h-12 rounded-2xl bg-raised border border-line flex items-center justify-center text-mute shadow-lg">
+                      <Lock className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-mute">
+                        Versión en secreto
+                      </p>
+                      <p className="text-[11px] text-faint mt-1">
+                        El cuervo todavía está cocinando estos planes
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
