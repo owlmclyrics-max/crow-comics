@@ -573,7 +573,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {canManageContent && !isAdmin && (
+          {canManageContent && (
             <button
               onClick={onOpenNewComic}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20 active:scale-95"
@@ -583,9 +583,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Herramientas administrativas: solo la campana de reportes quedó
-              en la barra. Nuevo Cómic, el badge de rol y "cerrar sesión" viven
-              en el menú del avatar para no saturar el navbar. */}
+          {/* Herramientas administrativas: la campana de reportes es lo único
+              exclusivo de admin en la barra. El badge de rol y "cerrar sesión"
+              viven en el menú del avatar para no saturar el navbar. */}
           {isAdmin && (
             <div className="relative" ref={reportsRef}>
                 <button
