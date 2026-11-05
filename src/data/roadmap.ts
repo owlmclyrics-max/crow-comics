@@ -1,9 +1,8 @@
 // ============================================================================
 // ROADMAP de Crow Comics — datos de la vista RoadmapView.
-// Dos fases: la beta actual (todo lo construido, colapsado en una tarjeta)
-// y la próxima versión con los pendientes reales. El estado de marcado se
-// persiste en localStorage desde el componente; aquí solo viven los datos y
-// el `done` inicial (true = feature ya integrada).
+// Fases: la beta actual (historial colapsado), la versión en curso y las
+// ideas futuras. El estado de marcado se persiste en localStorage desde el
+// componente; aquí solo viven los datos y el `done` inicial.
 // ============================================================================
 
 export interface RoadmapTask {
@@ -39,19 +38,67 @@ export const ROADMAP_VERSIONS: RoadmapVersionWithTasks[] = [
       { id: 'v04-5', label: 'Listas de lectura, colecciones oficiales e historial', done: true },
       { id: 'v04-6', label: 'Onboarding, guías de lectura e insignias', done: true },
       { id: 'v04-7', label: 'Mini-wiki de personajes: roles, filtros y ficha estilo fandom', done: true },
-      { id: 'v04-8', label: 'Temas claro/oscuro y acento personalizable', done: true },
+      { id: 'v04-8', label: 'Temas claro/oscuro, acento personalizable y hosting en Cloudflare Pages', done: true },
     ],
   },
   {
     version: 'v0.5',
     title: 'Hacia la luna',
-    subtitle: 'Lo que viene (en construcción)',
+    subtitle: 'La beta instalable en tu bolsillo',
     icon: 'map',
     tasks: [
-      { id: 'v05-1', label: 'Migración a Cloudflare Pages (¡en curso!)', done: false },
-      { id: 'v05-2', label: 'PWA instalable con lectura offline', done: false },
-      { id: 'v05-3', label: 'Dominio propio apuntando a pages.dev', done: false },
+      { id: 'v05-1', label: 'Migración a Cloudflare Pages completada', done: true },
+      { id: 'v05-2', label: 'Dominio propio apuntando a pages.dev', done: false },
+      { id: 'v05-3', label: 'PWA instalable con lectura offline', done: false },
       { id: 'v05-4', label: 'Notificaciones de nuevos tomos', done: false },
+    ],
+  },
+  {
+    version: 'v0.6',
+    title: 'El lector definitivo',
+    subtitle: 'Leer DENTRO del sitio, sin salir al link',
+    icon: 'book',
+    tasks: [
+      { id: 'v06-1', label: 'Lector de imágenes integrado: subes las páginas y se leen en la web', done: false },
+      { id: 'v06-2', label: 'Modos de lectura: horizontal, webtoon continuo y doble página', done: false },
+      { id: 'v06-3', label: 'Zoom, brillo y modo noche dentro del lector', done: false },
+      { id: 'v06-4', label: 'Descargas organizadas por tomo desde la ficha', done: false },
+    ],
+  },
+  {
+    version: 'v0.7',
+    title: 'Racha Cuervo',
+    subtitle: 'Que leer dé nivel, like el gym',
+    icon: 'flame',
+    tasks: [
+      { id: 'v07-1', label: 'Estadísticas de lectura: tomos leídos, racha diaria y horas', done: false },
+      { id: 'v07-2', label: 'XP y niveles con insignias por hitos de lectura', done: false },
+      { id: 'v07-3', label: '"Tu año en cómics": anuario estilo Wrapped con tu top', done: false },
+      { id: 'v07-4', label: 'Meta semanal personalizable con recordatorios', done: false },
+    ],
+  },
+  {
+    version: 'v0.8',
+    title: 'Nido conectado',
+    subtitle: 'La comunidad se conoce entre sí',
+    icon: 'users',
+    tasks: [
+      { id: 'v08-1', label: 'Seguir amigos y feed de actividad de lectura', done: false },
+      { id: 'v08-2', label: 'Comentarios con respuestas, reacciones y menciones', done: false },
+      { id: 'v08-3', label: 'Compartir listas y fichas en redes con preview bonito', done: false },
+      { id: 'v08-4', label: 'Clanes/círculos de lectura con retos conjuntos', done: false },
+    ],
+  },
+  {
+    version: 'v0.9',
+    title: 'El cuervo te conoce',
+    subtitle: 'Descubrimiento inteligente',
+    icon: 'sparkles',
+    tasks: [
+      { id: 'v09-1', label: 'Recomendaciones "porque leíste…" en el inicio', done: false },
+      { id: 'v09-2', label: 'Búsqueda avanzada combinada: personaje + editorial + año', done: false },
+      { id: 'v09-3', label: 'Colecciones inteligentes que se arman solas por tus gustos', done: false },
+      { id: 'v09-4', label: 'Panel de estadísticas para admins: lo más leído y usuarios activos', done: false },
     ],
   },
 ];

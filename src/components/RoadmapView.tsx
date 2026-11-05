@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
   Circle,
   Download,
+  Flame,
   ListVideo,
   Map as MapIcon,
   MessageSquare,
@@ -23,7 +24,9 @@ import { showToast } from './ui/Toast';
 
 // ============================================================================
 // VISTA: ROADMAP INTERACTIVO
-// Línea de tiempo horizontal tipo mapa de campaña con tarjetas por versión.
+// Línea de tiempo horizontal con EFECTO FOCO: la versión que se está
+// trabajando se muestra grande y nítida al centro; las laterales se ven
+// más pequeñas, atenuadas y con blur. Tocar una tarjeta lateral la centra.
 // El progreso (checkboxes) se persiste en localStorage y sobrevive
 // recargas: clave única por tarea con fallback al valor `done` del dato.
 // ============================================================================
@@ -59,6 +62,7 @@ const ICONS: Record<string, LucideIcon> = {
   sparkles: Sparkles,
   users: Users,
   map: MapIcon,
+  flame: Flame,
 };
 
 interface RoadmapViewProps {
@@ -77,6 +81,54 @@ interface VersionProgress {
 
 export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
   const [progress, setProgress] = useState<ProgressMap>((): ProgressMap => loadProgress());
+
+  // ── Efecto foco: qué tarjeta está centrada en el carril ──
+  const railRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Índice de la versión en construcción (primera incompleta al cargar).
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const initial = buildVersionProgress(loadProgress());
+    const pending = ROADMAP_VERSIONS.findIndex((v) => !initial[v.version]?.complete);
+    const target = pending === -1 ? ROADMAP_VERSIONS.length - 1 : pending;
+    const el = rail.children[target] as HTMLElement | undefined;
+    if (el) rail.scrollLeft = Math.max(0, el.offsetLeft + el.offsetWidth / 2 - rail.clientWidth / 2);
+    setActiveIndex(target);
+    // Intencionalmente una sola vez al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRailScroll = () => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const railCenter = rail.scrollLeft + rail.clientWidth / 2;
+    let best = 0;
+    let bestDist = Number.POSITIVE_INFINITY;
+    Array.from(rail.children).forEach((child, i) => {
+      const el = child as HTMLElement;
+      const center = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - railCenter);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    });
+    setActiveIndex(best);
+  };
+
+  /** Centra una tarjeta con animación suave. */
+  const focusCard = (index: number) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const el = rail.children[index] as HTMLElement | undefined;
+    if (!el) return;
+    rail.scrollTo({
+      left: el.offsetLeft + el.offsetWidth / 2 - rail.clientWidth / 2,
+      behavior: 'smooth',
+    });
+  };
 
   // Barras de progreso y contadores derivados del estado.
   const versionProgress = useMemo<Record<string, VersionProgress>>(
@@ -117,7 +169,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
     if (!window.confirm('¿Restablecer TODAS las casillas del roadmap a su estado inicial?')) return;
     setProgress({});
     saveProgress({});
-    showToast('Roadmap restablecido al estado inicial');
+    showToast('Roadmap restablecido a su estado inicial');
   };
 
   const exportJSON = () => {
@@ -190,7 +242,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
               </h2>
               <p className="text-xs sm:text-sm text-mute max-w-xl">
                 El mapa de campaña de Crow Comics: cada tarjeta es una versión.
-                Marca las tareas completadas — tu progreso se guarda en este navegador.
+                Toca una tarjeta lateral para enfocarla; las casillas se marcan
+                en la tarjeta enfocada — tu progreso se guarda en este navegador.
               </p>
             </div>
             <div className="flex items-center gap-4 shrink-0">
@@ -218,37 +271,59 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* ── Línea de tiempo horizontal ── */}
-      <div className="relative overflow-x-auto pb-4 [scrollbar-width:thin] snap-x snap-mandatory">
+      {/* ── Línea de tiempo con efecto foco ── */}
+      <div
+        ref={railRef}
+        onScroll={handleRailScroll}
+        className="relative overflow-x-auto pb-4 [scrollbar-width:thin] snap-x snap-mandatory"
+      >
         <div className="flex gap-5 min-w-max px-1 py-2 items-stretch">
           {ROADMAP_VERSIONS.map((version, index) => {
             const Icon = ICONS[version.icon] ?? Rocket;
             const info = versionProgress[version.version] ?? { checked: 0, total: version.tasks.length, complete: false };
             const percent = info.total ? Math.round((info.checked / info.total) * 100) : 0;
+            const isActive = index === activeIndex;
 
             return (
-              <div key={version.version} className="shrink-0 w-[19.5rem] snap-start flex flex-col">
+              <div
+                key={version.version}
+                onClick={() => {
+                  if (!isActive) focusCard(index);
+                }}
+                className={`shrink-0 w-[19.5rem] snap-center flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
+              >
                 {/* Conector: punto + tramo de línea hacia la siguiente tarjeta */}
                 <div className="flex items-center gap-2 min-h-[1rem]">
                   <span
-                    className={`w-3.5 h-3.5 rounded-full shrink-0 ring-4 transition-colors ${
+                    className={`rounded-full shrink-0 transition-all duration-500 ${
+                      isActive ? 'w-4 h-4 ring-4' : 'w-2.5 h-2.5 ring-2'
+                    } ${
                       info.complete
                         ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
-                        : 'bg-accent ring-accent/15'
-                    } ${index < ROADMAP_VERSIONS.length - 1 ? '' : ''}`}
+                        : 'bg-accent ring-accent/15 shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/50%)]'
+                    }`}
                     aria-hidden="true"
                   />
                   {index < ROADMAP_VERSIONS.length - 1 && (
-                    <span className="flex-1 h-0.5 bg-line rounded-full" aria-hidden="true" />
+                    <span
+                      className={`flex-1 rounded-full transition-colors duration-500 ${
+                        isActive ? 'h-0.5 bg-gradient-to-r from-accent to-accent2/60' : 'h-0.5 bg-line'
+                      }`}
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
 
-                {/* Tarjeta de versión */}
+                {/* Tarjeta de versión (enfocada: grande y nítida / lateral: pequeña y borrosa) */}
                 <article
-                  className={`mt-3 flex-1 rounded-3xl border overflow-hidden bg-surface transition-all duration-300 ${
-                    info.complete
-                      ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40'
-                      : 'border-line hover:border-accent/40 hover:shadow-xl'
+                  className={`mt-3 flex-1 rounded-3xl border overflow-hidden bg-surface origin-center transition-all duration-500 ease-out ${
+                    isActive
+                      ? 'scale-100 opacity-100 blur-0 saturate-100 ' +
+                        (info.complete
+                          ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
+                          : 'border-accent/60 shadow-2xl shadow-accent/30')
+                      : 'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
+                        (info.complete ? 'border-emerald-500/40' : 'border-line')
                   }`}
                 >
                   {/* Cabecera de versión */}
@@ -264,18 +339,22 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                         >
                           <Icon className="w-4 h-4" />
                         </span>
-                        <span className="text-lg font-black text-ink font-mono tracking-tight">
+                        <span className={`font-black text-ink font-mono tracking-tight ${isActive ? 'text-xl' : 'text-lg'}`}>
                           {version.version}
                         </span>
                       </div>
 
                       {/* Badge cuando la fase llega al 100% */}
-                      {info.complete && (
+                      {info.complete ? (
                         <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.35)]">
                           <CheckCircle2 className="w-3 h-3" />
                           Completada ✓
                         </span>
-                      )}
+                      ) : isActive ? (
+                        <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-accent/15 text-accent border border-accent/40 flex items-center gap-1 animate-pulse">
+                          En construcción
+                        </span>
+                      ) : null}
                     </div>
 
                     <h3 className="mt-2.5 text-sm font-bold text-ink leading-tight">{version.title}</h3>
@@ -285,7 +364,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                     <div className="mt-3 flex items-center gap-2.5">
                       <div className="flex-1 h-1.5 rounded-full bg-raised overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-400 ${
+                          className={`h-full rounded-full transition-all duration-500 ${
                             info.complete
                               ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
                               : 'bg-accent'
@@ -303,7 +382,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* Lista de tareas con checkboxes */}
+                  {/* Lista de tareas con checkboxes (solo togglean en la tarjeta enfocada) */}
                   <ul className="divide-y divide-line">
                     {version.tasks.map((task) => {
                       const checked = isTaskChecked(task, progress);
@@ -313,7 +392,10 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                             type="button"
                             role="checkbox"
                             aria-checked={checked}
-                            onClick={() => toggleTask(task.id)}
+                            onClick={() => {
+                              if (isActive) toggleTask(task.id);
+                              // En tarjetas laterales el clic burbujea y centra la tarjeta.
+                            }}
                             className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
                               checked ? 'bg-emerald-500/[0.06]' : 'hover:bg-raised/50'
                             } ${info.complete ? 'hover:bg-emerald-500/[0.08]' : ''}`}
