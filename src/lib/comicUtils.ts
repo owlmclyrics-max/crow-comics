@@ -21,6 +21,28 @@ export const toChapterWithComic = (chapter: Chapter, comic: Comic): ChapterWithC
 const normalize = (value: string): string => value.trim().toLowerCase();
 
 /**
+ * Minúsculas, sin acentos y con espacios colapsados: "Yelena Bélova ",
+ * "yelena belova" y "Yelena  Belova" empatan. Para comparar nombres
+ * de personajes entre el texto libre y el wiki.
+ */
+export const accentless = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+
+/** ¿Son el mismo nombre de personaje? Ignora acentos, mayúsculas y espacios. */
+export const isSameCharacterName = (a: string, b: string): boolean =>
+  Boolean(a) && Boolean(b) && accentless(a) === accentless(b);
+
+/** Coincide un nombre (libre) con el nombre inglés o español del personaje. */
+export const characterNameMatches = (character: Character, name: string): boolean =>
+  isSameCharacterName(character.name, name) ||
+  (!!character.name_spanish && isSameCharacterName(character.name_spanish, name));
+
+/**
  * Búsqueda del navbar: título, título original, guionista, editorial y maquetador.
  */
 export const filterComicsByQuery = (comics: Comic[], query: string): Comic[] => {

@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { useCharactersContext } from '../context/CharactersContext';
+import { characterNameMatches } from '../lib/comicUtils';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
 
 interface CharacterDetailPageProps {
@@ -99,16 +100,14 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   const powers = (character.powers ?? '').split('\n').map((v) => v.trim()).filter(Boolean);
 
   // Enemigos resueltos contra el wiki: los que tienen ficha van como reparto
-  // clicable; los que no, quedan como chips de texto.
+  // clicable; los que no, quedan como chips de texto. La comparación ignora
+  // mayúsculas, acentos y espacios ("yelena belova" ≡ "Yelena Bélova").
   const enemyEntries = useMemo(
     () =>
       enemies.map((enemy) => ({
         name: enemy,
         match: allCharacters.find(
-          (c) =>
-            c.id !== character.id &&
-            (c.name.toLowerCase() === enemy.toLowerCase() ||
-              (c.name_spanish ?? '').toLowerCase() === enemy.toLowerCase()),
+          (c) => c.id !== character.id && characterNameMatches(c, enemy),
         ),
       })),
     [enemies, allCharacters, character.id],

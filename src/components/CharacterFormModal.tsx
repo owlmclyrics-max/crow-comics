@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Character } from '../types/comic';
 import { CHARACTER_ALIGNMENTS, PUBLISHERS, getAlignmentBadgeClass } from '../lib/constants';
+import { characterNameMatches } from '../lib/comicUtils';
 import { useCharactersContext } from '../context/CharactersContext';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
@@ -93,18 +94,13 @@ const splitLines = (value: string): string[] =>
     .map((line) => line.trim())
     .filter(Boolean);
 
-/** Busca un personaje del wiki por nombre (inglés o español). */
+/** Busca un personaje del wiki por nombre (inglés o español), sin fijarse en mayúsculas, acentos ni espacios. */
 const findCharacterByName = (
   name: string,
   list: Character[],
   excludeId?: string | null,
 ): Character | undefined =>
-  list.find(
-    (c) =>
-      c.id !== excludeId &&
-      (c.name.toLowerCase() === name.toLowerCase() ||
-        (c.name_spanish ?? '').toLowerCase() === name.toLowerCase()),
-  );
+  list.find((c) => c.id !== excludeId && characterNameMatches(c, name));
 
 const inputClass =
   'w-full px-3.5 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint';
