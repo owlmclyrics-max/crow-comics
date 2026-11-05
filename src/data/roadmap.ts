@@ -60,7 +60,6 @@ export const ROADMAP_VERSIONS: RoadmapVersionWithTasks[] = [
     icon: 'book',
     tasks: [
       { id: 'v06-5', label: 'Solicitudes de cómics: la comunidad pide títulos y vota (prioridad)', done: false },
-      { id: 'v06-6', label: 'Continuar leyendo en el inicio: retoma el último tomo con tu marcador manual', done: false },
       { id: 'v06-7', label: '"Mi Biblioteca": panel con lo que estás leyendo, pausado y te falta por tomo', done: false },
       { id: 'v06-8', label: 'Historial de lectura mejorado con filtros por fecha y cómic', done: false },
       { id: 'v06-9', label: 'Estados de lectura que cada lector elige por tomo: "Leyendo / Leído / En pausa / Abandonado"', done: false },
