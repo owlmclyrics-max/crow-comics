@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import {
   ShieldCheck,
   LogOut,
@@ -18,7 +18,6 @@ import {
   XCircle,
   Clock,
   History,
-  Menu,
   Moon,
   Sun,
   Map as MapIcon,
@@ -91,14 +90,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, [isUserMenuOpen]);
 
-  // La barra inferior móvil (MobileBottomNav) abre ESTE menú con "Más":
-  // despachan un evento para no replicar el estado en dos componentes.
-  useEffect(() => {
-    const toggle = () => setIsMobileNavOpen((open) => !open);
-    window.addEventListener('crow:toggle-mobile-nav', toggle);
-    return () => window.removeEventListener('crow:toggle-mobile-nav', toggle);
-  }, []);
-
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     await signInWithGoogle();
@@ -142,7 +133,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const pendingCount = reports.filter(r => r.status === 'pending').length;
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -266,6 +256,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-sm sm:text-lg font-black tracking-tight text-ink uppercase font-sans">
                   CROW <span className="text-accent">COMICS</span>
                 </span>
+                {/* Versión actual — discreta, junto al logo */}
+                <span
+                  className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider rounded-md bg-accent/10 text-accent border border-accent/25 leading-none"
+                  title="Versión actual del sitio"
+                >
+                  Beta v0.4
+                </span>
               </div>
               <p className="text-[10px] text-mute font-mono hidden sm:block">
                 Maquetaciones & Scans
@@ -273,8 +270,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </button>
 
-          {/* Links de Navegación: Inicio, Cómics, Personajes e Historial (con cuenta) */}
-          <nav className="hidden md:flex items-center gap-1.5 sm:gap-2">
+          {/* Links de Navegación completos solo en pantallas grandes: en tablet
+              el menú hamburguesa evita que la barra se sature con la versión admin */}
+          <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
             {NAV_ITEMS.map((item) => {
               // El Historial requiere sesión: sin cuenta no se muestra.
               if (item.view === 'historial' && !user) return null;
@@ -307,15 +305,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Zona Derecha: Barra de Búsqueda Expandible + Panel Admin */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1" ref={searchContainerRef}>
-          <button
-            type="button"
-            onClick={() => setIsMobileNavOpen(open => !open)}
-            aria-label={isMobileNavOpen ? 'Cerrar menú' : 'Abrir menú'}
-            aria-expanded={isMobileNavOpen}
-            className="md:hidden p-2 rounded-xl bg-surface border border-line text-mute"
-          >
-            {isMobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
 
           {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
           <div className="flex items-center gap-2">
@@ -514,8 +503,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-ink truncate">
-                          {profile?.username?.trim() || (user.email ?? 'Cuenta').split('@')[0]}
+                        <p className="text-xs font-bold text-ink truncate flex items-center gap-1.5">
+                          <span className="truncate">
+                            {profile?.username?.trim() || (user.email ?? 'Cuenta').split('@')[0]}
+                          </span>
+                          {isAdmin && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-accent/15 text-accent border border-accent/30 leading-none">
+                              <ShieldCheck className="w-2.5 h-2.5" />
+                              {isDemoMode ? 'Admin demo' : 'Admin'}
+                            </span>
+                          )}
                         </p>
                         <p className="text-[10px] text-mute truncate">{user.email}</p>
                       </div>
@@ -586,20 +583,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Herramientas administrativas: reportes y estado de admin */}
+          {/* Herramientas administrativas: solo la campana de reportes quedó
+              en la barra. Nuevo Cómic, el badge de rol y "cerrar sesión" viven
+              en el menú del avatar para no saturar el navbar. */}
           {isAdmin && (
-            <div className="flex items-center gap-2">
-              {/* Botón Nuevo Cómic */}
-              <button
-                onClick={onOpenNewComic}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20 active:scale-95"
-              >
-                <Plus className="w-4 h-4 stroke-[3]" />
-                <span className="hidden sm:inline">Nuevo Cómic</span>
-              </button>
-
-              {/* Notificaciones de reportes */}
-              <div className="relative" ref={reportsRef}>
+            <div className="relative" ref={reportsRef}>
                 <button
                   onClick={() => { setShowReports(v => !v); void loadReports(); }}
                   className="relative p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line hover:border-accent/40 transition-colors"
@@ -699,119 +687,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
               </div>
-
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface border border-accent/30 text-accent text-xs font-medium">
-                <ShieldCheck className="w-4 h-4 text-accent" />
-                <span className="hidden md:inline">
-                  {isDemoMode ? 'Admin (Demo)' : 'Admin'}
-                </span>
-              </div>
-
-              <button
-                onClick={() => signOut()}
-                className="p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line transition-colors"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
           )}
         </div>
       </div>
-      {isMobileNavOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in"
-          onClick={() => setIsMobileNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      {isMobileNavOpen && (
-        <nav className="absolute right-3 top-[calc(100%+0.5rem)] z-[60] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-line/80 bg-bg/90 p-2 shadow-2xl shadow-black/60 backdrop-blur-xl md:hidden animate-fade-in">
-          <div className="mb-2 flex items-center justify-between border-b border-line px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">Explorar</span>
-            <span className="text-[10px] font-semibold text-accent">CROW COMICS</span>
-          </div>
-          <div className="space-y-1">
-            {NAV_ITEMS.map(item => {
-            if (item.view === 'historial' && !user) return null;
-            const Icon = item.icon;
-            const isActive = item.view === 'personajes'
-              ? currentView === 'personajes' || currentView === 'character-detail'
-              : item.view === 'historial'
-                ? currentView === 'historial'
-                : currentView === item.view;
-            return (
-              <button
-                key={item.view}
-                type="button"
-                onClick={() => {
-                  onNavigate(item.view);
-                  setIsMobileNavOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-surface text-accent' : 'text-mute hover:bg-surface'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            );
-            })}
-          </div>
-          {user && (
-            <div className="mt-2 border-t border-line pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenProfile();
-                  setIsMobileNavOpen(false);
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-mute transition-colors hover:bg-surface"
-              >
-                <UserCircle className="h-4 w-4" />
-                Mi perfil
-              </button>
-              {canManageContent && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenNewComic();
-                    setIsMobileNavOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-accent transition-colors hover:bg-accent/10"
-                >
-                  <Plus className="h-4 w-4" />
-                  Nuevo cómic
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileNavOpen(false);
-                  void signOut();
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-mute transition-colors hover:bg-accent/10 hover:text-accent2"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </div>
-          )}
-          {!user && !authLoading && (
-            <button
-              type="button"
-              onClick={() => {
-                onOpenAuth();
-                setIsMobileNavOpen(false);
-              }}
-              className="mt-2 w-full flex items-center gap-3 rounded-xl border-t border-line px-3 py-4 text-sm font-semibold text-mute hover:bg-surface"
-            >
-              <User className="w-4 h-4" />
-              Entrar o crear cuenta
-            </button>
-          )}
-        </nav>
-      )}
     </header>
   );
 };
