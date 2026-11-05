@@ -17,10 +17,47 @@ interface EnemyPickerModalProps {
   onPick: (name: string) => void;
 }
 
+/** Minúsculas, sin acentos: "Dínamo" y "dynamo" empatan. */
+const accentless = (value: string): string =>
+  value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/** Líneas limpias de un campo guardado "uno por línea". */
+const lines = (value: string | undefined): string[] =>
+  (value ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+/** Alias o nombre real con el que coincide la búsqueda (para mostrarlo). */
+const matchedExtraText = (c: Character, query: string): string | null => {
+  const q = accentless(query);
+  if (!q) return null;
+  const real = c.real_name ?? '';
+  if (real && accentless(real).includes(q)) return real;
+  const alias = lines(c.aliases).find((a) => accentless(a).includes(q));
+  return alias ?? null;
+};
+
+/** Resalta el fragmento que coincide con la búsqueda dentro del texto. */
+const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) => {
+  const q = accentless(query);
+  if (!q) return <>{text}</>;
+  const idx = accentless(text).indexOf(q);
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span className="text-accent">{text.slice(idx, idx + q.length)}</span>
+      {text.slice(idx + q.length)}
+    </>
+  );
+};
+
 /**
  * Modal para elegir personajes del wiki como enemigos: buscador + filas
- * con retrato circular estilo reparto. Multi-elección: se queda abierto
- * hasta que el editor cierra, para agregar varios de corrido.
+ * con retrato circular estilo reparto. La búsqueda cubre TODOS los nombres:
+ * inglés, español, nombre real y cada alias — sin importar acentos.
+ * Multi-elección: se queda abierto hasta cerrar, para agregar varios de corrido.
  */
 export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   isOpen,
@@ -45,17 +82,30 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
     );
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return characters
-      .filter((c) => c.id !== excludeId)
-      .filter(
-        (c) =>
-          !q ||
-          c.name.toLowerCase().includes(q) ||
-          (c.name_spanish ?? '').toLowerCase().includes(q) ||
-          (c.aliases ?? '').toLowerCase().includes(q),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const q = accentless(query);
+    const list = characters.filter((c) => c.id !== excludeId);
+    if (!q) return list.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Buscar en TODOS los nombres y alias disponibles.
+    const matches = list.filter((c) => {
+      const haystacks = [
+        c.name,
+        c.name_spanish,
+        c.real_name,
+        ...(lines(c.aliases) as string[]),
+      ];
+      return haystacks.some((value) => accentless(value ?? '').includes(q));
+    });
+
+    // Exactos primero, luego los que empiezan con la búsqueda, alfabético al final.
+    const rank = (c: Character): number => {
+      const en = accentless(c.name);
+      const es = accentless(c.name_spanish ?? '');
+      if (en === q || es === q) return 0;
+      if (en.startsWith(q) || es.startsWith(q)) return 1;
+      return 2;
+    };
+    return matches.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
   }, [characters, excludeId, query]);
 
   return (
@@ -89,7 +139,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nombre, alias..."
+            placeholder="Nombre, alias o nombre real..."
             autoFocus
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
           />
@@ -105,6 +155,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
         ) : (
           results.map((c) => {
             const taken = isAlreadyEnemy(c);
+            const extra = matchedExtraText(c, query);
             return (
               <button
                 key={c.id}
@@ -133,10 +184,17 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
-                    {c.name}
+                    <Highlight text={c.name} query={query} />
                   </p>
                   {c.name_spanish && (
-                    <p className="text-[11px] text-accent font-semibold truncate">{c.name_spanish}</p>
+                    <p className="text-[11px] text-accent font-semibold truncate">
+                      <Highlight text={c.name_spanish} query={query} />
+                    </p>
+                  )}
+                  {extra && (
+                    <p className="text-[10px] text-mute truncate">
+                      Coincide: <Highlight text={extra} query={query} />
+                    </p>
                   )}
                 </div>
                 {c.alignment && (
