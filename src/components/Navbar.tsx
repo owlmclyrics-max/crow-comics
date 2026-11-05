@@ -463,7 +463,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <div>
                 <button
-                  onClick={() => setIsUserMenuOpen((v) => !v)}
+                  onClick={() => { setIsUserMenuOpen((v) => !v); setShowReports(false); }}
                   className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-surface border transition-all ${
                     isUserMenuOpen
                       ? 'border-accent/40'
@@ -522,17 +522,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
 
                     <div className="p-1.5 space-y-0.5">
-                      {/* Admin: crear cómic vive aquí en pantallas <xl */}
+                      {/* ── Herramientas de administrador: viven en el menú ── */}
                       {canManageContent && (
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             onOpenNewComic();
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-accent hover:bg-accent/10 transition-colors xl:hidden"
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-accent hover:bg-accent/10 transition-colors"
                         >
                           <Plus className="w-4 h-4 stroke-[3]" />
                           Nuevo Cómic
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setShowReports(true);
+                            void loadReports();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent2 transition-colors"
+                        >
+                          <Flag className="w-4 h-4" />
+                          Reportes de enlaces
+                          {pendingCount > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-accent2 text-onaccent text-[10px] font-black">
+                              {pendingCount > 9 ? '9+' : pendingCount}
+                            </span>
+                          )}
                         </button>
                       )}
                       <button
@@ -599,37 +617,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {canManageContent && (
-            /* Botón directo solo en XL+ (ahí hay espacio de sobra); en
-               pantallas más chicas vive en el menú del avatar y no satura */
-            <button
-              onClick={onOpenNewComic}
-              className="hidden xl:inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold whitespace-nowrap transition-all shadow-md shadow-accent/20 active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Nuevo Cómic</span>
-            </button>
-          )}
-
-          {/* Herramientas administrativas: la campana de reportes es lo único
-              exclusivo de admin en la barra. El badge de rol y "cerrar sesión"
-              viven en el menú del avatar para no saturar el navbar. */}
+          {/* Herramientas admin (Nuevo Cómic / Reportes): en el menú del avatar.
+              El dropdown de reportes se ancla aquí, junto a la cuenta. */}
           {isAdmin && (
             <div className="relative" ref={reportsRef}>
-                <button
-                  onClick={() => { setShowReports(v => !v); void loadReports(); }}
-                  className="relative shrink-0 p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line hover:border-accent/40 transition-colors"
-                  title="Reportes de enlaces caídos"
-                >
-                  {/* Bandera (no campana): la campana es la de nuevos tomos */}
-                  <Flag className="w-4 h-4" />
-                  {pendingCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent2 text-onaccent text-[9px] font-black flex items-center justify-center">
-                      {pendingCount > 9 ? '9+' : pendingCount}
-                    </span>
-                  )}
-                </button>
-
                 {showReports && (
                   <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
                     <div className="px-4 py-3 border-b border-line flex items-center justify-between">
