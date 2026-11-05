@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import type { Character } from '../types/comic';
-import { X, Search, User, AlertCircle } from 'lucide-react';
+import { X, Search, User, AlertCircle, Check } from 'lucide-react';
 import { useCharactersContext } from '../context/CharactersContext';
 import { fetchChapterCharacterIds, setChapterCharacterAssigned } from '../lib/chapterCharacters';
 import { matchesCharacterSearch } from '../lib/comicUtils';
@@ -12,6 +12,11 @@ interface ChapterCharactersModalProps {
   onClose: () => void;
 }
 
+/**
+ * Asignar personajes a un tomo. Estilo reparto: círculos con retrato para los
+ * ya asignados (tócalos para quitar) y cuadrícula compacta de círculos para
+ * elegir del wiki, con check en los asignados.
+ */
 export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   isOpen,
   chapterId,
@@ -38,6 +43,7 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       void loadAssigned();
+      setSearchTerm('');
     }
   }, [isOpen, loadAssigned]);
 
@@ -77,37 +83,39 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-            <User className="w-5 h-5 text-accent" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black text-ink">Personajes en este Tomo</h2>
-            <p className="text-xs text-mute">Asigna personajes a este capítulo específico</p>
+      <div className="shrink-0 flex items-center justify-between gap-3 p-5 border-b border-line">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
+            <User className="w-4 h-4 text-accent" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-ink">Personajes en este tomo</h3>
+            <p className="text-[11px] text-mute">Toca un personaje para asignarlo o quitarlo</p>
           </div>
         </div>
         <button
+          type="button"
           onClick={onClose}
-          className="p-2 rounded-xl bg-raised hover:bg-line text-mute text-ink transition-colors"
+          className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors"
+          aria-label="Cerrar"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
         {/* Buscador */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mute" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
           <input
             type="text"
-            placeholder="Buscar personaje..."
+            placeholder="Nombre, alias o nombre real..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
           />
         </div>
 
@@ -118,59 +126,115 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
           </div>
         )}
 
-        {/* Personajes asignados */}
+        {/* Asignados: fila horizontal estilo reparto */}
         {assignedCharacters.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-ink">
-              Personajes Asignados ({assignedCharacters.length})
+          <div className="space-y-2">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-mute">
+              Asignados ({assignedCharacters.length})
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {assignedCharacters.map((character) => (
-                <div
+                <button
                   key={character.id}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/15 text-accent text-xs font-semibold border border-accent/30"
+                  type="button"
+                  onClick={() => void handleToggleCharacter(character)}
+                  title={`Quitar a ${character.name}`}
+                  className="group/as relative shrink-0 flex flex-col items-center gap-1 focus:outline-none w-16"
                 >
-                  <span>{character.name}</span>
-                  <button
-                    onClick={() => handleToggleCharacter(character)}
-                    className="hover:text-accent2"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-accent/60 bg-bg shrink-0 transition-colors group-hover/as:border-red-400/80">
+                    {character.photo_url ? (
+                      <img
+                        src={character.photo_url}
+                        alt={character.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-faint" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/as:flex">
+                    <X className="w-3 h-3 text-red-400" />
+                  </span>
+                  <p className="w-16 text-[10px] text-mute truncate group-hover/as:text-red-400 transition-colors">
+                    {character.name}
+                  </p>
+                </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Todos los personajes */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-ink">Todos los Personajes</h3>
+        {/* Todos: cuadrícula compacta de círculos con check */}
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-mute">
+            Todos los personajes
+          </h3>
           {loading || loadingAssigned ? (
             <p className="text-xs text-mute">Cargando personajes...</p>
           ) : filteredCharacters.length === 0 ? (
-            <p className="text-xs text-mute italic">No hay personajes disponibles</p>
+            <p className="text-xs text-faint italic">
+              Nadie en el wiki coincide con "{searchTerm}"
+            </p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-3 max-h-[45dvh] overflow-y-auto">
               {filteredCharacters.map((character) => {
                 const assigned = isCharacterAssigned(character.id);
                 return (
                   <button
                     key={character.id}
-                    onClick={() => handleToggleCharacter(character)}
-                    className={`p-3 rounded-lg border text-left transition-all ${
+                    type="button"
+                    onClick={() => void handleToggleCharacter(character)}
+                    aria-pressed={assigned}
+                    className={`group/all relative flex flex-col items-center gap-1.5 p-2 rounded-2xl border text-center transition-all focus:outline-none ${
                       assigned
-                        ? 'bg-accent/15 border-accent/30 text-accent'
-                        : 'bg-surface border-line hover:border-line text-mute'
+                        ? 'bg-accent/10 border-accent/50'
+                        : 'bg-surface border-line hover:border-accent/40'
                     }`}
                   >
-                    <div className="font-semibold text-xs">{character.name}</div>
-                    {character.name_spanish && (
-                      <div className="text-[10px] text-accent">{character.name_spanish}</div>
+                    {assigned && (
+                      <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-accent text-onaccent flex items-center justify-center shadow z-10">
+                        <Check className="w-3 h-3" />
+                      </span>
                     )}
-                    {character.real_name && (
-                      <div className="text-[10px] text-mute">{character.real_name}</div>
-                    )}
+                    <div
+                      className={`w-14 h-14 rounded-full overflow-hidden border-2 bg-bg shrink-0 transition-colors ${
+                        assigned
+                          ? 'border-accent'
+                          : 'border-line group-hover/all:border-accent/50'
+                      }`}
+                    >
+                      {character.photo_url ? (
+                        <img
+                          src={character.photo_url}
+                          alt={character.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-faint" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 w-full">
+                      <p
+                        className={`text-[11px] font-bold leading-tight line-clamp-1 transition-colors ${
+                          assigned
+                            ? 'text-accent'
+                            : 'text-ink group-hover/all:text-accent'
+                        }`}
+                      >
+                        {character.name}
+                      </p>
+                      {character.name_spanish && (
+                        <p className="text-[9px] text-faint leading-tight line-clamp-1">
+                          {character.name_spanish}
+                        </p>
+                      )}
+                    </div>
                   </button>
                 );
               })}
@@ -180,12 +244,13 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end p-6 border-t border-line">
+      <div className="shrink-0 flex items-center justify-end p-4 border-t border-line bg-raised/40">
         <button
+          type="button"
           onClick={onClose}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-raised hover:bg-line text-mute text-xs font-semibold transition-colors"
+          className="inline-flex items-center px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
         >
-          <span>Cerrar</span>
+          Listo
         </button>
       </div>
     </Modal>
