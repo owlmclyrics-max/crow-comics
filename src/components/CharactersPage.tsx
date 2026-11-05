@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
 import { CrowAmbience } from './ui/CrowAmbience';
-import { User, Search, Edit3, Plus, Dna, Globe, ChevronDown, Sparkles } from 'lucide-react';
+import { User, Search, Edit3, Plus, Dna, Globe, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCharactersContext } from '../context/CharactersContext';
 import { matchesCharacterSearch } from '../lib/comicUtils';
@@ -165,46 +165,41 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
           {filteredCharacters.map((character) => (
             <div
               key={character.id}
               onClick={() => onSelectCharacter(character)}
-              className="group flex flex-col bg-surface border border-line hover:border-accent/50 rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-accent/40 transition-all duration-300 cursor-pointer transform hover:-translate-y-1.5"
+              className="group flex flex-col items-center text-center gap-2.5 rounded-3xl border border-line bg-surface p-4 pt-5 hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/25 transition-all duration-300 cursor-pointer hover:-translate-y-1.5"
             >
-              {/* Retrato tipo wiki con rol y editorial superpuestos */}
-              <div className="relative aspect-square overflow-hidden bg-bg">
-                {character.photo_url ? (
-                  <img
-                    src={character.photo_url}
-                    alt={character.name}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-bg">
-                    <User className="w-14 h-14 text-faint" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent opacity-90" />
-
+              {/* Retrato circular estilo reparto (como en capítulos) */}
+              <div className="relative mb-1.5">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg transition-colors duration-300 shadow-lg">
+                  {character.photo_url ? (
+                    <img
+                      src={character.photo_url}
+                      alt={character.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-10 h-10 text-faint" />
+                    </div>
+                  )}
+                </div>
+                {/* Rol flotando en el borde del círculo */}
                 {character.alignment && (
                   <span
-                    className={`absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide rounded-lg border backdrop-blur-sm ${getAlignmentBadgeClass(character.alignment)}`}
+                    className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border backdrop-blur-sm shadow-md ${getAlignmentBadgeClass(character.alignment)}`}
                   >
                     {character.alignment}
-                  </span>
-                )}
-
-                {character.publisher && (
-                  <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-bg/85 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                    {character.publisher}
                   </span>
                 )}
               </div>
 
               {/* Datos de la ficha */}
-              <div className="p-3.5 space-y-1.5 w-full">
+              <div className="space-y-0.5 w-full">
                 <h3 className="font-black text-ink text-sm leading-tight line-clamp-1 group-hover:text-accent transition-colors">
                   {character.name}
                 </h3>
@@ -219,24 +214,24 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   </p>
                 )}
                 {character.species && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-faint line-clamp-1">
+                  <p className="flex items-center justify-center gap-1.5 text-[11px] text-faint line-clamp-1">
                     <Dna className="w-3 h-3 text-accent shrink-0" />
                     {character.species}
                   </p>
                 )}
                 {character.universe && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-faint line-clamp-1">
+                  <p className="flex items-center justify-center gap-1.5 text-[11px] text-faint line-clamp-1">
                     <Globe className="w-3 h-3 text-accent shrink-0" />
                     {character.universe}
                   </p>
                 )}
-                {(character.aliases ?? '') !== '' && (
-                  <p className="flex items-center gap-1.5 text-[10px] text-faint line-clamp-1 pt-0.5 border-t border-line/60">
-                    <Sparkles className="w-3 h-3 text-accent shrink-0" />
-                    {(character.aliases ?? '').split('\n')[0]}
-                  </p>
-                )}
               </div>
+
+              {character.publisher && (
+                <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-raised text-amber-400 border border-amber-500/30">
+                  {character.publisher}
+                </span>
+              )}
             </div>
           ))}
         </div>
