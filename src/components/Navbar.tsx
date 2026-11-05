@@ -34,13 +34,13 @@ import { useUserAvatar } from './ui/UserAvatar';
 
 export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
 
+// Historial vive en el menú del avatar (y en la barra inferior móvil):
+// fuera del navbar para que la barra nunca se sature.
 const NAV_ITEMS = [
   { view: 'inicio', label: 'Inicio', icon: Home },
   { view: 'comics', label: 'Cómics', icon: BookOpen },
   { view: 'personajes', label: 'Personajes', icon: User },
   { view: 'roadmap', label: 'Roadmap', icon: MapIcon },
-  // Historial solo se muestra para usuarios con cuenta (se filtra abajo).
-  { view: 'historial', label: 'Historial', icon: History },
 ] as const;
 
 interface NavbarProps {
@@ -274,16 +274,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               el menú hamburguesa evita que la barra se sature con la versión admin */}
           <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
             {NAV_ITEMS.map((item) => {
-              // El Historial requiere sesión: sin cuenta no se muestra.
-              if (item.view === 'historial' && !user) return null;
-
               const Icon = item.icon;
               const isActive =
                 item.view === 'personajes'
                   ? currentView === 'personajes' || currentView === 'character-detail'
-                  : item.view === 'historial'
-                    ? currentView === 'historial'
-                    : currentView === item.view;
+                  : currentView === item.view;
 
               return (
                 <button
@@ -307,7 +302,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1" ref={searchContainerRef}>
 
           {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleToggleTheme}
@@ -348,10 +343,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Buscar cómic (Ctrl + K)"
               >
                 <Search className="w-4 h-4 text-mute group-hover:text-accent transition-colors" />
-                <span className="text-xs text-mute group-hover:text-mute hidden md:inline">
+                <span className="text-xs text-mute group-hover:text-mute hidden xl:inline">
                   Buscar...
                 </span>
-                <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-bg text-mute border border-line">
+                <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-bg text-mute border border-line">
                   <Command className="w-2.5 h-2.5" /> K
                 </kbd>
               </button>
@@ -456,7 +451,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Zona de usuario: Google / Menú de cuenta */}
-          <div className="relative" ref={userMenuRef}>
+          <div className="relative shrink-0" ref={userMenuRef}>
             {user ? (
               <div>
                 <button
@@ -522,6 +517,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
+                          onNavigate('historial');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent transition-colors"
+                      >
+                        <History className="w-4 h-4" />
+                        Historial de lectura
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
                           onOpenProfile();
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent transition-colors"
@@ -576,7 +581,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {canManageContent && (
             <button
               onClick={onOpenNewComic}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20 active:scale-95"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold whitespace-nowrap transition-all shadow-md shadow-accent/20 active:scale-95"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span className="hidden sm:inline">Nuevo Cómic</span>
@@ -590,7 +595,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative" ref={reportsRef}>
                 <button
                   onClick={() => { setShowReports(v => !v); void loadReports(); }}
-                  className="relative p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line hover:border-accent/40 transition-colors"
+                  className="relative shrink-0 p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line hover:border-accent/40 transition-colors"
                   title="Reportes de enlaces caídos"
                 >
                   <Bell className="w-4 h-4" />
