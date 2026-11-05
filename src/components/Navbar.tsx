@@ -12,7 +12,6 @@ import {
   User,
   UserCircle,
   ChevronDown,
-  Bell,
   Flag,
   CheckCircle,
   XCircle,
@@ -271,9 +270,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </button>
 
-          {/* Links de Navegación completos solo en pantallas grandes: en tablet
-              el menú hamburguesa evita que la barra se sature con la versión admin */}
-          <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
+          {/* Links de Navegación completos solo en pantallas muy anchas (xl):
+              entre lg y xl la barra se satura (2 campanas + buscador + admin)
+              y los items pisaban el menú; abajo de eso existe la barra móvil */}
+          <nav className="hidden xl:flex items-center gap-1.5 sm:gap-2">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -317,7 +317,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <AccentPicker variant="box" />
+            {/* El acento vive en xl+ y en el perfil; en pantallas medianas
+                sobraba y empujaba todo encima del menú */}
+            <div className="hidden xl:block">
+              <AccentPicker variant="box" />
+            </div>
           </div>
 
           {/* Lupa / Input Expandible */}
@@ -602,7 +606,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="relative shrink-0 p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-accent2 border border-line hover:border-accent/40 transition-colors"
                   title="Reportes de enlaces caídos"
                 >
-                  <Bell className="w-4 h-4" />
+                  {/* Bandera (no campana): la campana es la de nuevos tomos */}
+                  <Flag className="w-4 h-4" />
                   {pendingCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent2 text-onaccent text-[9px] font-black flex items-center justify-center">
                       {pendingCount > 9 ? '9+' : pendingCount}
