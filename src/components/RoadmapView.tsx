@@ -289,17 +289,14 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
       </header>
 
       {/* ── Línea de tiempo con efecto foco: se navega con FLECHAS ── */}
-      <div
-        onScroll={handleRailScroll}
-        className="relative overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {/* Flechas de navegación (izq/der) */}
+      <div className="relative">
+        {/* Flechas de navegación — FUERA del scroller para que no se desplacen */}
         <button
           type="button"
           onClick={() => focusCard(Math.max(0, activeIndex - 1))}
           disabled={activeIndex === 0}
           aria-label="Versión anterior"
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -308,11 +305,15 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
           onClick={() => focusCard(Math.min(ROADMAP_VERSIONS.length - 1, activeIndex + 1))}
           disabled={activeIndex === ROADMAP_VERSIONS.length - 1}
           aria-label="Versión siguiente"
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
 
+        <div
+          onScroll={handleRailScroll}
+          className="relative overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
         {/* El padding calc permite centrar la primera y última tarjeta en
             pantallas anchas: 50% del carril menos la mitad de una tarjeta. */}
         <div
@@ -375,7 +376,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                           : 'border-accent/60 shadow-2xl shadow-accent/30')
                       : // Las laterales se ven pequeñas y borrosas para todos;
                         // se lee cada una al enfocarla con flechas o clic.
-                        'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
+                        'scale-[0.9] opacity-60 blur-[5px] saturate-[0.8] ' +
                         (info.complete ? 'border-emerald-500/40' : 'border-line')
                   }`}
                 >
@@ -508,6 +509,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
