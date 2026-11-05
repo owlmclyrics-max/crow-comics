@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
 import { CrowAmbience } from './ui/CrowAmbience';
-import { User, Search, Edit3, Plus, Dna, Globe, ChevronDown } from 'lucide-react';
+import { User, Search, Edit3, Plus, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCharactersContext } from '../context/CharactersContext';
 import { matchesCharacterSearch } from '../lib/comicUtils';
@@ -165,16 +165,18 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-3 gap-y-6 sm:gap-x-4">
           {filteredCharacters.map((character) => (
-            <div
+            <button
               key={character.id}
+              type="button"
               onClick={() => onSelectCharacter(character)}
-              className="group flex flex-col items-center text-center gap-2.5 rounded-3xl border border-line bg-surface p-4 pt-5 hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/25 transition-all duration-300 cursor-pointer hover:-translate-y-1.5"
+              className="group flex flex-col items-center text-center gap-1.5 cursor-pointer focus:outline-none"
+              aria-label={`Ver la ficha de ${character.name}`}
             >
-              {/* Retrato circular estilo reparto (como en capítulos) */}
-              <div className="relative mb-1.5">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg transition-colors duration-300 shadow-lg">
+              {/* Retrato circular puro: sin cajita, la imagen ES el botón */}
+              <div className="relative w-full">
+                <div className="w-full aspect-square rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg transition-colors duration-300 shadow-md group-hover:shadow-xl group-hover:shadow-accent/25">
                   {character.photo_url ? (
                     <img
                       src={character.photo_url}
@@ -184,55 +186,31 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <User className="w-10 h-10 text-faint" />
+                      <User className="w-1/3 h-1/3 text-faint" />
                     </div>
                   )}
                 </div>
                 {/* Rol flotando en el borde del círculo */}
                 {character.alignment && (
                   <span
-                    className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border backdrop-blur-sm shadow-md ${getAlignmentBadgeClass(character.alignment)}`}
+                    className={`absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border backdrop-blur-sm shadow-md ${getAlignmentBadgeClass(character.alignment)}`}
                   >
                     {character.alignment}
                   </span>
                 )}
               </div>
 
-              {/* Datos de la ficha */}
-              <div className="space-y-0.5 w-full">
-                <h3 className="font-black text-ink text-sm leading-tight line-clamp-1 group-hover:text-accent transition-colors">
+              <div className="w-full px-1">
+                <p className="text-xs sm:text-sm font-bold text-ink leading-tight line-clamp-1 group-hover:text-accent transition-colors">
                   {character.name}
-                </h3>
+                </p>
                 {character.name_spanish && (
-                  <p className="text-xs text-accent font-semibold line-clamp-1">
+                  <p className="text-[11px] text-accent font-semibold line-clamp-1">
                     {character.name_spanish}
                   </p>
                 )}
-                {character.real_name && (
-                  <p className="text-[11px] text-mute italic line-clamp-1">
-                    ({character.real_name})
-                  </p>
-                )}
-                {character.species && (
-                  <p className="flex items-center justify-center gap-1.5 text-[11px] text-faint line-clamp-1">
-                    <Dna className="w-3 h-3 text-accent shrink-0" />
-                    {character.species}
-                  </p>
-                )}
-                {character.universe && (
-                  <p className="flex items-center justify-center gap-1.5 text-[11px] text-faint line-clamp-1">
-                    <Globe className="w-3 h-3 text-accent shrink-0" />
-                    {character.universe}
-                  </p>
-                )}
               </div>
-
-              {character.publisher && (
-                <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-raised text-amber-400 border border-amber-500/30">
-                  {character.publisher}
-                </span>
-              )}
-            </div>
+            </button>
           ))}
         </div>
       )}
