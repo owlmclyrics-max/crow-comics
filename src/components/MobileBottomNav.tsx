@@ -32,7 +32,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 md:hidden border-t border-line bg-bg/90 backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-line bg-bg/90 backdrop-blur-xl"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navegación móvil"
     >

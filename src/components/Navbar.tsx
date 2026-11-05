@@ -270,10 +270,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </button>
 
-          {/* Links de Navegación completos solo en pantallas muy anchas (xl):
-              entre lg y xl la barra se satura (2 campanas + buscador + admin)
-              y los items pisaban el menú; abajo de eso existe la barra móvil */}
-          <nav className="hidden xl:flex items-center gap-1.5 sm:gap-2">
+          {/* Links de Navegación desde lg: debajo existe la barra inferior móvil.
+              Las herramientas de admin viven en el menú del avatar para que la
+              barra nunca se desborde encima del menú */}
+          <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -522,6 +522,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
 
                     <div className="p-1.5 space-y-0.5">
+                      {/* Admin: crear cómic vive aquí en pantallas <xl */}
+                      {canManageContent && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenNewComic();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-accent hover:bg-accent/10 transition-colors xl:hidden"
+                        >
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                          Nuevo Cómic
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
@@ -587,12 +600,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {canManageContent && (
+            /* Botón directo solo en XL+ (ahí hay espacio de sobra); en
+               pantallas más chicas vive en el menú del avatar y no satura */
             <button
               onClick={onOpenNewComic}
-              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold whitespace-nowrap transition-all shadow-md shadow-accent/20 active:scale-95"
+              className="hidden xl:inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold whitespace-nowrap transition-all shadow-md shadow-accent/20 active:scale-95"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span className="hidden sm:inline">Nuevo Cómic</span>
+              <span>Nuevo Cómic</span>
             </button>
           )}
 
