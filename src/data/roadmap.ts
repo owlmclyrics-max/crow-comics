@@ -48,7 +48,7 @@ export const ROADMAP_VERSIONS: RoadmapVersionWithTasks[] = [
     icon: 'map',
     tasks: [
       { id: 'v05-1', label: 'Migración a Cloudflare Pages completada', done: true },
-      { id: 'v05-2', label: 'Dominio propio apuntando a pages.dev', done: true },
+      { id: 'v05-2', label: 'Dominio propio apuntando a pages.dev', done: false },
       { id: 'v05-3', label: 'PWA instalable con lectura offline', done: false },
       { id: 'v05-4', label: 'Notificaciones de nuevos tomos', done: false },
     ],
