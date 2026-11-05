@@ -53,11 +53,12 @@ const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) =
 };
 
 /**
- * Modal para elegir enemigos del wiki en MODO SELECCIÓN: se marcan varios
- * (✓) tocándolos en la lista —bucando por nombre, español, real o alias,
- * sin acentos— y un botón "Agregar (N)" los añade todos de golpe.
- * También tiene modo de escritura a mano con coincidencias en vivo y
- * creación de ficha rápida cuando nadie coincide.
+ * Modal para elegir enemigos del wiki. Tres caminos, todos con confirmación:
+ * 1) MARCAR varios en la lista (✓) y botón "Agregar (N)".
+ * 2) "Añadir en lista": pega/escribe un nombre por línea, se resuelven contra
+ *    el wiki (✓ existentes, "ficha nueva" los desconocidos) y se agregan juntos.
+ * 3) Ficha rápida individual cuando nadie coincide.
+ * Búsqueda global: nombre inglés, español, real y cada alias, sin acentos.
  */
 export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   isOpen,
@@ -72,7 +73,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  // Selección marcada: se confirma todo junto con "Agregar".
+  // Selección marcada en la lista: se confirma todo junto con "Agregar".
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Cada vez que abre, todo empieza limpio.
@@ -102,7 +103,6 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
     const list = characters.filter((c) => c.id !== excludeId);
     if (!q) return list.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Buscar en TODOS los nombres y alias disponibles.
     const matches = list.filter((c) => {
       const haystacks = [c.name, c.name_spanish, c.real_name, ...lines(c.aliases)];
       return haystacks.some((value) => accentless(value ?? '').includes(q));
@@ -119,41 +119,61 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
     return matches.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
   }, [characters, excludeId, query]);
 
-  // ── Modo manual: coincidencias en vivo + ficha rápida ──
-  const manualQuery = manualName.trim();
-  const manualMatches = useMemo(() => {
-    const q = accentless(manualQuery);
-    if (!q) return [];
-    return characters
-      .filter((c) => c.id !== excludeId && !isAlreadyEnemy(c))
-      .filter((c) => {
-        const haystacks = [c.name, c.name_spanish, c.real_name, ...lines(c.aliases)];
-        return haystacks.some((value) => accentless(value ?? '').includes(q));
-      })
-      .slice(0, 4);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characters, excludeId, manualQuery, existingEnemies]);
+  // ── Modo lista: un nombre por línea, resuelto contra el wiki ──
+  const manualLines = useMemo(() => {
+    const seen = new Set<string>();
+    return manualName
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => {
+        if (!line) return false;
+        const key = accentless(line);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [manualName]);
 
-  // ¿Lo tecleado ya ES una ficha del wiki? Entonces no ofrecer crear duplicado.
-  const exactWikiMatch = useMemo(
-    () =>
-      manualQuery
-        ? characters.find((c) => c.id !== excludeId && characterNameMatches(c, manualQuery))
-        : undefined,
-    [characters, excludeId, manualQuery],
-  );
+  const manualResolution = useMemo(() => {
+    const self = characters.find((c) => c.id === excludeId);
+    const resolved: { line: string; character: Character }[] = [];
+    const missing: string[] = [];
+    manualLines.forEach((line) => {
+      // La línea que coincide consigo mismo no cuenta (nadie es su propio enemigo).
+      if (self && characterNameMatches(self, line)) return;
+      const match = characters.find(
+        (c) => c.id !== excludeId && characterNameMatches(c, line),
+      );
+      if (match) resolved.push({ line, character: match });
+      else missing.push(line);
+    });
+    return { resolved, missing };
+  }, [manualLines, characters, excludeId]);
 
-  const createQuickCharacter = async () => {
-    if (!manualQuery || isCreating) return;
+  const manualTotal = manualResolution.resolved.length + manualResolution.missing.length;
+
+  /** Agrega TODA la lista: fichas nuevas para los desconocidos + los del wiki. */
+  const handleBulkAdd = async () => {
+    if (isCreating || manualTotal === 0) return;
     setIsCreating(true);
-    const result = await addCharacter({ name: manualQuery });
-    setIsCreating(false);
-    if (result.success) {
-      onPick(manualQuery);
+    try {
+      for (const name of manualResolution.missing) {
+        const result = await addCharacter({ name });
+        if (result.success) {
+          onPick(name);
+        } else {
+          showToast(`No se pudo crear la ficha de "${name}"`, 'error');
+        }
+      }
+      manualResolution.resolved
+        .filter(({ character }) => !isAlreadyEnemy(character))
+        .forEach(({ character }) => onPick(character.name));
+      showToast(`Lista agregada: ${manualTotal} enemigos`, 'success');
       setManualName('');
-      showToast(`Ficha rápida de "${manualQuery}" creada y agregada`, 'success');
-    } else {
-      showToast(result.error ?? 'No se pudo crear la ficha rápida', 'error');
+      setManualMode(false);
+      onClose();
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -177,7 +197,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-black text-ink">Elegir enemigos del wiki</h3>
-            <p className="text-[11px] text-mute">Márcalos todos y toca Agregar</p>
+            <p className="text-[11px] text-mute">Márcalos o pégalos en lista, luego Agregar</p>
           </div>
         </div>
         <button
@@ -190,7 +210,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
         </button>
       </div>
 
-      {/* Buscador + botonsito del modo manual */}
+      {/* Buscador + botonsito del modo lista */}
       <div className="shrink-0 px-5 py-3 border-b border-line space-y-2">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
@@ -214,100 +234,86 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
             }`}
           >
             <Pencil className="w-3 h-3" />
-            {manualMode ? 'Ocultar escritura' : 'Escribir a mano'}
+            {manualMode ? 'Ocultar lista' : 'Añadir en lista'}
           </button>
         </div>
 
-        {/* Modo manual: texto libre con coincidencias en vivo + ficha rápida */}
+        {/* Modo lista: un nombre por línea → resuelto contra el wiki */}
         {manualMode && (
           <div className="rounded-xl border border-line bg-bg/60 p-3 space-y-2 animate-fade-in">
-            <input
-              type="text"
+            <textarea
               value={manualName}
               onChange={(event) => setManualName(event.target.value)}
-              placeholder="Nombre del enemigo..."
-              className="w-full px-3 py-2 rounded-lg bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
+              rows={3}
+              placeholder={'Un nombre por línea:\nYelena Belova\nRed Guardian\nCrimson Dynamo'}
+              className="w-full px-3 py-2 rounded-lg bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint resize-none leading-relaxed"
             />
 
-            {manualQuery && (
+            {manualLines.length > 0 && (
               <>
                 <p className="text-[9px] font-black uppercase tracking-widest text-faint">
-                  Coincidencias del wiki — toca para marcar
+                  Tu lista, resuelta contra el wiki
                 </p>
-                {manualMatches.length > 0 ? (
-                  <div className="space-y-1">
-                    {manualMatches.map((c) => {
-                      const marked = selectedIds.has(c.id);
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => toggleSelected(c)}
-                          className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg border transition-colors ${
-                            marked
-                              ? 'bg-accent/10 border-accent/50'
-                              : 'border-transparent hover:bg-raised group/match'
-                          }`}
-                        >
-                          <div
-                            className={`w-8 h-8 rounded-full overflow-hidden border-2 bg-bg shrink-0 transition-colors ${
-                              marked ? 'border-accent' : 'border-line'
-                            }`}
-                          >
-                            {c.photo_url ? (
-                              <img
-                                src={c.photo_url}
-                                alt={c.name}
-                                loading="lazy"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <User className="w-3.5 h-3.5 text-faint" />
-                              </div>
-                            )}
+                <div className="max-h-36 overflow-y-auto space-y-1">
+                  {manualResolution.resolved.map(({ line, character }) => (
+                    <div
+                      key={line}
+                      className="flex items-center gap-2 text-[11px] p-1.5 rounded-lg bg-raised/60"
+                    >
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-line bg-bg shrink-0">
+                        {character.photo_url ? (
+                          <img
+                            src={character.photo_url}
+                            alt={character.name}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User className="w-3.5 h-3.5 text-faint" />
                           </div>
-                          <p className="flex-1 min-w-0 text-left text-xs font-bold text-ink truncate">
-                            {c.name}
-                            {c.name_spanish && (
-                              <span className="text-faint font-semibold"> — {c.name_spanish}</span>
-                            )}
-                          </p>
-                          {marked ? (
-                            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                          ) : (
-                            <Plus className="w-4 h-4 text-accent shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-faint">Sin coincidencias en el wiki.</p>
-                )}
+                        )}
+                      </div>
+                      <span className="text-mute truncate max-w-24">{line}</span>
+                      <span className="text-faint shrink-0">→</span>
+                      <span className="text-accent font-bold truncate">
+                        {character.name}
+                        {character.name_spanish ? ` — ${character.name_spanish}` : ''}
+                      </span>
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-auto" />
+                    </div>
+                  ))}
+                  {manualResolution.missing.map((name) => (
+                    <div
+                      key={name}
+                      className="flex items-center gap-2 text-[11px] p-1.5 rounded-lg bg-raised/60"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span className="text-ink font-semibold truncate">"{name}"</span>
+                      <span className="text-faint ml-auto shrink-0">se creará ficha nueva</span>
+                    </div>
+                  ))}
+                </div>
 
-                {/* Ficha rápida: solo si NO es ya una ficha del wiki */}
-                {exactWikiMatch ? (
-                  <p className="text-[10px] text-mute">
-                    Ya existe una ficha llamada así — márcala arriba ☝️
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void createQuickCharacter()}
-                    disabled={isCreating}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent/15 border border-accent/40 text-accent text-[11px] font-bold hover:bg-accent hover:text-onaccent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isCreating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Plus className="w-3.5 h-3.5" />
-                    )}
-                    {isCreating
-                      ? 'Creando ficha...'
-                      : `Crear ficha rápida: "${manualQuery}"`}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => void handleBulkAdd()}
+                  disabled={isCreating}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-onaccent text-[11px] font-bold hover:bg-accent2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  {isCreating
+                    ? 'Agregando lista...'
+                    : `Agregar lista (${manualResolution.resolved.length} del wiki${
+                        manualResolution.missing.length
+                          ? ` + ${manualResolution.missing.length} nuevas`
+                          : ''
+                      })`}
+                </button>
               </>
             )}
           </div>
