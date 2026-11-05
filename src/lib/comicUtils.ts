@@ -37,10 +37,23 @@ export const accentless = (value: string): string =>
 export const isSameCharacterName = (a: string, b: string): boolean =>
   Boolean(a) && Boolean(b) && accentless(a) === accentless(b);
 
-/** Coincide un nombre (libre) con el nombre inglés o español del personaje. */
-export const characterNameMatches = (character: Character, name: string): boolean =>
-  isSameCharacterName(character.name, name) ||
-  (!!character.name_spanish && isSameCharacterName(character.name_spanish, name));
+/**
+ * Coincide un nombre (libre) con CUALQUIER nombre del personaje: inglés,
+ * español, nombre real o cada alias — exacto, sin acentos ni mayúsculas.
+ * Así "Yelena Belova" encuentra la ficha aunque se llame "White Widow",
+ * si "Yelena Belova" figura entre sus alias.
+ */
+export const characterNameMatches = (character: Character, name: string): boolean => {
+  const target = accentless(name);
+  if (!target) return false;
+  const names = [
+    character.name,
+    character.name_spanish,
+    character.real_name,
+    ...(character.aliases ?? '').split('\n'),
+  ];
+  return names.some((value) => Boolean(value) && accentless(value ?? '') === target);
+};
 
 /**
  * Búsqueda del navbar: título, título original, guionista, editorial y maquetador.

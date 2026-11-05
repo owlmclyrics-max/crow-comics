@@ -278,7 +278,9 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                       <span className="text-faint shrink-0">→</span>
                       <span className="text-accent font-bold truncate">
                         {character.name}
-                        {character.name_spanish ? ` — ${character.name_spanish}` : ''}
+                        {accentless(character.name) !== accentless(line) && (
+                          <span className="text-faint font-normal"> (por alias)</span>
+                        )}
                       </span>
                       <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-auto" />
                     </div>
