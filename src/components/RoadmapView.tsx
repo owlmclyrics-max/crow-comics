@@ -309,17 +309,27 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                 }}
                 className={`group relative shrink-0 w-[19.5rem] flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
               >
-                {/* Conector: punto + tramo de línea hacia la siguiente tarjeta */}
+                {/* Conector: punto navegable + tramo de línea hacia la siguiente tarjeta */}
                 <div className="flex items-center gap-2 min-h-[1rem]">
-                  <span
-                    className={`rounded-full shrink-0 transition-all duration-500 ${
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (locked) {
+                        showToast('🔒 Esta versión todavía es secreto — solo el admin puede verla');
+                        return;
+                      }
+                      focusCard(index);
+                    }}
+                    title={`Ir a ${version.version}`}
+                    aria-label={`Ir a la versión ${version.version}`}
+                    className={`rounded-full shrink-0 cursor-pointer hover:scale-125 transition-all duration-500 ${
                       isActive ? 'w-4 h-4 ring-4' : 'w-2.5 h-2.5 ring-2'
                     } ${
                       info.complete
                         ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
                         : 'bg-accent ring-accent/15 shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/50%)]'
                     }`}
-                    aria-hidden="true"
                   />
                   {index < ROADMAP_VERSIONS.length - 1 && (
                     <span
@@ -339,8 +349,12 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                         (info.complete
                           ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
                           : 'border-accent/60 shadow-2xl shadow-accent/30')
-                      : 'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
-                        (info.complete ? 'border-emerald-500/40' : 'border-line')
+                      : isAdmin
+                        ? // Admin: laterales más pequeñas pero SIEMPRE legibles (sin blur)
+                          'scale-[0.92] opacity-85 blur-0 ' +
+                          (info.complete ? 'border-emerald-500/40' : 'border-line')
+                        : 'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
+                          (info.complete ? 'border-emerald-500/40' : 'border-line')
                   }`}
                 >
                   {/* Cabecera de versión */}
