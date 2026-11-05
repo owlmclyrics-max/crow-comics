@@ -86,17 +86,22 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
   const [progress, setProgress] = useState<ProgressMap>((): ProgressMap => loadProgress());
 
   // ── Efecto foco: qué tarjeta está centrada en el carril ──
-  const railRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null); // contenedor de las tarjetas
   const [activeIndex, setActiveIndex] = useState(0);
+
+  /** El carril scrolleable es el padre del track de tarjetas. */
+  const getRail = (): HTMLElement | null =>
+    (trackRef.current?.parentElement as HTMLElement | null) ?? null;
 
   // Índice de la versión en construcción (primera incompleta al cargar).
   useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
+    const rail = getRail();
+    const track = trackRef.current;
+    if (!rail || !track) return;
     const initial = buildVersionProgress(loadProgress());
     const pending = ROADMAP_VERSIONS.findIndex((v) => !initial[v.version]?.complete);
     const target = pending === -1 ? ROADMAP_VERSIONS.length - 1 : pending;
-    const el = rail.children[target] as HTMLElement | undefined;
+    const el = track.children[target] as HTMLElement | undefined;
     if (el) rail.scrollLeft = Math.max(0, el.offsetLeft + el.offsetWidth / 2 - rail.clientWidth / 2);
     setActiveIndex(target);
     // Intencionalmente una sola vez al montar.
@@ -104,12 +109,13 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
   }, []);
 
   const handleRailScroll = () => {
-    const rail = railRef.current;
-    if (!rail) return;
+    const track = trackRef.current;
+    const rail = getRail();
+    if (!track || !rail) return;
     const railCenter = rail.scrollLeft + rail.clientWidth / 2;
     let best = 0;
     let bestDist = Number.POSITIVE_INFINITY;
-    Array.from(rail.children).forEach((child, i) => {
+    Array.from(track.children).forEach((child, i) => {
       const el = child as HTMLElement;
       const center = el.offsetLeft + el.offsetWidth / 2;
       const dist = Math.abs(center - railCenter);
@@ -123,10 +129,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
   /** Centra una tarjeta con animación suave. */
   const focusCard = (index: number) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const el = rail.children[index] as HTMLElement | undefined;
-    if (!el) return;
+    const rail = getRail();
+    const el = trackRef.current?.children[index] as HTMLElement | undefined;
+    if (!rail || !el) return;
     rail.scrollTo({
       left: el.offsetLeft + el.offsetWidth / 2 - rail.clientWidth / 2,
       behavior: 'smooth',
@@ -283,11 +288,15 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
       {/* ── Línea de tiempo con efecto foco (scroll libre: el foco sigue al centro) ── */}
       <div
-        ref={railRef}
         onScroll={handleRailScroll}
         className="relative overflow-x-auto pb-4 [scrollbar-width:thin]"
       >
-        <div className="flex gap-5 min-w-max px-1 py-2 items-stretch">
+        {/* El padding calc permite centrar la primera y última tarjeta en
+            pantallas anchas: 50% del carril menos la mitad de una tarjeta. */}
+        <div
+          ref={trackRef}
+          className="flex gap-5 min-w-max py-2 items-stretch ps-[calc(50%-9.75rem)] pe-[calc(50%-9.75rem)]"
+        >
           {ROADMAP_VERSIONS.map((version, index) => {
             const Icon = ICONS[version.icon] ?? Rocket;
             const info = versionProgress[version.version] ?? { checked: 0, total: version.tasks.length, complete: false };
