@@ -533,7 +533,7 @@ export const App: React.FC = () => {
         currentView={currentView}
         onNavigate={handleNavigate}
         onOpenProfile={() => setCurrentView('profile')}
-        onOpenMenu={() => window.dispatchEvent(new Event('crow:toggle-mobile-nav'))}
+        onOpenNewComic={handleOpenNewComic}
       />
       <ScrollToTop />
         </>
