@@ -284,8 +284,13 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
                         {character.name}
                       </p>
                       {character.name_spanish && (
-                        <p className="text-[9px] text-faint leading-tight line-clamp-1">
+                        <p className="text-[9px] text-accent2 leading-tight line-clamp-1">
                           {character.name_spanish}
+                        </p>
+                      )}
+                      {character.real_name && (
+                        <p className="text-[9px] text-faint leading-tight line-clamp-1">
+                          {character.real_name}
                         </p>
                       )}
                     </div>
