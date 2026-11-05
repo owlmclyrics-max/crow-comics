@@ -15,6 +15,8 @@ import {
   User,
   Users,
   Lock,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -257,7 +259,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
               </h2>
               <p className="text-xs sm:text-sm text-mute max-w-xl">
                 El mapa de campaña de Crow Comics: cada tarjeta es una versión.
-                Desliza con libertad — la tarjeta del centro toma el foco y ahí
+                Navega con las flechas — la tarjeta centrada toma el foco y ahí
                 se marcan las casillas. Tu progreso se guarda en este navegador.
               </p>
             </div>
@@ -286,11 +288,31 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* ── Línea de tiempo con efecto foco (scroll libre: el foco sigue al centro) ── */}
+      {/* ── Línea de tiempo con efecto foco: se navega con FLECHAS ── */}
       <div
         onScroll={handleRailScroll}
-        className="relative overflow-x-auto pb-4 [scrollbar-width:thin]"
+        className="relative overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
+        {/* Flechas de navegación (izq/der) */}
+        <button
+          type="button"
+          onClick={() => focusCard(Math.max(0, activeIndex - 1))}
+          disabled={activeIndex === 0}
+          aria-label="Versión anterior"
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => focusCard(Math.min(ROADMAP_VERSIONS.length - 1, activeIndex + 1))}
+          disabled={activeIndex === ROADMAP_VERSIONS.length - 1}
+          aria-label="Versión siguiente"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
         {/* El padding calc permite centrar la primera y última tarjeta en
             pantallas anchas: 50% del carril menos la mitad de una tarjeta. */}
         <div
@@ -351,12 +373,10 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                         (info.complete
                           ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
                           : 'border-accent/60 shadow-2xl shadow-accent/30')
-                      : isAdmin
-                        ? // Admin: laterales más pequeñas pero SIEMPRE legibles (sin blur)
-                          'scale-[0.92] opacity-85 blur-0 ' +
-                          (info.complete ? 'border-emerald-500/40' : 'border-line')
-                        : 'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
-                          (info.complete ? 'border-emerald-500/40' : 'border-line')
+                      : // Las laterales se ven pequeñas y borrosas para todos;
+                        // se lee cada una al enfocarla con flechas o clic.
+                        'scale-[0.9] opacity-60 blur-[2px] saturate-[0.8] ' +
+                        (info.complete ? 'border-emerald-500/40' : 'border-line')
                   }`}
                 >
                   {/* Cabecera de versión */}
