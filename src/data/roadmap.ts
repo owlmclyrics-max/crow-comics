@@ -60,6 +60,7 @@ export const ROADMAP_VERSIONS: RoadmapVersionWithTasks[] = [
     icon: 'book',
     tasks: [
       { id: 'v06-5', label: 'Solicitudes de cómics: la comunidad pide títulos y vota (prioridad)', done: false },
+      { id: 'v06-6', label: 'Continuar leyendo en el inicio: retoma el último tomo con tu marcador manual', done: false },
       { id: 'v06-1', label: 'Modo lectura inmersivo: visor online a pantalla completa con la navbar oculta (tipo visor de Google)', done: false },
       { id: 'v06-2', label: 'Modos de lectura: horizontal, webtoon continuo y doble página', done: false },
       { id: 'v06-3', label: 'Zoom, brillo y modo noche dentro del lector', done: false },
