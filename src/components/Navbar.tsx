@@ -27,6 +27,7 @@ import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { useTheme } from '../context/ThemeContext';
 import { AccentPicker } from './ui/AccentPicker';
+import { NewChaptersBell } from './NewChaptersBell';
 import { filterComicsByQuery } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
 import { GoogleIcon } from './ui/GoogleIcon';
@@ -298,8 +299,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
         </div>
 
-        {/* Zona Derecha: Barra de Búsqueda Expandible + Panel Admin */}
+        {/* Zona Derecha: Campana de nuevos tomos + Búsqueda + Panel Admin */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1" ref={searchContainerRef}>
+
+          {/* Campana: capítulos subidos desde tu última visita (todos los usuarios) */}
+          <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
 
           {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
           <div className="flex items-center gap-2 shrink-0">

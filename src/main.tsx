@@ -8,6 +8,16 @@ import { CharactersProvider } from './context/CharactersContext'
 import { FavoritesProvider } from './context/FavoritesContext'
 import { ThemeProvider } from './context/ThemeContext'
 
+// PWA: registro del service worker (solo producción; en dev estorbaría).
+// Con esto la app es instalable y abre offline con el app shell cacheado.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
+      // Sin SW la web sigue funcionando normal; solo pierde el modo offline.
+    });
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
