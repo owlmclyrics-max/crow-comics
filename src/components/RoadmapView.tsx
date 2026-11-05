@@ -140,6 +140,14 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
     });
   };
 
+  /** Navegación por flechas: avanza/retrocede una versión con feedback inmediato. */
+  const go = (dir: 1 | -1) => {
+    const next = Math.min(ROADMAP_VERSIONS.length - 1, Math.max(0, activeIndex + dir));
+    if (next === activeIndex) return;
+    setActiveIndex(next); // respuesta instantánea del foco, sin esperar el scroll
+    focusCard(next);
+  };
+
   // Barras de progreso y contadores derivados del estado.
   const versionProgress = useMemo<Record<string, VersionProgress>>(
     () => buildVersionProgress(progress),
@@ -290,25 +298,35 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
       {/* ── Línea de tiempo con efecto foco: se navega con FLECHAS ── */}
       <div className="relative">
-        {/* Flechas de navegación — FUERA del scroller para que no se desplacen */}
-        <button
-          type="button"
-          onClick={() => focusCard(Math.max(0, activeIndex - 1))}
-          disabled={activeIndex === 0}
-          aria-label="Versión anterior"
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => focusCard(Math.min(ROADMAP_VERSIONS.length - 1, activeIndex + 1))}
-          disabled={activeIndex === ROADMAP_VERSIONS.length - 1}
-          aria-label="Versión siguiente"
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface/90 backdrop-blur border border-line hover:border-accent/50 text-mute hover:text-accent shadow-xl flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        {/* Controles de navegación (fuera del carril: nunca tapan tarjetas) */}
+        <div className="flex items-center justify-between pb-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-faint">
+            Navega las versiones
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label="Versión anterior"
+              title="Versión anterior"
+              className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-mono font-black text-mute tabular-nums w-12 text-center">
+              {activeIndex + 1}/{ROADMAP_VERSIONS.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label="Versión siguiente"
+              title="Versión siguiente"
+              className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
         <div
           onScroll={handleRailScroll}
