@@ -1,10 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
-import { X, Search, User, AlertCircle, Check } from 'lucide-react';
+import { X, Search, User, AlertCircle, Check, Layers } from 'lucide-react';
 import { useCharactersContext } from '../context/CharactersContext';
-import { fetchChapterCharacterIds, setChapterCharacterAssigned } from '../lib/chapterCharacters';
+import { useComics } from '../context/ComicsContext';
+import {
+  fetchChapterCharacterIds,
+  setChapterCharacterAssigned,
+  assignCharactersToChapters,
+} from '../lib/chapterCharacters';
 import { matchesCharacterSearch } from '../lib/comicUtils';
 import { Modal } from './ui/Modal';
+import { showToast } from './ui/Toast';
 
 interface ChapterCharactersModalProps {
   isOpen: boolean;
@@ -82,6 +88,40 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
     matchesCharacterSearch(character, searchTerm),
   );
 
+  // ── Aplicar a toda la serie: localiza el cómic de este tomo ──
+  const { comics } = useComics();
+  const parentComic = useMemo(
+    () => comics.find((comic) => (comic.chapters ?? []).some((ch) => ch.id === chapterId)),
+    [comics, chapterId],
+  );
+  const siblingChapterIds = useMemo(
+    () => (parentComic?.chapters ?? []).map((ch) => ch.id),
+    [parentComic],
+  );
+  const [isBulkApplying, setIsBulkApplying] = useState(false);
+
+  const canApplyToSeries = Boolean(
+    parentComic && siblingChapterIds.length > 1 && assignedCharacters.length > 0,
+  );
+
+  const handleApplyToSeries = async () => {
+    if (!parentComic || isBulkApplying || assignedIds.length === 0) return;
+    setIsBulkApplying(true);
+    setError(null);
+    try {
+      await assignCharactersToChapters(siblingChapterIds, assignedIds);
+      showToast(
+        `Aplicado a los ${siblingChapterIds.length} tomos de "${parentComic.title}"`,
+        'success',
+      );
+    } catch (err: unknown) {
+      console.error('Error aplicando a toda la serie:', err);
+      setError('No se pudo aplicar a toda la serie');
+    } finally {
+      setIsBulkApplying(false);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg">
       {/* Header */}
@@ -129,9 +169,23 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
         {/* Asignados: fila horizontal estilo reparto */}
         {assignedCharacters.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-mute">
-              Asignados ({assignedCharacters.length})
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-mute">
+                Asignados ({assignedCharacters.length})
+              </h3>
+              {canApplyToSeries && (
+                <button
+                  type="button"
+                  onClick={() => void handleApplyToSeries()}
+                  disabled={isBulkApplying}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/15 border border-accent/40 text-accent text-[10px] font-bold hover:bg-accent hover:text-onaccent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={`Asigna estos ${assignedCharacters.length} personajes a los ${siblingChapterIds.length} tomos de la serie`}
+                >
+                  <Layers className="w-3 h-3" />
+                  {isBulkApplying ? 'Aplicando...' : `Aplicar a toda la serie (${siblingChapterIds.length})`}
+                </button>
+              )}
+            </div>
             <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {assignedCharacters.map((character) => (
                 <button
