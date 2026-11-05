@@ -22,15 +22,17 @@ import {
 import {
   ROADMAP_VERSIONS,
   type RoadmapTask,
+  type RoadmapVersionWithTasks,
 } from '../data/roadmap';
 import { showToast } from './ui/Toast';
 import { useAuth } from '../context/AuthContext';
 
 // ============================================================================
 // VISTA: ROADMAP INTERACTIVO
-// Línea de tiempo horizontal con EFECTO FOCO: la versión que se está
-// trabajando se muestra grande y nítida al centro; las laterales se ven
-// más pequeñas, atenuadas y con blur. Tocar una tarjeta lateral la centra.
+// ADMIN: línea de tiempo con EFECTO FOCO — la versión centrada se ve grande
+// y nítida; las laterales, pequeñas y con blur. Se navega con flechas
+// (botones), con los punticos o con clic en la tarjeta lateral.
+// USUARIO: solo ve la versión en construcción y cómo va avanzando.
 // El progreso (checkboxes) se persiste en localStorage y sobrevive
 // recargas: clave única por tarea con fallback al valor `done` del dato.
 // ============================================================================
@@ -87,7 +89,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
   const { isAdmin } = useAuth();
   const [progress, setProgress] = useState<ProgressMap>((): ProgressMap => loadProgress());
 
-  // ── Efecto foco: qué tarjeta está centrada en el carril ──
+  // ── Efecto foco: qué tarjeta está centrada en el carril (solo admin) ──
   const trackRef = useRef<HTMLDivElement>(null); // contenedor de las tarjetas
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -97,6 +99,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
   // Índice de la versión en construcción (primera incompleta al cargar).
   useEffect(() => {
+    if (!isAdmin) return;
     const rail = getRail();
     const track = trackRef.current;
     if (!rail || !track) return;
@@ -108,7 +111,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
     setActiveIndex(target);
     // Intencionalmente una sola vez al montar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAdmin]);
 
   const handleRailScroll = () => {
     const track = trackRef.current;
@@ -171,12 +174,12 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
     [versionProgress],
   );
 
-  // Versión "en construcción": la primera incompleta. Los usuarios normales
-  // solo ven en detalle esta y las completadas; las futuras quedan en secreto.
-  const currentVersionIndex = useMemo(
-    () => ROADMAP_VERSIONS.findIndex((v) => !versionProgress[v.version]?.complete),
-    [versionProgress],
-  );
+  // Versión "en construcción": la primera incompleta. Es la ÚNICA que ve el
+  // usuario normal; si todo está completo, se muestra la última.
+  const currentVersionIndex = useMemo(() => {
+    const pending = ROADMAP_VERSIONS.findIndex((v) => !versionProgress[v.version]?.complete);
+    return pending === -1 ? ROADMAP_VERSIONS.length - 1 : pending;
+  }, [versionProgress]);
 
   const toggleTask = (taskId: string) => {
     setProgress((prev) => {
@@ -224,6 +227,211 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
     showToast('Roadmap exportado como JSON');
   };
 
+  /** Tarjeta de una versión — reutilizada por el timeline (admin) y la vista
+      de usuario. `showRail` activa conector + navegación + efecto foco. */
+  const renderTimelineCard = (
+    version: RoadmapVersionWithTasks,
+    index: number,
+    isActive: boolean,
+    showRail: boolean,
+  ) => {
+    const Icon = ICONS[version.icon] ?? Rocket;
+    const info = versionProgress[version.version] ?? {
+      checked: 0,
+      total: version.tasks.length,
+      complete: false,
+    };
+    const percent = info.total ? Math.round((info.checked / info.total) * 100) : 0;
+    const isFuture = !info.complete && index !== currentVersionIndex;
+    // Los usuarios normales no pueden leer versiones futuras; el admin ve todo.
+    const locked = isFuture && !isAdmin;
+
+    return (
+      <div
+        key={version.version}
+        onClick={() => {
+          if (showRail && !isActive) focusCard(index);
+        }}
+        className={`relative ${
+          showRail
+            ? `shrink-0 w-[19.5rem] flex flex-col ${isActive ? '' : 'cursor-pointer'}`
+            : 'mx-auto w-full max-w-lg'
+        }`}
+      >
+        {/* Conector: punto navegable + tramo de línea hacia la siguiente tarjeta */}
+        {showRail && (
+          <div className="flex items-center gap-2 min-h-[1rem]">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                focusCard(index);
+              }}
+              title={`Ir a ${version.version}`}
+              aria-label={`Ir a la versión ${version.version}`}
+              className={`rounded-full shrink-0 cursor-pointer hover:scale-125 transition-all duration-500 ${
+                isActive ? 'w-4 h-4 ring-4' : 'w-2.5 h-2.5 ring-2'
+              } ${
+                info.complete
+                  ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
+                  : 'bg-accent ring-accent/15 shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/50%)]'
+              }`}
+            />
+            {index < ROADMAP_VERSIONS.length - 1 && (
+              <span
+                className={`flex-1 rounded-full transition-colors duration-500 ${
+                  isActive ? 'h-0.5 bg-gradient-to-r from-accent to-accent2/60' : 'h-0.5 bg-line'
+                }`}
+                aria-hidden="true"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Tarjeta de versión (enfocada: grande y nítida / lateral: pequeña y borrosa) */}
+        <article
+          className={`mt-3 flex-1 rounded-3xl border overflow-hidden bg-surface origin-center transition-all duration-500 ease-out ${
+            isActive
+              ? 'scale-100 opacity-100 blur-0 saturate-100 ' +
+                (info.complete
+                  ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
+                  : 'border-accent/60 shadow-2xl shadow-accent/30')
+              : // Las laterales se ven pequeñas y borrosas para todos;
+                // se lee cada una al enfocarla con flechas o clic.
+                'scale-[0.9] opacity-60 blur-[5px] saturate-[0.8] ' +
+                (info.complete ? 'border-emerald-500/40' : 'border-line')
+          }`}
+        >
+          {/* Cabecera de versión */}
+          <div className={`relative p-4 border-b ${info.complete ? 'border-emerald-500/30' : 'border-line'}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                    info.complete
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : 'bg-accent/10 text-accent border-accent/30'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </span>
+                <span className={`font-black text-ink font-mono tracking-tight ${isActive ? 'text-xl' : 'text-lg'}`}>
+                  {version.version}
+                </span>
+              </div>
+
+              {/* Badge cuando la fase llega al 100% */}
+              {info.complete ? (
+                <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.35)]">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Completada ✓
+                </span>
+              ) : isActive ? (
+                <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-accent/15 text-accent border border-accent/40 flex items-center gap-1 animate-pulse">
+                  En construcción
+                </span>
+              ) : null}
+            </div>
+
+            <h3 className="mt-2.5 text-sm font-bold text-ink leading-tight">{version.title}</h3>
+            <p className="text-[11px] text-mute italic mt-0.5">{version.subtitle}</p>
+
+            {/* Mini-progreso de la versión */}
+            <div className="mt-3 flex items-center gap-2.5">
+              <div className="flex-1 h-1.5 rounded-full bg-raised overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    info.complete
+                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                      : 'bg-accent'
+                  }`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <span
+                className={`text-[10px] font-black tabular-nums ${
+                  info.complete ? 'text-emerald-400' : 'text-mute'
+                }`}
+              >
+                {info.checked}/{info.total}
+              </span>
+            </div>
+          </div>
+
+          {/* Lista de tareas con checkboxes */}
+          <ul className="divide-y divide-line">
+            {version.tasks.map((task) => {
+              const checked = isTaskChecked(task, progress);
+              return (
+                <li key={task.id}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={checked}
+                    onClick={() => {
+                      if (locked) return;
+                      // Admin puede marcar en cualquier tarjeta; usuarios solo en la enfocada.
+                      if (isActive || isAdmin) toggleTask(task.id);
+                    }}
+                    className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
+                      checked ? 'bg-emerald-500/[0.06]' : 'hover:bg-raised/50'
+                    } ${info.complete ? 'hover:bg-emerald-500/[0.08]' : ''}`}
+                  >
+                    {checked ? (
+                      <CheckCircle2
+                        className={`w-5 h-5 mt-px shrink-0 transition-colors ${
+                          info.complete
+                            ? 'text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.6)]'
+                            : 'text-accent'
+                        }`}
+                        strokeWidth={2.4}
+                      />
+                    ) : (
+                      <Circle className="w-5 h-5 mt-px shrink-0 text-faint hover:text-accent transition-colors" />
+                    )}
+                    <span
+                      className={`text-[13px] leading-snug font-medium transition-colors ${
+                        checked
+                          ? 'text-ink line-through decoration-accent/40 decoration-2'
+                          : 'text-mute'
+                      }`}
+                    >
+                      {task.label}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Pie de tarjeta */}
+          <div className={`px-4 py-3 border-t text-right ${info.complete ? 'border-emerald-500/30' : 'border-line'}`}>
+            <p className={`text-[10px] font-black uppercase tracking-widest ${info.complete ? 'text-emerald-400' : 'text-faint'}`}>
+              {percent}% de la fase
+            </p>
+          </div>
+        </article>
+
+        {/* Overlay de secreto: usuarios no pueden leer versiones futuras */}
+        {locked && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 top-7 rounded-3xl bg-bg/55 backdrop-blur-md border border-line/50 flex flex-col items-center justify-center gap-3 text-center p-6">
+            <span className="w-12 h-12 rounded-2xl bg-raised border border-line flex items-center justify-center text-mute shadow-lg">
+              <Lock className="w-5 h-5" />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-mute">
+                Versión en secreto
+              </p>
+              <p className="text-[11px] text-faint mt-1">
+                El cuervo todavía está cocinando estos planes
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* ── Barra superior ── */}
@@ -266,9 +474,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                 Roadmap
               </h2>
               <p className="text-xs sm:text-sm text-mute max-w-xl">
-                El mapa de campaña de Crow Comics: cada tarjeta es una versión.
-                Navega con las flechas — la tarjeta centrada toma el foco y ahí
-                se marcan las casillas. Tu progreso se guarda en este navegador.
+                {isAdmin
+                  ? 'El mapa de campaña de Crow Comics: cada tarjeta es una versión. Navega con las flechas — la tarjeta centrada toma el foco y ahí se marcan las casillas. Tu progreso se guarda en este navegador.'
+                  : 'La versión en la que estamos trabajando y cómo va avanzando. ¡Pronto será tuya!'}
               </p>
             </div>
             <div className="flex items-center gap-4 shrink-0">
@@ -296,240 +504,66 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* ── Línea de tiempo con efecto foco: se navega con FLECHAS ── */}
-      <div className="relative">
-        {/* Controles de navegación (fuera del carril: nunca tapan tarjetas) */}
-        <div className="flex items-center justify-between pb-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-faint">
-            Navega las versiones
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => go(-1)}
-              aria-label="Versión anterior"
-              title="Versión anterior"
-              className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-mono font-black text-mute tabular-nums w-12 text-center">
-              {activeIndex + 1}/{ROADMAP_VERSIONS.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => go(1)}
-              aria-label="Versión siguiente"
-              title="Versión siguiente"
-              className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div
-          onScroll={handleRailScroll}
-          className="relative overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-        {/* El padding calc permite centrar la primera y última tarjeta en
-            pantallas anchas: 50% del carril menos la mitad de una tarjeta. */}
-        <div
-          ref={trackRef}
-          className="flex gap-5 min-w-max py-2 items-stretch ps-[calc(50%-9.75rem)] pe-[calc(50%-9.75rem)]"
-        >
-          {ROADMAP_VERSIONS.map((version, index) => {
-            const Icon = ICONS[version.icon] ?? Rocket;
-            const info = versionProgress[version.version] ?? { checked: 0, total: version.tasks.length, complete: false };
-            const percent = info.total ? Math.round((info.checked / info.total) * 100) : 0;
-            const isActive = index === activeIndex;
-            const isFuture = !info.complete && index !== currentVersionIndex;
-            // Los usuarios normales no pueden leer versiones futuras; el admin ve todo.
-            const locked = isFuture && !isAdmin;
-
-            return (
-              <div
-                key={version.version}
-                onClick={() => {
-                  // Navegar siempre: el secreto lo guarda el overlay, no el foco.
-                  if (!isActive) focusCard(index);
-                }}
-                className={`group relative shrink-0 w-[19.5rem] flex flex-col ${isActive ? '' : 'cursor-pointer'}`}
+      {isAdmin ? (
+        /* ── ADMIN: línea de tiempo completa con efecto foco y flechas ── */
+        <div className="relative">
+          {/* Controles de navegación (fuera del carril: nunca tapan tarjetas) */}
+          <div className="flex items-center justify-between pb-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-faint">
+              Navega las versiones
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => go(-1)}
+                aria-label="Versión anterior"
+                title="Versión anterior"
+                className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
               >
-                {/* Conector: punto navegable + tramo de línea hacia la siguiente tarjeta */}
-                <div className="flex items-center gap-2 min-h-[1rem]">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      focusCard(index);
-                    }}
-                    title={`Ir a ${version.version}`}
-                    aria-label={`Ir a la versión ${version.version}`}
-                    className={`rounded-full shrink-0 cursor-pointer hover:scale-125 transition-all duration-500 ${
-                      isActive ? 'w-4 h-4 ring-4' : 'w-2.5 h-2.5 ring-2'
-                    } ${
-                      info.complete
-                        ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
-                        : 'bg-accent ring-accent/15 shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/50%)]'
-                    }`}
-                  />
-                  {index < ROADMAP_VERSIONS.length - 1 && (
-                    <span
-                      className={`flex-1 rounded-full transition-colors duration-500 ${
-                        isActive ? 'h-0.5 bg-gradient-to-r from-accent to-accent2/60' : 'h-0.5 bg-line'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  )}
-                </div>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono font-black text-mute tabular-nums w-12 text-center">
+                {activeIndex + 1}/{ROADMAP_VERSIONS.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => go(1)}
+                aria-label="Versión siguiente"
+                title="Versión siguiente"
+                className="w-9 h-9 rounded-xl bg-surface hover:bg-raised border border-line hover:border-accent/50 text-mute hover:text-accent shadow-sm flex items-center justify-center transition-all active:scale-90"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-                {/* Tarjeta de versión (enfocada: grande y nítida / lateral: pequeña y borrosa) */}
-                <article
-                  className={`mt-3 flex-1 rounded-3xl border overflow-hidden bg-surface origin-center transition-all duration-500 ease-out ${
-                    isActive
-                      ? 'scale-100 opacity-100 blur-0 saturate-100 ' +
-                        (info.complete
-                          ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
-                          : 'border-accent/60 shadow-2xl shadow-accent/30')
-                      : // Las laterales se ven pequeñas y borrosas para todos;
-                        // se lee cada una al enfocarla con flechas o clic.
-                        'scale-[0.9] opacity-60 blur-[5px] saturate-[0.8] ' +
-                        (info.complete ? 'border-emerald-500/40' : 'border-line')
-                  }`}
-                >
-                  {/* Cabecera de versión */}
-                  <div className={`relative p-4 border-b ${info.complete ? 'border-emerald-500/30' : 'border-line'}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                            info.complete
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                              : 'bg-accent/10 text-accent border-accent/30'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                        </span>
-                        <span className={`font-black text-ink font-mono tracking-tight ${isActive ? 'text-xl' : 'text-lg'}`}>
-                          {version.version}
-                        </span>
-                      </div>
-
-                      {/* Badge cuando la fase llega al 100% */}
-                      {info.complete ? (
-                        <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.35)]">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Completada ✓
-                        </span>
-                      ) : isActive ? (
-                        <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-accent/15 text-accent border border-accent/40 flex items-center gap-1 animate-pulse">
-                          En construcción
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <h3 className="mt-2.5 text-sm font-bold text-ink leading-tight">{version.title}</h3>
-                    <p className="text-[11px] text-mute italic mt-0.5">{version.subtitle}</p>
-
-                    {/* Mini-progreso de la versión */}
-                    <div className="mt-3 flex items-center gap-2.5">
-                      <div className="flex-1 h-1.5 rounded-full bg-raised overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            info.complete
-                              ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                              : 'bg-accent'
-                          }`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                      <span
-                        className={`text-[10px] font-black tabular-nums ${
-                          info.complete ? 'text-emerald-400' : 'text-mute'
-                        }`}
-                      >
-                        {info.checked}/{info.total}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Lista de tareas con checkboxes (solo togglean en la tarjeta enfocada) */}
-                  <ul className="divide-y divide-line">
-                    {version.tasks.map((task) => {
-                      const checked = isTaskChecked(task, progress);
-                      return (
-                        <li key={task.id}>
-                          <button
-                            type="button"
-                            role="checkbox"
-                            aria-checked={checked}
-                            onClick={() => {
-                              if (locked) return;
-                              // Admin puede marcar en cualquier tarjeta; usuarios solo en la enfocada.
-                              if (isActive || isAdmin) toggleTask(task.id);
-                            }}
-                            className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
-                              checked ? 'bg-emerald-500/[0.06]' : 'hover:bg-raised/50'
-                            } ${info.complete ? 'hover:bg-emerald-500/[0.08]' : ''}`}
-                          >
-                            {checked ? (
-                              <CheckCircle2
-                                className={`w-5 h-5 mt-px shrink-0 transition-colors ${
-                                  info.complete
-                                    ? 'text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.6)]'
-                                    : 'text-accent'
-                                }`}
-                                strokeWidth={2.4}
-                              />
-                            ) : (
-                              <Circle className="w-5 h-5 mt-px shrink-0 text-faint hover:text-accent transition-colors" />
-                            )}
-                            <span
-                              className={`text-[13px] leading-snug font-medium transition-colors ${
-                                checked
-                                  ? 'text-ink line-through decoration-accent/40 decoration-2'
-                                  : 'text-mute'
-                              }`}
-                            >
-                              {task.label}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  {/* Pie de tarjeta */}
-                  <div className={`px-4 py-3 border-t text-right ${info.complete ? 'border-emerald-500/30' : 'border-line'}`}>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${info.complete ? 'text-emerald-400' : 'text-faint'}`}>
-                      {percent}% de la fase
-                    </p>
-                  </div>
-                </article>
-
-                {/* Overlay de secreto: usuarios no pueden leer versiones futuras */}
-                {locked && (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 top-7 rounded-3xl bg-bg/55 backdrop-blur-md border border-line/50 flex flex-col items-center justify-center gap-3 text-center p-6">
-                    <span className="w-12 h-12 rounded-2xl bg-raised border border-line flex items-center justify-center text-mute shadow-lg">
-                      <Lock className="w-5 h-5" />
-                    </span>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-mute">
-                        Versión en secreto
-                      </p>
-                      <p className="text-[11px] text-faint mt-1">
-                        El cuervo todavía está cocinando estos planes
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          <div
+            onScroll={handleRailScroll}
+            className="relative overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {/* El padding calc permite centrar la primera y última tarjeta en
+                pantallas anchas: 50% del carril menos la mitad de una tarjeta. */}
+            <div
+              ref={trackRef}
+              className="flex gap-5 min-w-max py-2 items-stretch ps-[calc(50%-9.75rem)] pe-[calc(50%-9.75rem)]"
+            >
+              {ROADMAP_VERSIONS.map((version, index) =>
+                renderTimelineCard(version, index, index === activeIndex, true),
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* ── USUARIO: solo la versión en construcción, sin navegación ── */
+        <div className="pt-2">
+          {renderTimelineCard(
+            ROADMAP_VERSIONS[currentVersionIndex],
+            currentVersionIndex,
+            true,
+            false,
+          )}
+        </div>
+      )}
 
       {/* Comodidad móvil: volver al final */}
       <button
