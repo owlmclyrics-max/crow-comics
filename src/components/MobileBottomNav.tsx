@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Map as MapIcon, History, Plus, X } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Map as MapIcon, History, Plus, X, Check } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { showToast } from './ui/Toast';
+import {
+  getInstallPrompt,
+  isRunningStandalone,
+  APP_INSTALLED_EVENT,
+  INSTALL_PROMPT_EVENT,
+  type BeforeInstallPromptEvent,
+} from '../lib/installPrompt';
 
 interface MobileBottomNavProps {
   currentView: CurrentView;
@@ -12,11 +19,6 @@ interface MobileBottomNavProps {
   onOpenProfile: () => void;
   /** Abre el modal de administración para crear un cómic (solo admin). */
   onOpenNewComic?: () => void;
-}
-
-/** Evento de instalación PWA que lanza el navegador. */
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
 }
 
 const TABS = [
@@ -43,36 +45,49 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const { canManageContent } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  // El evento llega vía captura GLOBAL (lib/installPrompt): se registra antes
+  // del render, así no se pierde aunque Chrome lo dispare muy temprano.
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(
+    () => getInstallPrompt(),
+  );
+  const [alreadyInstalled] = useState(() => isRunningStandalone());
 
-  // Captura el evento de instalación del navegador (Chrome/Edge lo emiten
-  // cuando la PWA cumple los requisitos). En iOS nunca llega: ahí se instala
-  // con Compartir → "Añadir a pantalla de inicio".
+  // Se entera de llegadas tardías del evento y de la instalación completada.
   useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', () => {
+    const onPrompt = () => setInstallEvent(getInstallPrompt());
+    const onInstalled = () => {
       setInstallEvent(null);
       showToast('¡Crow Comics instalada! 🎉 búscala en tu inicio', 'success');
-    });
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    };
+    window.addEventListener(INSTALL_PROMPT_EVENT, onPrompt);
+    window.addEventListener(APP_INSTALLED_EVENT, onInstalled);
+    return () => {
+      window.removeEventListener(INSTALL_PROMPT_EVENT, onPrompt);
+      window.removeEventListener(APP_INSTALLED_EVENT, onInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
+    // 1) El navegador ya nos dijo que se puede: lanzar su diálogo nativo.
     if (installEvent) {
       await installEvent.prompt();
       setInstallEvent(null);
       setIsSheetOpen(false);
       return;
     }
+    // 2) Ya corre como app (ventana propia): no hay nada que instalar.
+    if (alreadyInstalled) {
+      showToast('Ya estás dentro de la app ✅', 'info');
+      return;
+    }
+    // 3) iPhone/iPad: instalación manual vía Compartir.
     if (isIosDevice()) {
       showToast('En iPhone: Compartir (□↑) → "Añadir a pantalla de inicio"', 'info');
-    } else {
-      showToast('Ya tienes la app instalada (o tu navegador no lo permite)', 'info');
+      return;
     }
+    // 4) Android sin evento aún: Chrome pide interacción/visitas previas, o
+    //    ya creaste un acceso directo. La ruta manual siempre funciona.
+    showToast('Menú del navegador (⋮) → "Instalar aplicación" o "Añadir a pantalla de inicio"', 'info');
   };
 
   const openSheet = () => setIsSheetOpen(true);
@@ -181,10 +196,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               <button
                 type="button"
                 onClick={() => void handleInstall()}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-accent hover:bg-accent/10 transition-colors"
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-accent/10 transition-colors ${
+                  alreadyInstalled ? 'text-emerald-400' : 'text-accent'
+                }`}
               >
-                <Smartphone className="w-5 h-5" />
-                Instalar la app
+                {alreadyInstalled ? <Check className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
+                {alreadyInstalled ? 'App instalada ✓' : 'Instalar la app'}
                 {installEvent && (
                   <span className="ml-auto px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[9px] font-black uppercase tracking-wider border border-accent/30">
                     Disponible
