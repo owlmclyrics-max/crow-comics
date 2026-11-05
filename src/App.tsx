@@ -289,6 +289,17 @@ export const App: React.FC = () => {
     } catch { /* noop */ }
   }, [currentView, selectedComicId, selectedChapterId, selectedProfileId, selectedCharacter, selectedList, selectedEvent]);
 
+  // Mantener la ficha abierta SIEMPRE sincronizada con el catálogo: al guardar
+  // ediciones (o si otro dispositivo cambia algo), el detalle y su formulario
+  // reflejan la versión actual sin tener que re-navegar.
+  React.useEffect(() => {
+    if (!selectedCharacter || charactersLoading) return;
+    const live = characters.find((c) => c.id === selectedCharacter.id);
+    if (live && live !== selectedCharacter) {
+      setSelectedCharacter(live);
+    }
+  }, [characters, charactersLoading, selectedCharacter]);
+
   // Ficha pedida por el hash pero sin snapshot (ej: PWA cerrada y reabierta):
   // resolverla contra el catálogo en cuanto cargue.
   React.useEffect(() => {

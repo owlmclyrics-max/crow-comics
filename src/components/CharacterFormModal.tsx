@@ -364,6 +364,8 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isEnemyPickerOpen, setIsEnemyPickerOpen] = useState(false);
   const prefilledRef = useRef(false);
+  // Snapshot del precargado para detectar cambios sin guardar.
+  const prefillRef = useRef<CharacterFormState>(EMPTY_FORM);
 
   const isEdit = Boolean(characterId);
 
@@ -390,9 +392,25 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
     prefilledRef.current = true;
     if (characterId) {
       const target = characters.find((item) => item.id === characterId);
-      setForm(target ? toForm(target) : EMPTY_FORM);
+      const initial = target ? toForm(target) : EMPTY_FORM;
+      setForm(initial);
+      prefillRef.current = initial;
+    } else {
+      prefillRef.current = EMPTY_FORM;
     }
   }, [characterId, characters, loading]);
+
+  // ¿Hay cambios sin guardar? (comparación simple por contenido)
+  const isDirty =
+    JSON.stringify(form) !== JSON.stringify(prefillRef.current ?? EMPTY_FORM);
+
+  // Cierre seguro: avisar antes de tirar cambios sin guardar.
+  const requestClose = () => {
+    if (isDirty && !window.confirm('Tienes cambios sin guardar. ¿Cerrar de todos modos?')) {
+      return;
+    }
+    onClose();
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() || isSaving) return;
@@ -435,7 +453,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl">
+      <Modal isOpen={isOpen} onClose={requestClose} className="max-w-5xl">
       {/* ── Header con ambiente Crow ── */}
       <div className="relative shrink-0 border-b border-line overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-accent/15 via-transparent to-transparent pointer-events-none" />
@@ -456,7 +474,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
@@ -695,7 +713,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
         </p>
         <div className="flex items-center gap-2.5 ml-auto">
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="inline-flex items-center px-4 py-2.5 rounded-xl bg-raised hover:bg-line text-mute text-xs font-semibold transition-colors"
           >
             Cancelar
