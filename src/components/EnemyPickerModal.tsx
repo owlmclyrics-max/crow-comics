@@ -53,12 +53,11 @@ const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) =
 };
 
 /**
- * Modal para elegir personajes del wiki como enemigos. Dos caminos:
- * 1) Buscar y elegir de la lista (retrato circular estilo reparto); la
- *    búsqueda cubre nombre inglés, español, real y cada alias, sin acentos.
- * 2) "Escribir a mano": mientras tecleas se ofrecen coincidencias del wiki y,
- *    si nadie coincide, crear una FICHA RÁPIDA con ese nombre.
- * Multi-elección: se queda abierto hasta cerrar, para agregar varios de corrido.
+ * Modal para elegir enemigos del wiki en MODO SELECCIÓN: se marcan varios
+ * (✓) tocándolos en la lista —bucando por nombre, español, real o alias,
+ * sin acentos— y un botón "Agregar (N)" los añade todos de golpe.
+ * También tiene modo de escritura a mano con coincidencias en vivo y
+ * creación de ficha rápida cuando nadie coincide.
  */
 export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   isOpen,
@@ -73,6 +72,8 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  // Selección marcada: se confirma todo junto con "Agregar".
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Cada vez que abre, todo empieza limpio.
   useEffect(() => {
@@ -80,11 +81,21 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
       setQuery('');
       setManualMode(false);
       setManualName('');
+      setSelectedIds(new Set());
     }
   }, [isOpen]);
 
   const isAlreadyEnemy = (c: Character) =>
     existingEnemies.some((enemy) => characterNameMatches(c, enemy));
+
+  const toggleSelected = (c: Character) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(c.id)) next.delete(c.id);
+      else next.add(c.id);
+      return next;
+    });
+  };
 
   const results = useMemo(() => {
     const q = accentless(query);
@@ -140,11 +151,20 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
     if (result.success) {
       onPick(manualQuery);
       setManualName('');
-      setManualMode(false);
-      showToast(`Ficha rápida de "${manualQuery}" creada en el wiki`, 'success');
+      showToast(`Ficha rápida de "${manualQuery}" creada y agregada`, 'success');
     } else {
       showToast(result.error ?? 'No se pudo crear la ficha rápida', 'error');
     }
+  };
+
+  const selectedCount = selectedIds.size;
+
+  const handleAddSelected = () => {
+    if (selectedCount === 0) return;
+    characters
+      .filter((c) => selectedIds.has(c.id))
+      .forEach((c) => onPick(c.name));
+    onClose();
   };
 
   return (
@@ -156,8 +176,8 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
             <Skull className="w-4 h-4 text-accent" />
           </span>
           <div className="min-w-0">
-            <h3 className="text-sm font-black text-ink">Elegir enemigo del wiki</h3>
-            <p className="text-[11px] text-mute">Agrega tantos como quieras</p>
+            <h3 className="text-sm font-black text-ink">Elegir enemigos del wiki</h3>
+            <p className="text-[11px] text-mute">Márcalos todos y toca Agregar</p>
           </div>
         </div>
         <button
@@ -212,43 +232,55 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
             {manualQuery && (
               <>
                 <p className="text-[9px] font-black uppercase tracking-widest text-faint">
-                  Coincidencias del wiki
+                  Coincidencias del wiki — toca para marcar
                 </p>
                 {manualMatches.length > 0 ? (
                   <div className="space-y-1">
-                    {manualMatches.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          onPick(c.name);
-                          setManualName('');
-                        }}
-                        className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-raised transition-colors group/match"
-                      >
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-line bg-bg shrink-0">
-                          {c.photo_url ? (
-                            <img
-                              src={c.photo_url}
-                              alt={c.name}
-                              loading="lazy"
-                              className="w-full h-full object-cover"
-                            />
+                    {manualMatches.map((c) => {
+                      const marked = selectedIds.has(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleSelected(c)}
+                          className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg border transition-colors ${
+                            marked
+                              ? 'bg-accent/10 border-accent/50'
+                              : 'border-transparent hover:bg-raised group/match'
+                          }`}
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-full overflow-hidden border-2 bg-bg shrink-0 transition-colors ${
+                              marked ? 'border-accent' : 'border-line'
+                            }`}
+                          >
+                            {c.photo_url ? (
+                              <img
+                                src={c.photo_url}
+                                alt={c.name}
+                                loading="lazy"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <User className="w-3.5 h-3.5 text-faint" />
+                              </div>
+                            )}
+                          </div>
+                          <p className="flex-1 min-w-0 text-left text-xs font-bold text-ink truncate">
+                            {c.name}
+                            {c.name_spanish && (
+                              <span className="text-faint font-semibold"> — {c.name_spanish}</span>
+                            )}
+                          </p>
+                          {marked ? (
+                            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <User className="w-3.5 h-3.5 text-faint" />
-                            </div>
+                            <Plus className="w-4 h-4 text-accent shrink-0" />
                           )}
-                        </div>
-                        <p className="flex-1 min-w-0 text-left text-xs font-bold text-ink truncate group-hover/match:text-accent transition-colors">
-                          {c.name}
-                          {c.name_spanish && (
-                            <span className="text-faint font-semibold"> — {c.name_spanish}</span>
-                          )}
-                        </p>
-                        <Plus className="w-3.5 h-3.5 text-accent shrink-0" />
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-[10px] text-faint">Sin coincidencias en el wiki.</p>
@@ -257,7 +289,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                 {/* Ficha rápida: solo si NO es ya una ficha del wiki */}
                 {exactWikiMatch ? (
                   <p className="text-[10px] text-mute">
-                    Ya existe una ficha llamada así — elígela arriba ☝️
+                    Ya existe una ficha llamada así — márcala arriba ☝️
                   </p>
                 ) : (
                   <button
@@ -282,8 +314,8 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
         )}
       </div>
 
-      {/* Lista con retratos circulares */}
-      <div className="overflow-y-auto divide-y divide-line" style={{ maxHeight: '50dvh' }}>
+      {/* Lista de resultados: tocar MARCA/DESMARCA */}
+      <div className="overflow-y-auto divide-y divide-line" style={{ maxHeight: '42dvh' }}>
         {results.length === 0 ? (
           <div className="p-8 text-center text-xs text-faint">
             Nadie en el wiki coincide con "{query}"
@@ -291,20 +323,27 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
         ) : (
           results.map((c) => {
             const taken = isAlreadyEnemy(c);
+            const marked = selectedIds.has(c.id);
             const extra = matchedExtraText(c, query);
             return (
               <button
                 key={c.id}
                 type="button"
                 disabled={taken}
-                onClick={() => onPick(c.name)}
+                onClick={() => toggleSelected(c)}
                 className={`w-full text-left p-3.5 flex items-center gap-3 transition-colors ${
                   taken
                     ? 'opacity-40 cursor-not-allowed'
-                    : 'hover:bg-raised/80 cursor-pointer group'
+                    : marked
+                      ? 'bg-accent/10 cursor-pointer'
+                      : 'hover:bg-raised/80 cursor-pointer'
                 }`}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors">
+                <div
+                  className={`w-12 h-12 rounded-full overflow-hidden border-2 bg-bg shrink-0 transition-colors ${
+                    marked ? 'border-accent' : 'border-line'
+                  }`}
+                >
                   {c.photo_url ? (
                     <img
                       src={c.photo_url}
@@ -319,11 +358,15 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
+                  <p
+                    className={`text-sm font-bold truncate transition-colors ${
+                      marked ? 'text-accent' : 'text-ink'
+                    }`}
+                  >
                     <Highlight text={c.name} query={query} />
                   </p>
                   {c.name_spanish && (
-                    <p className="text-[11px] text-accent font-semibold truncate">
+                    <p className="text-[11px] text-accent2 font-semibold truncate">
                       <Highlight text={c.name_spanish} query={query} />
                     </p>
                   )}
@@ -333,18 +376,23 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                     </p>
                   )}
                 </div>
-                {c.alignment && (
-                  <span
-                    className={`shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border ${getAlignmentBadgeClass(c.alignment)}`}
-                  >
-                    {c.alignment}
-                  </span>
-                )}
-                {taken && (
+                {taken ? (
                   <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
                     <Check className="w-3.5 h-3.5" />
                     Agregado
                   </span>
+                ) : marked ? (
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-accent text-onaccent flex items-center justify-center shadow">
+                    <Check className="w-4 h-4" />
+                  </span>
+                ) : (
+                  c.alignment && (
+                    <span
+                      className={`shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border ${getAlignmentBadgeClass(c.alignment)}`}
+                    >
+                      {c.alignment}
+                    </span>
+                  )
                 )}
               </button>
             );
@@ -352,14 +400,19 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 p-4 border-t border-line bg-raised/40">
+      {/* Footer: confirmación de la selección marcada */}
+      <div className="shrink-0 p-4 border-t border-line bg-raised/40 flex items-center gap-3">
+        <span className="shrink-0 text-[11px] font-bold text-mute">
+          {selectedCount > 0 ? `${selectedCount} marcados` : 'Nada marcado'}
+        </span>
         <button
           type="button"
-          onClick={onClose}
-          className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
+          onClick={handleAddSelected}
+          disabled={selectedCount === 0}
+          className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Listo
+          <Check className="w-4 h-4" />
+          Agregar{selectedCount > 0 ? ` (${selectedCount})` : ''}
         </button>
       </div>
     </Modal>
