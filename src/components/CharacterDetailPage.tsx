@@ -16,8 +16,6 @@ import {
   Swords,
   Skull,
   Zap,
-  X,
-  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -27,7 +25,6 @@ import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
 interface CharacterDetailPageProps {
   character: Character;
   onBack: () => void;
-  onSelectComic: (comic: Comic) => void;
   onSelectChapter: (chapter: Chapter, comic: Comic) => void;
   onOpenManageModal: () => void;
   /** Abre la ficha de otro personaje (ej: al hacer clic en un enemigo). */
@@ -37,7 +34,6 @@ interface CharacterDetailPageProps {
 export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   character,
   onBack,
-  onSelectComic,
   onSelectChapter,
   onOpenManageModal,
   onSelectCharacter,
@@ -154,8 +150,8 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
 
       {/* ═══ WIKI: infobox a la derecha · contenido a la izquierda ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem] xl:grid-cols-[1fr_22rem] gap-6 items-start">
-        {/* ── INFOBOX: ficha a la derecha con retrato circular con brillo ── */}
-        <aside className="lg:order-2 lg:sticky lg:top-20 self-start rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+        {/* ── INFOBOX: ficha a la derecha, sticky sin robar el scroll ── */}
+        <aside className="lg:order-2 lg:sticky lg:top-20 self-start rounded-3xl overflow-hidden border border-accent/25 bg-surface shadow-2xl">
           {/* Retrato circular centrado, como la vista anterior */}
           <div className="relative bg-bg overflow-hidden">
             {/* Resplandor radial detrás de la foto */}
@@ -165,7 +161,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
 
             <div className="relative flex flex-col items-center gap-5 px-5 pt-8 pb-6 text-center">
               <div className="relative">
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-accent/40 ring-8 ring-accent/5 bg-surface shadow-2xl shadow-accent/25">
+                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-accent/40 ring-8 ring-accent/5 bg-surface shadow-2xl shadow-accent/25">
                   {character.photo_url ? (
                     <img
                       src={character.photo_url}
@@ -381,138 +377,84 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                 <span>Aparece en ({comics.length})</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                {comics.map((comic) => {
-                  const chapterCount = chapters.filter((chapter) => chapter.comic_id === comic.id).length;
-                  const isSelected = selectedComicId === comic.id;
-                  return (
-                    <div
-                      key={comic.id}
-                      onClick={() => setSelectedComicId(isSelected ? null : comic.id)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          setSelectedComicId(isSelected ? null : comic.id);
-                        }
-                      }}
-                      className={`group relative bg-surface border rounded-2xl overflow-hidden hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1.5 ${
-                        isSelected
-                          ? 'border-accent shadow-xl shadow-accent/30 -translate-y-1'
-                          : 'border-line hover:border-accent/50 hover:shadow-accent/40'
-                      }`}
+              {selectedComic ? (
+                /* Nivel 2: capítulos del cómic elegido — fila horizontal estilo reparto */
+                <div className="space-y-4 animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedComicId(null)}
+                      className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink border border-line transition-colors shrink-0"
+                      aria-label="Volver a los cómics"
                     >
-                      <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
-                        <img
-                          src={comic.cover_url}
-                          alt={comic.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent opacity-80" />
-
-                        {/* Conteo de tomos con apariciones */}
-                        <span className="absolute top-3 left-3 px-2 py-0.5 text-[10px] font-black uppercase rounded-lg bg-accent text-onaccent shadow-md flex items-center gap-1">
-                          <Layers className="w-3 h-3" />
-                          {chapterCount} {chapterCount === 1 ? 'tomo' : 'tomos'}
-                        </span>
-
-                        {isSelected && (
-                          <span className="absolute top-3 right-3 w-7 h-7 rounded-full bg-accent text-onaccent flex items-center justify-center shadow-lg">
-                            <X className="w-4 h-4" />
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="p-4">
-                        <h4 className="font-bold text-ink text-base group-hover:text-accent transition-colors line-clamp-1">
-                          {comic.title}
-                        </h4>
-                        {comic.original_title && (
-                          <p className="text-xs text-mute italic line-clamp-1 mt-1">
-                            {comic.original_title}
-                          </p>
-                        )}
-                        <p className="flex items-center gap-1 text-[11px] font-semibold text-accent mt-2">
-                          {isSelected ? 'Ocultar capítulos' : 'Ver capítulos donde aparece'}
-                          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Panel desplegable: capítulos del cómic elegido */}
-              {selectedComic && (
-                <div className="rounded-3xl border border-accent/25 bg-surface p-6 animate-fade-in shadow-xl shadow-accent/10">
-                  <div className="flex items-center justify-between gap-4 pb-4 border-b border-line">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <img
-                        src={selectedComic.cover_url}
-                        alt={selectedComic.title}
-                        className="w-10 h-[3.75rem] object-cover rounded-lg border border-line shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-faint">
-                          Capítulos donde aparece
-                        </p>
-                        <h4 className="font-black text-ink truncate">{selectedComic.title}</h4>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectComic(selectedComic);
-                        }}
-                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-raised hover:bg-line text-ink text-xs font-semibold border border-line transition-colors"
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-accent" />
-                        <span>Ir a la serie</span>
-                      </button>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedComicId(null);
-                        }}
-                        className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors"
-                        aria-label="Cerrar lista de capítulos"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-faint">
+                        Capítulos donde aparece
+                      </p>
+                      <h4 className="font-black text-ink truncate">{selectedComic.title}</h4>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
-                    {selectedChapters.map((chapter) => {
-                      const parentComic = comics.find((item) => item.id === chapter.comic_id);
-                      return (
-                        <div
-                          key={chapter.id}
-                          onClick={() => {
-                            if (parentComic) onSelectChapter(chapter, parentComic);
-                          }}
-                          className="group/ch flex items-center gap-3.5 rounded-2xl bg-bg/60 border border-line hover:border-accent/50 p-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/20"
-                        >
-                          <span className="w-11 h-11 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-black text-xs shrink-0">
+                  <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {selectedChapters.map((chapter) => (
+                      <button
+                        key={chapter.id}
+                        type="button"
+                        onClick={() => onSelectChapter(chapter, selectedComic)}
+                        className="group/ch flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center focus:outline-none"
+                        aria-label={`Leer ${chapter.title}`}
+                      >
+                        <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/ch:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">
+                          <img
+                            src={chapter.cover_url || selectedComic.cover_url}
+                            alt={chapter.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover/ch:scale-105 transition-transform duration-300"
+                          />
+                          <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-bg/90 border border-accent/40 text-accent text-[9px] font-black">
                             #{chapter.chapter_number}
                           </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-ink group-hover/ch:text-accent transition-colors truncate">
-                              {chapter.title}
-                            </p>
-                            <p className="text-[11px] text-mute mt-0.5">
-                              {chapter.release_date
-                                ? `Publicado: ${chapter.release_date}`
-                                : `Tomo #${chapter.chapter_number}`}
-                            </p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-mute group-hover/ch:text-accent group-hover/ch:translate-x-1 transition-all shrink-0" />
                         </div>
-                      );
-                    })}
+                        <p className="text-xs font-bold text-ink leading-tight line-clamp-2 group-hover/ch:text-accent transition-colors">
+                          {chapter.title}
+                        </p>
+                      </button>
+                    ))}
                   </div>
+                </div>
+              ) : (
+                /* Nivel 1: cómics compactos en fila horizontal */
+                <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {comics.map((comic) => {
+                    const chapterCount = chapters.filter((chapter) => chapter.comic_id === comic.id).length;
+                    return (
+                      <button
+                        key={comic.id}
+                        type="button"
+                        onClick={() => setSelectedComicId(comic.id)}
+                        className="group/cast flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center focus:outline-none"
+                        aria-label={`Ver capítulos de ${comic.title}`}
+                      >
+                        <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/cast:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">
+                          <img
+                            src={comic.cover_url}
+                            alt={comic.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover/cast:scale-105 transition-transform duration-300"
+                          />
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-accent text-onaccent text-[9px] font-black shadow flex items-center gap-1">
+                            <Layers className="w-2.5 h-2.5" />
+                            {chapterCount}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-ink leading-tight line-clamp-2 group-hover/cast:text-accent transition-colors">
+                          {comic.title}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

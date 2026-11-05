@@ -556,7 +556,6 @@ export const App: React.FC = () => {
           <CharacterDetailPage
             character={selectedCharacter}
             onBack={() => setCurrentView('personajes')}
-            onSelectComic={handleOpenComicDetail}
             onSelectChapter={handleOpenChapterDetail}
             onSelectCharacter={(next) => setSelectedCharacter(next)}
             onOpenManageModal={() => {
