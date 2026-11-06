@@ -372,14 +372,25 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
   // ── Enemigos: solo se eligen del wiki ──
   const enemyNames = splitLines(form.enemies);
   const addEnemy = (name: string) => {
-    if (!name || enemyNames.some((enemy) => enemy.toLowerCase() === name.toLowerCase())) return;
-    updateField('enemies', [...enemyNames, name].join('\n'));
+    if (!name) return;
+    // Funcional: al agregar VARIOS en lote (forEach de onPick), cada llamada
+    // parte del estado más reciente en vez del render congelado — si no,
+    // todas pisan la misma lista y solo sobrevive el último nombre.
+    setForm((current) => {
+      const currentEnemies = splitLines(current.enemies);
+      if (currentEnemies.some((enemy) => enemy.toLowerCase() === name.toLowerCase())) {
+        return current;
+      }
+      return { ...current, enemies: [...currentEnemies, name].join('\n') };
+    });
   };
   const removeEnemy = (name: string) => {
-    updateField(
-      'enemies',
-      enemyNames.filter((enemy) => enemy !== name).join('\n'),
-    );
+    setForm((current) => ({
+      ...current,
+      enemies: splitLines(current.enemies)
+        .filter((enemy) => enemy !== name)
+        .join('\n'),
+    }));
   };
 
   const updateField = <K extends keyof CharacterFormState>(field: K, value: string) => {
@@ -740,6 +751,7 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
         excludeId={characterId}
         existingEnemies={enemyNames}
         onPick={addEnemy}
+        onRemove={removeEnemy}
       />
     </>
   );

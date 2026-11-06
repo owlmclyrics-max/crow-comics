@@ -18,6 +18,8 @@ interface EnemyPickerModalProps {
   existingEnemies: string[];
   /** Se dispara al elegir un personaje (agrega por nombre). */
   onPick: (name: string) => void;
+  /** Se dispara al tocar un enemigo ya agregado (lo quita de la lista). */
+  onRemove: (name: string) => void;
 }
 
 /** Líneas limpias de un campo guardado "uno por línea". */
@@ -67,6 +69,7 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
   excludeId,
   existingEnemies,
   onPick,
+  onRemove,
 }) => {
   const { addCharacter } = useCharactersContext();
   const [query, setQuery] = useState('');
@@ -86,8 +89,10 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
     }
   }, [isOpen]);
 
-  const isAlreadyEnemy = (c: Character) =>
-    existingEnemies.some((enemy) => characterNameMatches(c, enemy));
+  /** Texto EXACTO guardado en el formulario con el que coincide este personaje. */
+  const existingEnemyText = (c: Character): string | null =>
+    existingEnemies.find((enemy) => characterNameMatches(c, enemy)) ?? null;
+  const isAlreadyEnemy = (c: Character) => existingEnemyText(c) !== null;
 
   const toggleSelected = (c: Character) => {
     setSelectedIds((current) => {
@@ -197,7 +202,9 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-black text-ink">Elegir enemigos del wiki</h3>
-            <p className="text-[11px] text-mute">Márcalos o pégalos en lista, luego Agregar</p>
+            <p className="text-[11px] text-mute">
+              Toca para marcar ✓ · toca un Agregado para quitarlo
+            </p>
           </div>
         </div>
         <button
@@ -330,18 +337,19 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
           </div>
         ) : (
           results.map((c) => {
-            const taken = isAlreadyEnemy(c);
+            const takenText = existingEnemyText(c);
+            const taken = takenText !== null;
             const marked = selectedIds.has(c.id);
             const extra = matchedExtraText(c, query);
             return (
               <button
                 key={c.id}
                 type="button"
-                disabled={taken}
-                onClick={() => toggleSelected(c)}
-                className={`w-full text-left p-3.5 flex items-center gap-3 transition-colors ${
+                onClick={() => (taken ? onRemove(takenText) : toggleSelected(c))}
+                title={taken ? 'Ya está como enemigo — toca para quitarlo' : undefined}
+                className={`group w-full text-left p-3.5 flex items-center gap-3 transition-colors ${
                   taken
-                    ? 'opacity-40 cursor-not-allowed'
+                    ? 'bg-emerald-500/5 hover:bg-red-500/10 cursor-pointer'
                     : marked
                       ? 'bg-accent/10 cursor-pointer'
                       : 'hover:bg-raised/80 cursor-pointer'
@@ -385,9 +393,11 @@ export const EnemyPickerModal: React.FC<EnemyPickerModalProps> = ({
                   )}
                 </div>
                 {taken ? (
-                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                    <Check className="w-3.5 h-3.5" />
-                    Agregado
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-400 group-hover:text-red-400 transition-colors">
+                    <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                    <X className="w-3.5 h-3.5 hidden group-hover:block" />
+                    <span className="group-hover:hidden">Agregado</span>
+                    <span className="hidden group-hover:inline">Quitar</span>
                   </span>
                 ) : marked ? (
                   <span className="shrink-0 w-7 h-7 rounded-full bg-accent text-onaccent flex items-center justify-center shadow">
