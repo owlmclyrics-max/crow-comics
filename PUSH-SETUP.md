@@ -78,7 +78,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url := 'https://zllafdlsatueezldoxlh.supabase.co/functions/v1/notify-new-chapter',
+    url := 'https://zllafdlsatueezldoxlh.supabase.co/functions/v1/rapid-endpoint',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-webhook-secret', '6c260beef6094d9195be793d09fa0a4e218277dc0bf640ee8bc6bd62f98b77cb'
@@ -104,8 +104,10 @@ EXECUTE FUNCTION public.notify_new_chapter_hook();
 ### Y la Edge Function (si aún no la creaste)
 
 **Edge Functions → Deploy a new function → Via Editor → Open Editor**:
-nómbrala `notify-new-chapter`, reemplaza TODO el código por el contenido de
-`supabase/functions/notify-new-chapter/index.ts` de este repo y **Deploy**.
+pégale el código de `supabase/functions/notify-new-chapter/index.ts` de este
+repo y **Deploy**. ⚠️ El nombre que le des al crearla define la URL final
+(el renombrar después solo cambia el nombre visible) — la URL que muestre
+el Overview es la que debe ir en el trigger del paso 3.
 
 ## Paso 4 — Probar
 

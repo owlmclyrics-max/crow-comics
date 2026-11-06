@@ -20,7 +20,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url := 'https://zllafdlsatueezldoxlh.supabase.co/functions/v1/notify-new-chapter',
+    url := 'https://zllafdlsatueezldoxlh.supabase.co/functions/v1/rapid-endpoint',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-webhook-secret', '6c260beef6094d9195be793d09fa0a4e218277dc0bf640ee8bc6bd62f98b77cb'
