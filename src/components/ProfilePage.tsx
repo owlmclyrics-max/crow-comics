@@ -30,6 +30,7 @@ import {
   getListItems,
   createReadingList,
   deleteReadingList,
+  deleteReadingProgressRow,
   getPrivacySettings,
   savePrivacySettings,
   DEFAULT_PRIVACY,
@@ -544,14 +545,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     comic && chapterTitle.trim().toLowerCase() === comic.title.trim().toLowerCase();
 
                   return (
-                    <button
+                    <div
                       key={row.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         if (comic && chapter) onSelectChapter(chapter, comic);
                         else if (comic) onSelectComic(comic);
                       }}
-                      className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 transition-all text-left cursor-pointer group"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          if (comic && chapter) onSelectChapter(chapter, comic);
+                          else if (comic) onSelectComic(comic);
+                        }
+                      }}
+                      className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 transition-all text-left cursor-pointer group outline-none focus:border-accent/60"
                     >
                       {/* Portada del tomo (fallback: portada de la serie) */}
                       <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line shrink-0">
@@ -571,17 +579,32 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           {!sameTitleAsComic && chapter ? ` · ${chapter.title}` : ''}
                           {' · '}
                           {row.completed ? 'Completado' : 'En progreso'}
+                          {row.hidden_at && ' · oculto de Continuar'}
                         </p>
-                        {/* Sprint 3.5: marcador de página manual */}
-                        {row.page_number && row.page_number > 0 && (
+                        {/* Sprint 3.5: marcador de página manual (0 = sin marcador) */}
+                        {(row.page_number ?? 0) > 0 && (
                           <p className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-semibold mt-1">
                             <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
                             Te quedaste en la página {row.page_number}
                           </p>
                         )}
                       </div>
-                      <BookOpen className="w-4 h-4 text-faint group-hover:text-accent transition-colors shrink-0" />
-                    </button>
+                      {/* Borrado REAL del historial (independiente de "Continuar Leyendo") */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProgress((prev) => prev.filter((r) => r.id !== row.id));
+                          void deleteReadingProgressRow(row.id);
+                          showToast('Borrado del historial', 'info');
+                        }}
+                        title="Borrar del historial"
+                        aria-label={`Borrar ${comic?.title ?? 'cómic'} Tomo ${row.chapter_number} del historial`}
+                        className="shrink-0 p-1.5 rounded-lg text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>

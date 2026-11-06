@@ -33,6 +33,9 @@ export interface ReadingProgressRow {
   page_number?: number;
   completed: boolean;
   updated_at: string;
+  /** Netflix-style: con marca, el tomo sale de "Continuar Leyendo" pero
+      SIGUE en el historial. Solo el borrado explícito lo elimina de ambos. */
+  hidden_at?: string | null;
 }
 
 export interface ReadingListRow {
@@ -222,6 +225,8 @@ export const saveReadingProgress = async (
         chapter_id: chapterId,
         chapter_number: chapterNumber,
         ...(hasMarker ? { page_number: pageNumber } : {}),
+        // Volver a leer un tomo lo regresa a "Continuar Leyendo".
+        hidden_at: null,
         updated_at: now,
       },
       { onConflict: 'user_id,chapter_id' },
@@ -237,6 +242,7 @@ export const saveReadingProgress = async (
   if (existing) {
     existing.chapter_number = chapterNumber;
     if (hasMarker) existing.page_number = pageNumber;
+    existing.hidden_at = null;
     existing.updated_at = now;
   } else {
     all.unshift({
@@ -247,6 +253,7 @@ export const saveReadingProgress = async (
       chapter_number: chapterNumber,
       ...(hasMarker ? { page_number: pageNumber } : {}),
       completed: false,
+      hidden_at: null,
       updated_at: now,
     });
   }
@@ -280,7 +287,7 @@ export const deleteReadingProgress = async (userId: string, chapterId: string): 
 
 /**
  * Sprint 2.5: elimina un registro de progreso por su id de fila.
- * Se usa en la "X" de las tarjetas de "Continuar Leyendo".
+ * BORRADO REAL (usuario+capítulo fuera del historial y de todo).
  */
 export const deleteReadingProgressRow = async (rowId: string): Promise<void> => {
   if (isSupabaseConfigured && supabase) {
@@ -292,6 +299,48 @@ export const deleteReadingProgressRow = async (rowId: string): Promise<void> => 
   writeLocalJSON(
     LOCAL_KEYS.readingProgress,
     readLocalJSON<ReadingProgressRow[]>(LOCAL_KEYS.readingProgress, []).filter((r) => r.id !== rowId),
+  );
+};
+
+/**
+ * Netflix-style: OCULTAR un tomo de "Continuar Leyendo" SIN borrarlo del
+ * historial. La fila queda con hidden_at y el historial la conserva.
+ */
+export const hideReadingProgress = async (userId: string, chapterId: string): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase
+      .from('reading_progress')
+      .update({ hidden_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('chapter_id', chapterId);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  writeLocalJSON(
+    LOCAL_KEYS.readingProgress,
+    readLocalJSON<ReadingProgressRow[]>(LOCAL_KEYS.readingProgress, []).map((r) =>
+      r.user_id === userId && r.chapter_id === chapterId ? { ...r, hidden_at: new Date().toISOString() } : r,
+    ),
+  );
+};
+
+/** Igual que hideReadingProgress pero por id de fila (la "X" de las tarjetas). */
+export const hideReadingProgressRow = async (rowId: string): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase
+      .from('reading_progress')
+      .update({ hidden_at: new Date().toISOString() })
+      .eq('id', rowId);
+    if (error) console.error('Error ocultando registro de progreso:', error.message);
+    return;
+  }
+
+  writeLocalJSON(
+    LOCAL_KEYS.readingProgress,
+    readLocalJSON<ReadingProgressRow[]>(LOCAL_KEYS.readingProgress, []).map((r) =>
+      r.id === rowId ? { ...r, hidden_at: new Date().toISOString() } : r,
+    ),
   );
 };
 

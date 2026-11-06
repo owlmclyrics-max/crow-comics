@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
-import { saveReadingProgress, deleteReadingProgress, getReadingProgressForChapter } from '../lib/profile';
+import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter } from '../lib/profile';
 import { showToast } from './ui/Toast';
 import { fetchChapterCharacters } from '../lib/chapterCharacters';
 import { CommentsSection } from './CommentsSection';
@@ -165,8 +165,9 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     }
     setMarkingAsRead(true);
     try {
-      await deleteReadingProgress(user.id, chapter.id);
-      showToast('¡Añadido a terminados!');
+      // Netflix-style: sale de "Continuar Leyendo" pero QUEDA en el historial.
+      await hideReadingProgress(user.id, chapter.id);
+      showToast('¡Añadido a terminados! Sigue en tu historial');
       onBack();
     } catch (err) {
       showToast(`No se pudo marcar como terminado: ${err instanceof Error ? err.message : 'error desconocido'}`, 'error');
@@ -185,8 +186,10 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     if (!target || !parentComic) return;
     if (user?.id) {
       setNavDirection(direction);
-      await deleteReadingProgress(user.id, chapter.id).catch(() => {
-        // Si falla el borrado seguimos igual: navegar al tomo destino.
+      // El tomo actual se OCULTA (no se borra): deja de estar en "Continuar
+      // Leyendo" pero conserva su lugar en el historial.
+      await hideReadingProgress(user.id, chapter.id).catch(() => {
+        // Si falla el ocultado seguimos igual: navegar al tomo destino.
       });
       await saveReadingProgress(user.id, parentComic.id, target.id, target.chapter_number).catch(() => {
         // Sin sesión de Supabase válida seguimos igual: navegar al tomo.
@@ -248,9 +251,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     }
   };
 
-  // Sprint 3.5: botón "Finalizado" del modal → borra el registro de
-  // reading_progress, así el tomo desaparece de "Continuar Leyendo"
-  // (mismo mecanismo que "Marcar como leído", pero sin salir del tomo).
+  // Sprint 3.5 (v0.6): botón "Finalizado" del modal → OCULTA el registro de
+  // reading_progress (sale de "Continuar Leyendo", queda en el historial).
   const [finishingPage, setFinishingPage] = useState(false);
 
   const handleFinishFromModal = async () => {
@@ -260,11 +262,11 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     }
     setFinishingPage(true);
     try {
-      await deleteReadingProgress(user.id, chapter.id);
+      await hideReadingProgress(user.id, chapter.id);
       setIsPageModalOpen(false);
       setPageInput('');
       setSavedPage(0);
-      showToast('¡Tomo terminado! Se quitó de "Continuar Leyendo"');
+      showToast('¡Tomo terminado! Fuera de "Continuar Leyendo", queda en tu historial');
     } catch (err) {
       showToast(
         `No se pudo marcar como terminado: ${err instanceof Error ? err.message : 'error desconocido'}`,

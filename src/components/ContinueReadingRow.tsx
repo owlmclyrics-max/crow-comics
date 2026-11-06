@@ -3,7 +3,7 @@ import { Play, History, BookX, X, Bookmark } from 'lucide-react';
 import type { Chapter, Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
-import { getReadingProgress, deleteReadingProgressRow, type ReadingProgressRow } from '../lib/profile';
+import { getReadingProgress, hideReadingProgressRow, type ReadingProgressRow } from '../lib/profile';
 import { showToast } from './ui/Toast';
 
 interface ContinueReadingRowProps {
@@ -33,7 +33,9 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
     }
 
     getReadingProgress(user.id).then((rows) => {
-      if (!cancelled) setProgress(rows.slice(0, 5)); // últimos 5 capítulos
+      // Netflix-style: los tomos OCULTOS (hidden_at) no aparecen aquí,
+      // pero siguen vivos en el historial del perfil.
+      if (!cancelled) setProgress(rows.filter((r) => !r.hidden_at).slice(0, 5));
     });
 
     return () => {
@@ -65,12 +67,13 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
     }
   };
 
-  // Sprint 2.5: quita este registro del historial en Supabase y de la vista
+  // Sprint 2.5 (v0.6): OCULTA el registro de "Continuar Leyendo" sin borrarlo:
+  // el tomo sigue en el historial del perfil (estilo Netflix).
   const handleRemove = async (rowId: string) => {
     // Optimista: la tarjeta desaparece al instante
     setProgress((prev) => prev.filter((r) => r.id !== rowId));
-    await deleteReadingProgressRow(rowId);
-    showToast('Tomado fuera de "Continuar Leyendo"');
+    await hideReadingProgressRow(rowId);
+    showToast('Quitado de "Continuar Leyendo" — sigue en tu historial', 'info');
   };
 
   return (
@@ -147,7 +150,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                     </p>
                   </div>
                   {/* Sprint 3.5: marcar de página (el tomo ya se indica arriba) */}
-                  {row.page_number && row.page_number > 0 && (
+                  {(row.page_number ?? 0) > 0 && (
                     <p className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400">
                       <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
                       Quedaste en la página {row.page_number}
