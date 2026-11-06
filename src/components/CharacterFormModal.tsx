@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   X,
   Save,
@@ -14,6 +14,8 @@ import {
   Zap,
   IdCard,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { Character } from '../types/comic';
 import { CHARACTER_ALIGNMENTS, PUBLISHERS, getAlignmentBadgeClass } from '../lib/constants';
@@ -393,6 +395,52 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
     }));
   };
 
+  // ── Carrusel de enemigos con flechas (como los tomos de una ficha) ──
+  // La fila NO crece ni empuja el layout: se desborda en una sola línea y
+  // las flechas ← → navegan entre círculos cuando ya no caben todos.
+  const enemiesScrollerRef = useRef<HTMLDivElement>(null);
+  const [enemyScroll, setEnemyScroll] = useState({ left: false, right: false });
+
+  const updateEnemyScroll = useCallback(() => {
+    const el = enemiesScrollerRef.current;
+    if (!el) return;
+    setEnemyScroll({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = enemiesScrollerRef.current;
+    if (!el) return;
+    updateEnemyScroll();
+    el.addEventListener('scroll', updateEnemyScroll, { passive: true });
+    const observer = new ResizeObserver(updateEnemyScroll);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateEnemyScroll);
+      observer.disconnect();
+    };
+  }, [updateEnemyScroll, enemyNames.length]);
+
+  const scrollEnemies = (direction: -1 | 1) => {
+    const el = enemiesScrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction * el.clientWidth * 0.7, behavior: 'smooth' });
+  };
+
+  // Al agregar un enemigo nuevo, la fila se desliza al final para que se vea.
+  const prevEnemyCountRef = useRef(0);
+  useEffect(() => {
+    if (enemyNames.length > prevEnemyCountRef.current) {
+      enemiesScrollerRef.current?.scrollTo({
+        left: enemiesScrollerRef.current.scrollWidth,
+        behavior: 'smooth',
+      });
+    }
+    prevEnemyCountRef.current = enemyNames.length;
+  }, [enemyNames.length]);
+
   const updateField = <K extends keyof CharacterFormState>(field: K, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
@@ -611,42 +659,71 @@ export const CharacterFormModal: React.FC<CharacterFormModalProps> = ({
                   )}
                 </div>
 
-                {/* Fila horizontal de círculos (como el reparto) */}
+                {/* Fila horizontal de círculos (como el reparto) con flechas ← → */}
                 {enemyNames.length > 0 && (
-                  <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {enemyNames.map((enemy) => {
-                      const match = findCharacterByName(enemy, characters, characterId);
-                      return (
-                        <button
-                          key={enemy}
-                          type="button"
-                          onClick={() => removeEnemy(enemy)}
-                          title={`Quitar a ${enemy}`}
-                          className="group/enemy relative shrink-0 flex flex-col items-center gap-1 cursor-pointer focus:outline-none"
-                        >
-                          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-line group-hover/enemy:border-red-400/80 bg-bg transition-colors">
-                            {match?.photo_url ? (
-                              <img
-                                src={match.photo_url}
-                                alt={enemy}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Skull className="w-5 h-5 text-faint" />
-                              </div>
-                            )}
-                          </div>
-                          {/* X de quitar, aparece al hover */}
-                          <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/enemy:flex">
-                            <X className="w-3 h-3 text-red-400" />
-                          </span>
-                          <p className="w-14 text-[10px] text-mute truncate group-hover/enemy:text-red-400 transition-colors">
-                            {enemy}
-                          </p>
-                        </button>
-                      );
-                    })}
+                  <div className="flex items-center gap-2">
+                    {(enemyScroll.left || enemyScroll.right) && (
+                      <button
+                        type="button"
+                        onClick={() => scrollEnemies(-1)}
+                        disabled={!enemyScroll.left}
+                        aria-label="Ver enemigos anteriores"
+                        className="shrink-0 p-1.5 rounded-full bg-raised text-mute hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <div
+                      ref={enemiesScrollerRef}
+                      className="flex flex-1 min-w-0 gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                      {enemyNames.map((enemy) => {
+                        const match = findCharacterByName(enemy, characters, characterId);
+                        return (
+                          <button
+                            key={enemy}
+                            type="button"
+                            onClick={() => removeEnemy(enemy)}
+                            title={`Quitar a ${enemy}`}
+                            className="group/enemy relative shrink-0 flex flex-col items-center gap-1 cursor-pointer focus:outline-none"
+                          >
+                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-line group-hover/enemy:border-red-400/80 bg-bg transition-colors">
+                              {match?.photo_url ? (
+                                <img
+                                  src={match.photo_url}
+                                  alt={enemy}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Skull className="w-5 h-5 text-faint" />
+                                </div>
+                              )}
+                            </div>
+                            {/* X de quitar, aparece al hover */}
+                            <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/enemy:flex">
+                              <X className="w-3 h-3 text-red-400" />
+                            </span>
+                            <p className="w-14 text-[10px] text-mute truncate group-hover/enemy:text-red-400 transition-colors">
+                              {enemy}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {(enemyScroll.left || enemyScroll.right) && (
+                      <button
+                        type="button"
+                        onClick={() => scrollEnemies(1)}
+                        disabled={!enemyScroll.right}
+                        aria-label="Ver más enemigos"
+                        className="shrink-0 p-1.5 rounded-full bg-raised text-mute hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
 
