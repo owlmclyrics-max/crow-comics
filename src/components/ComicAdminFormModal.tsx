@@ -95,15 +95,20 @@ const ChapterEditor: React.FC<{
         <input type="number" value={chapter.chapter_number}
           onChange={e => onUpdate('chapter_number', parseInt(e.target.value, 10))} className={inputCls} />
       </Field>
-      <ImageUploadField
-        label="Portada del capítulo"
-        value={chapter.cover_url ?? ''}
-        onChange={url => onUpdate('cover_url', url)}
-      />
       <Field label="Fecha">
         <input type="date" value={chapter.release_date ?? TODAY}
           onChange={e => onUpdate('release_date', e.target.value)} className={inputCls} />
       </Field>
+      {/* Portada en fila propia y compacta: la preview no queda huérfana
+          flotando junto a otros campos (era el layout roto de antes). */}
+      <div className="col-span-2">
+        <ImageUploadField
+          label="Portada del capítulo"
+          value={chapter.cover_url ?? ''}
+          onChange={url => onUpdate('cover_url', url)}
+          compact
+        />
+      </div>
       <Field label="Páginas del tomo" col2>
         <input type="number" min={1}
           value={chapter.pages_count ?? ''}
@@ -317,7 +322,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           <input type="text" value={originalTitle} onChange={e => setOriginalTitle(e.target.value)}
             placeholder="Original title" className={inputCls} />
         </Field>
-        <ImageUploadField label="Portada del cómic *" value={coverUrl} onChange={setCoverUrl} />
+        <ImageUploadField label="Portada del cómic *" value={coverUrl} onChange={setCoverUrl} compact />
         <Field label="Editorial">
           <select value={publisher} onChange={e => setPublisher(e.target.value as ComicPublisher)} className={inputCls}>
             {PUBLISHERS.map(p => <option key={p} value={p}>{p}</option>)}

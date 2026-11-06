@@ -10,9 +10,15 @@ interface ImageUploadFieldProps {
   label: string;
   value: string;
   onChange: (url: string) => void;
+  /**
+   * Layout horizontal compacto: preview fija a la izquierda (o placeholder)
+   * y controles apilados a la derecha. Ideal dentro de formularios altos,
+   * donde la variante normal deja la preview huérfana junto a otros campos.
+   */
+  compact?: boolean;
 }
 
-export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ label, value, onChange }) => {
+export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ label, value, onChange, compact }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +58,46 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ label, value
       if (inputRef.current) inputRef.current.value = '';
     }
   };
+
+  /* ── Variante compacta: preview a la izquierda + controles a la derecha ── */
+  if (compact) {
+    return (
+      <div className="flex gap-3">
+        <div className="w-20 h-28 shrink-0 rounded-lg border border-line bg-bg overflow-hidden flex items-center justify-center">
+          {value ? (
+            <img
+              key={value}
+              src={value}
+              alt={`Vista previa: ${label}`}
+              className="w-full h-full object-cover"
+              onError={event => { event.currentTarget.style.display = 'none'; }}
+            />
+          ) : (
+            <ImagePlus className="w-6 h-6 text-faint" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0 space-y-2">
+          <label className="block text-[11px] font-semibold text-mute uppercase tracking-wide">{label}</label>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="block w-full min-w-0 rounded-xl border border-dashed border-accent/30 bg-accent/10 px-3 py-2.5 text-xs text-mute file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-onaccent hover:border-accent/70"
+            onChange={event => void handleUpload(event.target.files?.[0])}
+          />
+          <input
+            type="text"
+            value={value}
+            onChange={event => onChange(event.target.value)}
+            placeholder="o pega un enlace a la imagen (opcional)"
+            aria-label={`${label} por URL`}
+            className="w-full min-w-0 rounded-xl border border-line bg-bg px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-accent"
+          />
+          {error && <p role="alert" className="text-xs text-accent2">{error}</p>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
