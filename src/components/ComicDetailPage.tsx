@@ -19,6 +19,9 @@ import { useAuth } from '../context/AuthContext';
 import { CommentsSection } from './CommentsSection';
 import { StarRating } from './ui/StarRating';
 import { FavoriteButton, OPEN_AUTH_EVENT } from './FavoriteButton';
+import { FollowButton } from './FollowButton';
+import { useFollows } from '../context/FollowsContext';
+import { newChaptersOf } from '../lib/follows';
 import { AddToListModal } from './AddToListModal';
 import { getReadingProgressForComic } from '../lib/profile';
 import { ListPlus, Bookmark } from 'lucide-react';
@@ -40,6 +43,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
   onOpenChapter
 }) => {
   const { canManageContent, user } = useAuth();
+  const { follows, markSeen } = useFollows();
 
   // Estado para la calificación del usuario
   const [userRating, setUserRating] = useState(0);
@@ -80,6 +84,13 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
       observer.disconnect();
     };
   }, [updateChapterScroll, comic.chapters?.length]);
+
+  // Cómic seguido: al VISITARLO, sus capítulos actuales dejan de ser "nuevos"
+  // (limpia el pendiente de la campana y de las tarjetas).
+  const pendingNew = newChaptersOf(comic, follows.get(comic.id)).length;
+  useEffect(() => {
+    if (pendingNew > 0) markSeen(comic.id);
+  }, [comic.id, pendingNew, markSeen]);
 
   const scrollChapters = (direction: -1 | 1) => {
     const el = chaptersScrollerRef.current;
@@ -174,6 +185,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           {/* Corazón + Añadir a lista (esquina superior derecha del hero) */}
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-start gap-2">
             <FavoriteButton comicId={comic.id} size="lg" />
+            <FollowButton comicId={comic.id} size="lg" />
             <button
               type="button"
               onClick={() => {

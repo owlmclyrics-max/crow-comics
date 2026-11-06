@@ -2,6 +2,9 @@ import React from 'react';
 import type { Comic } from '../types/comic';
 import { BookOpen, User, Feather } from 'lucide-react';
 import { FavoriteButton } from './FavoriteButton';
+import { FollowButton } from './FollowButton';
+import { useFollows } from '../context/FollowsContext';
+import { newChaptersOf } from '../lib/follows';
 
 interface ComicCardProps {
   comic: Comic;
@@ -10,6 +13,9 @@ interface ComicCardProps {
 
 export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
   const chapterCount = comic.chapters?.length || 0;
+  const { follows } = useFollows();
+  // Pendiente: capítulos subidos después de la última visita (solo seguidos).
+  const pending = newChaptersOf(comic, follows.get(comic.id)).length;
 
   return (
     <div
@@ -44,9 +50,18 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
           </span>
         </div>
 
-        {/* Badge de Estado + Corazón de favorito (esquina sup. derecha) */}
+        {/* Badge de Estado + Campanita + Corazón de favorito (esquina sup. derecha) */}
         <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1.5">
+          {pending > 0 && (
+            <span
+              className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md bg-emerald-500/90 text-white shadow-sm border border-emerald-300/40"
+              title="Capítulos nuevos desde tu última visita"
+            >
+              {pending} nuevo{pending === 1 ? '' : 's'}
+            </span>
+          )}
           <FavoriteButton comicId={comic.id} />
+          <FollowButton comicId={comic.id} />
           <span
             className={`px-2 py-0.5 text-xs font-medium rounded-md backdrop-blur-md shadow-sm border ${
               comic.status === 'En curso'

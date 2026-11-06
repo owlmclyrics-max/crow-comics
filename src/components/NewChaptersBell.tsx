@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, BookOpen, X } from 'lucide-react';
+import { Bell, BellRing, BookOpen, X } from 'lucide-react';
 import type { Chapter, Comic } from '../types/comic';
 import { useComics } from '../context/ComicsContext';
+import { useFollows } from '../context/FollowsContext';
 
 // ============================================================================
 // CAMPANA DE NUEVOS TOMOS (todos los usuarios)
@@ -45,9 +46,13 @@ interface NewChaptersBellProps {
 
 export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSelectComic }) => {
   const { refreshComics } = useComics();
+  const { follows } = useFollows();
   const [isOpen, setIsOpen] = useState(false);
   const [seenAt, setSeenAt] = useState<Date | null>(() => readSeenAt());
   const containerRef = useRef<HTMLDivElement>(null);
+  // Pestaña activa; null = aún no se decide (siguiendo si ya sigues algo).
+  const [tab, setTab] = useState<'siguiendo' | 'todos' | null>(null);
+  const activeTab = tab ?? (follows.size > 0 ? 'siguiendo' : 'todos');
 
   // Todos los capítulos con fecha, del más nuevo al más viejo.
   const allChapters = useMemo<ChapterWithMeta[]>(() => {
@@ -80,6 +85,21 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
     const seenTime = seenAt.getTime();
     return allChapters.filter((entry) => entry.date.getTime() > seenTime);
   }, [allChapters, seenAt]);
+
+  // Capítulos nuevos SOLO de los cómics que sigues (vs tu última visita a cada uno).
+  const followedNew = useMemo(() => {
+    if (follows.size === 0) return [];
+    return allChapters.filter((entry) => {
+      const lastSeen = follows.get(entry.comic.id);
+      if (!lastSeen) return false;
+      const seen = new Date(lastSeen).getTime();
+      return !Number.isNaN(seen) && entry.date.getTime() > seen;
+    });
+  }, [allChapters, follows]);
+
+  // Si sigues cómics, la campana cuenta solo SUS novedades; si no, todo.
+  const badgeCount = follows.size > 0 ? followedNew.length : newChapters.length;
+  const visibleChapters = activeTab === 'siguiendo' ? followedNew : newChapters;
 
   const markAllSeen = useCallback(() => {
     const now = new Date();
@@ -121,15 +141,15 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
           if (!isOpen && count > 0) markAllSeen();
         }}
         className={`relative p-2 rounded-xl bg-surface hover:bg-raised border border-line transition-colors ${
-          count > 0 ? 'text-accent' : 'text-mute hover:text-ink'
+          badgeCount > 0 ? 'text-accent' : 'text-mute hover:text-ink'
         }`}
-        title="Nuevos tomos"
-        aria-label={`Nuevos tomos${count > 0 ? ` (${count} sin ver)` : ''}`}
+        title={follows.size > 0 ? 'Nuevos tomos de tus cómics seguidos' : 'Nuevos tomos'}
+        aria-label={`Nuevos tomos${badgeCount > 0 ? ` (${badgeCount} sin ver)` : ''}`}
       >
         <Bell className="w-4 h-4" />
-        {count > 0 && (
+        {badgeCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-accent text-onaccent text-[9px] font-black flex items-center justify-center shadow-lg shadow-accent/40">
-            {count > 9 ? '9+' : count}
+            {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         )}
       </button>
@@ -140,9 +160,9 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
             <div className="flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5 text-accent" />
               <span className="text-xs font-bold text-ink">Nuevos tomos</span>
-              {count > 0 && (
+              {badgeCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-bold border border-accent/30">
-                  {count} sin ver
+                  {badgeCount} sin ver
                 </span>
               )}
             </div>
@@ -155,13 +175,50 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
             </button>
           </div>
 
+          {/* Pestañas: prioriza lo que SIGUES; "Todos" muestra todo el sitio */}
+          {follows.size > 0 && (
+            <div className="flex gap-1 p-1.5 border-b border-line bg-raised/40">
+              <button
+                type="button"
+                onClick={() => setTab('siguiendo')}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                  activeTab === 'siguiendo'
+                    ? 'bg-accent text-onaccent shadow-sm'
+                    : 'text-mute hover:text-ink'
+                }`}
+              >
+                <BellRing className="w-3.5 h-3.5" />
+                Siguiendo ({follows.size})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('todos')}
+                className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                  activeTab === 'todos'
+                    ? 'bg-accent text-onaccent shadow-sm'
+                    : 'text-mute hover:text-ink'
+                }`}
+              >
+                Todos
+              </button>
+            </div>
+          )}
+
           <div className="max-h-80 overflow-y-auto divide-y divide-line">
-            {newChapters.length === 0 ? (
-              <div className="p-6 text-center text-xs text-faint">
-                Ya viste todo lo subido. ¡Cuando llegue un tomo nuevo te avisamos aquí! 🐦
-              </div>
+            {visibleChapters.length === 0 ? (
+              activeTab === 'siguiendo' ? (
+                <div className="p-6 text-center text-xs text-faint">
+                  {follows.size === 0
+                    ? 'No sigues ningún cómic aún — toca la campanita en una tarjeta o ficha 🐦'
+                    : 'Sin tomos nuevos en tus cómics seguidos 🐦'}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-faint">
+                  Ya viste todo lo subido. ¡Cuando llegue un tomo nuevo te avisamos aquí! 🐦
+                </div>
+              )
             ) : (
-              newChapters.slice(0, 20).map(({ chapter, comic, date }) => (
+              visibleChapters.slice(0, 20).map(({ chapter, comic, date }) => (
                 <button
                   key={chapter.id}
                   type="button"

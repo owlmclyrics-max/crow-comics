@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ComicsProvider } from './context/ComicsContext'
 import { CharactersProvider } from './context/CharactersContext'
 import { FavoritesProvider } from './context/FavoritesContext'
+import { FollowsProvider } from './context/FollowsContext'
 import { ThemeProvider } from './context/ThemeContext'
 
 // PWA: registro del service worker (solo producción; en dev estorbaría).
@@ -26,11 +27,13 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <AuthProvider>
         <FavoritesProvider>
-          <ComicsProvider>
-            <CharactersProvider>
-              <App />
-            </CharactersProvider>
-          </ComicsProvider>
+          <FollowsProvider>
+            <ComicsProvider>
+              <CharactersProvider>
+                <App />
+              </CharactersProvider>
+            </ComicsProvider>
+          </FollowsProvider>
         </FavoritesProvider>
       </AuthProvider>
     </ThemeProvider>
