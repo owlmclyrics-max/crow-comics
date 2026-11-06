@@ -23,6 +23,17 @@ interface WebhookPayload {
 
 Deno.serve(async (req) => {
   try {
+    // Puerta cerrada: si se configuró WEBHOOK_SECRET, el disparador debe
+    // enviarlo en el header x-webhook-secret. Evita que cualquiera con la
+    // URL dispare notificaciones falsas a todos los seguidores.
+    const expectedSecret = Deno.env.get('WEBHOOK_SECRET');
+    if (expectedSecret && req.headers.get('x-webhook-secret') !== expectedSecret) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const payload = (await req.json()) as WebhookPayload;
 
     // Solo nos interesa la inserción de capítulos.

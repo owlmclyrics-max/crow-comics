@@ -53,25 +53,59 @@ agrega estas tres:
 | `VAPID_PUBLIC_KEY` | `BDciMswMYxXqQFvg55BTaOLQfZrO3gb9FX5lg3E18H7er2cI3vJ3c6jU6oZcTMgNpjBTrRnJbUrmOQU-S5FTZm0` |
 | `VAPID_PRIVATE_KEY` | `blWe5F4yeI6TSuSB4J6Q3jq7HPmc5EZ-kMT5m9aUX_Q` |
 | `VAPID_SUBJECT` | `mailto:tu-correo@ejemplo.com` |
+| `WEBHOOK_SECRET` | `6c260beef6094d9195be793d09fa0a4e218277dc0bf640ee8bc6bd62f98b77cb` |
+
+La última es la llave que el trigger SQL usa para autorizarse — sin ella,
+cualquiera con la URL de la función podría disparar notificaciones falsas.
 
 ⚠️ La **privada** NO se toca nunca: vive solo en los secrets. Si se filtra,
 se regeneran las dos y se actualiza el secret (la pública del código está en
 `src/lib/pushNotifications.ts`).
 
-## Paso 3 — El Webhook (dispara el envío)
+## Paso 3 — El disparador: SQL (más simple que el Webhook del panel)
 
-Supabase → **Database** → **Webhooks** → **Enable webhooks** (una vez) →
-**Create a webhook**:
+El dashboard puede no mostrar la pestaña de Webhooks — no hace falta. Un
+trigger SQL hace lo mismo. En **SQL Editor** corre el contenido de
+`add-chapter-push-trigger.sql` (ya viene con la llave y la URL puestas):
 
-- **Name:** `notify-new-chapter`
-- **Table:** `chapters`
-- **Events:** ✅ INSERT (solo insert)
-- Al guardarlo, Supabase crea una Edge Function (se llama tipo
-  `handle_chapters_insert` o el nombre que elegiste).
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_net;
 
-Abre esa función recién creada (Edge Functions → tu función → código) y
-**reemplaza TODO su contenido** por el contenido de
-`supabase/functions/notify-new-chapter/index.ts` de este repo. **Deploy**.
+CREATE OR REPLACE FUNCTION public.notify_new_chapter_hook()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  PERFORM net.http_post(
+    url := 'https://zllafdlsatueezldoxlh.supabase.co/functions/v1/notify-new-chapter',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-webhook-secret', '6c260beef6094d9195be793d09fa0a4e218277dc0bf640ee8bc6bd62f98b77cb'
+    ),
+    body := jsonb_build_object(
+      'type', 'INSERT',
+      'table', 'chapters',
+      'record', to_jsonb(NEW)
+    ),
+    timeout_msec := 15000
+  );
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS chapters_notify_new_chapter ON public.chapters;
+CREATE TRIGGER chapters_notify_new_chapter
+AFTER INSERT ON public.chapters
+FOR EACH ROW
+EXECUTE FUNCTION public.notify_new_chapter_hook();
+```
+
+### Y la Edge Function (si aún no la creaste)
+
+**Edge Functions → Deploy a new function → Via Editor → Open Editor**:
+nómbrala `notify-new-chapter`, reemplaza TODO el código por el contenido de
+`supabase/functions/notify-new-chapter/index.ts` de este repo y **Deploy**.
 
 ## Paso 4 — Probar
 
