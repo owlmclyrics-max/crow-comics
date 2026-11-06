@@ -12,7 +12,7 @@
 //   cae al respaldo local del catálogo (localStorage) por su cuenta.
 // ============================================================================
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL_CACHE = `crow-shell-${VERSION}`;
 const RUNTIME_CACHE = `crow-runtime-${VERSION}`;
 
@@ -55,6 +55,48 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ── Notificaciones PUSH (v0.5): tomos nuevos de cómics que sigues ──
+// La Edge Function de Supabase envía el mensaje cuando se inserta un
+// capítulo; aquí lo convertimos en notificación del sistema.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Crow Comics', {
+      body: data.body || 'Hay contenido nuevo para ti',
+      icon: '/crow-192.png',
+      badge: '/crow-192.png',
+      tag: data.tag || undefined,
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/' },
+    }),
+  );
+});
+
+// Tocar la notificación: abre (o enfoca) la app directo en el tomo nuevo.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) {
+          if (client.url.includes(self.location.origin)) {
+            client.focus();
+            if (typeof client.navigate === 'function') client.navigate(target);
+            return;
+          }
+        }
+        return self.clients.openWindow(target);
+      }),
+  );
 });
 
 /** ¿Es una fuente de Google (CSS u archivo de fuente)? */

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Map as MapIcon, History, Plus, X, Check } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Map as MapIcon, History, Plus, X, Check, Bell, BellRing } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,12 @@ import {
   INSTALL_PROMPT_EVENT,
   type BeforeInstallPromptEvent,
 } from '../lib/installPrompt';
+import {
+  disablePush,
+  enablePush,
+  getPushState,
+  type PushState,
+} from '../lib/pushNotifications';
 
 interface MobileBottomNavProps {
   currentView: CurrentView;
@@ -42,9 +48,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenProfile,
   onOpenNewComic,
 }) => {
-  const { canManageContent } = useAuth();
+  const { canManageContent, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // Notificaciones push de tomos nuevos (v0.5): estado del permiso/suscripción.
+  const [pushState, setPushState] = useState<PushState>('default');
+  const [pushBusy, setPushBusy] = useState(false);
   // El evento llega vía captura GLOBAL (lib/installPrompt): se registra antes
   // del render, así no se pierde aunque Chrome lo dispare muy temprano.
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(
@@ -66,6 +75,51 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       window.removeEventListener(APP_INSTALLED_EVENT, onInstalled);
     };
   }, []);
+
+  // Estado del push: se refresca cada vez que abren la hoja "Más".
+  useEffect(() => {
+    if (!isSheetOpen) return;
+    let cancelled = false;
+    getPushState().then((state) => {
+      if (!cancelled) setPushState(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSheetOpen, user?.id]);
+
+  // Activar / desactivar las notificaciones de tomos nuevos.
+  const handleTogglePush = async () => {
+    if (pushBusy) return;
+    if (!user?.id) {
+      showToast('Inicia sesión para activar las notificaciones', 'info');
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const state = await getPushState();
+      if (state === 'denied') {
+        showToast('Permiso bloqueado — actívalo en los ajustes del navegador', 'info');
+        return;
+      }
+      if (state === 'subscribed') {
+        await disablePush();
+        setPushState('default');
+        showToast('Notificaciones desactivadas', 'info');
+      } else {
+        await enablePush(user.id);
+        setPushState('subscribed');
+        showToast('¡Notificaciones activadas! 🔔 te avisamos cuando suba tomo', 'success');
+      }
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : 'No se pudieron cambiar las notificaciones',
+        'error',
+      );
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const handleInstall = async () => {
     // 1) El navegador ya nos dijo que se puede: lanzar su diálogo nativo.
@@ -207,6 +261,45 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                     Disponible
                   </span>
                 )}
+              </button>
+
+              {/* Notificaciones push de tomos nuevos (v0.5) */}
+              <button
+                type="button"
+                onClick={() => void handleTogglePush()}
+                disabled={pushBusy}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-accent/10 transition-colors ${
+                  pushState === 'subscribed' ? 'text-emerald-400' : 'text-accent'
+                } disabled:opacity-60`}
+                title={
+                  pushState === 'unsupported'
+                    ? 'En iPhone funciona con la app instalada (iOS 16.4+)'
+                    : undefined
+                }
+              >
+                {pushState === 'subscribed' ? (
+                  <BellRing className="w-5 h-5" />
+                ) : (
+                  <Bell className="w-5 h-5" />
+                )}
+                Avisos de tomos nuevos
+                <span
+                  className={`ml-auto px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                    pushState === 'subscribed'
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-400/30'
+                      : 'bg-accent/15 text-accent border-accent/30'
+                  }`}
+                >
+                  {!user
+                    ? 'Inicia sesión'
+                    : pushState === 'subscribed'
+                      ? 'Activadas ✓'
+                      : pushState === 'denied'
+                        ? 'Bloqueadas'
+                        : pushState === 'unsupported'
+                          ? 'No soportadas'
+                          : 'Activar'}
+                </span>
               </button>
 
               <button
