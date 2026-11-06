@@ -261,7 +261,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider rounded-md bg-accent/10 text-accent border border-accent/25 leading-none"
                   title="Versión actual del sitio"
                 >
-                  Beta v0.4
+                  Beta v0.5
                 </span>
               </div>
               <p className="text-[10px] text-mute font-mono hidden sm:block">
