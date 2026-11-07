@@ -64,7 +64,7 @@ export const ROADMAP_VERSIONS: RoadmapVersionWithTasks[] = [
       { id: 'v06-8', label: 'Historial de lectura mejorado con filtros por fecha y cómic', done: false },
       { id: 'v06-9', label: 'Estados de lectura que cada lector elige por tomo: "Leyendo / Leído / En pausa / Abandonado"', done: false },
       { id: 'v06-10', label: 'Historial independiente: eliminar algo de "Continuar leyendo" NO lo borra del historial', done: true },
-      { id: 'v06-1', label: 'Modo lectura inmersivo: visor online a pantalla completa con la navbar oculta (tipo visor de Google)', done: false },
+      { id: 'v06-1', label: 'Modo lectura inmersivo: visor online a pantalla completa con la navbar oculta (tipo visor de Google)', done: true },
       { id: 'v06-2', label: 'Modos de lectura: horizontal, webtoon continuo y doble página', done: false },
       { id: 'v06-3', label: 'Zoom, brillo y modo noche dentro del lector', done: false },
     ],

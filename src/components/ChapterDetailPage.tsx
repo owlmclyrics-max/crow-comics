@@ -25,6 +25,8 @@ import {
   SkipForward,
   Bookmark,
   Layers,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -42,6 +44,8 @@ interface ChapterDetailPageProps {
   onSelectCharacter: (character: Character) => void;
   /** Sprint 2.5: navega a otro tomo usado por "Leer Siguiente Tomo". */
   onOpenChapter: (chapter: Chapter, comic: Comic) => void;
+  /** v0.6: avisa a App.tsx al entrar/salir del modo inmersivo (oculta navbars). */
+  onImmersiveChange?: (active: boolean) => void;
 }
 
 // SPRINT 2.5: tarjetas de navegación entre tomos (anterior / siguiente de la
@@ -115,7 +119,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   onBack,
   onOpenCharactersModal,
   onSelectCharacter,
-  onOpenChapter
+  onOpenChapter,
+  onImmersiveChange
 }) => {
   const { canManageContent, user } = useAuth();
   const { comics, reportBrokenLink } = useComics();
@@ -226,6 +231,43 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     setPageInput('');
     setIsPageModalOpen(true);
   };
+
+  // ── Modo lectura inmersivo (v0.6): visor a pantalla completa sin navbars ──
+  // App.tsx oculta Navbar y la barra móvil mientras dure la lectura.
+  const [isImmersive, setIsImmersive] = useState(false);
+
+  const enterImmersive = () => {
+    setIsImmersive(true);
+    onImmersiveChange?.(true);
+  };
+
+  const exitImmersive = () => {
+    setIsImmersive(false);
+    onImmersiveChange?.(false);
+  };
+
+  // Al desmontar (cambiar de tomo o salir de la vista), restaurar las barras.
+  useEffect(() => () => onImmersiveChange?.(false), []);
+
+  // Bloquear el scroll del fondo mientras el visor cubre todo.
+  useEffect(() => {
+    if (!isImmersive) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isImmersive]);
+
+  // Esc también sale del modo inmersivo (desktop).
+  useEffect(() => {
+    if (!isImmersive) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitImmersive();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isImmersive]);
 
   const handleSavePage = async () => {
     const pageNumber = parseInt(pageInput, 10);
@@ -402,7 +444,41 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   };
 
   return (
-    <div className="space-y-10 animate-fade-in pb-16">
+    <>
+      {/* ── VISOR INMERSIVO (v0.6): pantalla completa, sin navbar ni barra móvil ──
+          Hermano del div raíz (no hijo) para que `fixed` sea siempre respecto
+          al viewport y no lo rompa la animación fade-in del contenedor. */}
+      {isImmersive && chapter.pdf_url && (
+        <div className="fixed inset-0 z-[70] bg-zinc-950">
+          <iframe
+            src={chapter.pdf_url}
+            title={`Leer ${chapter.title} a pantalla completa`}
+            className="absolute inset-0 w-full h-full"
+            allow="autoplay"
+          />
+          {/* Botones flotantes sobre el visor: marcador y salir */}
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openPageModal}
+              className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
+              title="Guardar marcador de página"
+            >
+              <Bookmark className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={exitImmersive}
+              className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
+              title="Salir de pantalla completa (Esc)"
+            >
+              <Minimize2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-10 animate-fade-in pb-16">
       {/* Botón de Regresar */}
       <div>
         <button
@@ -602,7 +678,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* ================================================================ */}
       {/* SECCIÓN: VISOR PDF EMBEBIDO                                       */}
       {/* ================================================================ */}
-      {chapter.pdf_url && (
+      {chapter.pdf_url && !isImmersive && (
         <div ref={pdfViewerRef} className="space-y-4 scroll-mt-6">
           <div className="border-b border-line pb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -633,6 +709,14 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               >
                 <Bookmark className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span>Guardar página actual</span>
+              </button>
+              <button
+                onClick={enterImmersive}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/40 transition-all shadow-md active:scale-95"
+                title="Leer a pantalla completa, sin distracciones"
+              >
+                <Maximize2 className="w-4 h-4" />
+                <span>Pantalla completa</span>
               </button>
             </div>
           </div>
@@ -779,7 +863,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* MINI-MODAL: GUARDAR PÁGINA ACTUAL (Sprint 3.5)                    */}
       {/* ================================================================ */}
       {isPageModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setIsPageModalOpen(false)}>
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" onClick={() => setIsPageModalOpen(false)}>
           <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" />
           <div
             className="relative w-full max-w-sm bg-surface rounded-2xl border border-amber-500/40 shadow-2xl p-5 space-y-4 animate-fade-in"
@@ -929,6 +1013,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };

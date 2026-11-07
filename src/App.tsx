@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { useComics } from './context/ComicsContext';
 import type { Comic, ComicTag, Chapter, Character, ReadingEvent } from './types/comic';
 import { toChapterWithComic } from './lib/comicUtils';
@@ -427,6 +427,13 @@ export const App: React.FC = () => {
     }
   };
 
+  // Modo lectura inmersivo (v0.6): ChapterDetailPage avisa al entrar/salir y
+  // aquí ocultamos Navbar y barra móvil para que el visor quede 100% limpio.
+  const [isImmersiveReading, setIsImmersiveReading] = useState(false);
+  useEffect(() => {
+    if (currentView !== 'chapter-detail') setIsImmersiveReading(false);
+  }, [currentView]);
+
   return (
     <div className="min-h-screen bg-bg text-ink flex flex-col font-sans selection:bg-accent selection:text-onaccent">
       {/* ===== AMBIENTE GLOBAL: luces y halftone detrás de toda la web ===== */}
@@ -455,22 +462,24 @@ export const App: React.FC = () => {
       ) : (
         <>
       {/* Navbar Superior con Pestañas Inicio / Cómics y Atajo Ctrl+Shift+A */}
-      <Navbar
-        comics={comics}
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onSelectComic={handleOpenComicDetail}
-        onOpenAuth={(tab) => {
-          setAuthModalTab(tab ?? 'signin');
-          setIsAuthModalOpen(true);
-        }}
-        onOpenProfile={() => setCurrentView('profile')}
-        onOpenPublicProfile={(profileId) => {
-          setSelectedProfileId(profileId);
-          setCurrentView('public-profile');
-        }}
-        onOpenNewComic={handleOpenNewComic}
-      />
+      {!isImmersiveReading && (
+        <Navbar
+          comics={comics}
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          onSelectComic={handleOpenComicDetail}
+          onOpenAuth={(tab) => {
+            setAuthModalTab(tab ?? 'signin');
+            setIsAuthModalOpen(true);
+          }}
+          onOpenProfile={() => setCurrentView('profile')}
+          onOpenPublicProfile={(profileId) => {
+            setSelectedProfileId(profileId);
+            setCurrentView('public-profile');
+          }}
+          onOpenNewComic={handleOpenNewComic}
+        />
+      )}
 
       {/* Contenido Principal según Vista */}
       <main className="box-border relative z-10 flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
@@ -518,6 +527,7 @@ export const App: React.FC = () => {
               setIsChapterCharactersModalOpen(true);
             }}
             onOpenChapter={handleOpenChapterDetail}
+            onImmersiveChange={setIsImmersiveReading}
           />
         ) : currentView === 'list-detail' && selectedList ? (
           /* ======================================================== */
@@ -705,12 +715,14 @@ export const App: React.FC = () => {
       </footer>
 
       {/* ── Barra inferior móvil estilo app nativa + volver arriba ── */}
-      <MobileBottomNav
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onOpenProfile={() => setCurrentView('profile')}
-        onOpenNewComic={handleOpenNewComic}
-      />
+      {!isImmersiveReading && (
+        <MobileBottomNav
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          onOpenProfile={() => setCurrentView('profile')}
+          onOpenNewComic={handleOpenNewComic}
+        />
+      )}
       <ScrollToTop />
         </>
       )}
