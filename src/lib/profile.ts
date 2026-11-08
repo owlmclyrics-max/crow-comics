@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { readLocalJSON, writeLocalJSON } from './localStore';
+import type { ReadingStatus } from './readingStatus';
 
 // ==============================================================================
 // SPRINT 1: Capa de datos del perfil de usuario (favoritos, historial,
@@ -36,6 +37,8 @@ export interface ReadingProgressRow {
   /** Netflix-style: con marca, el tomo sale de "Continuar Leyendo" pero
       SIGUE en el historial. Solo el borrado explícito lo elimina de ambos. */
   hidden_at?: string | null;
+  /** v0.6: estado que el lector asigna al tomo (v. lib/readingStatus.ts). */
+  reading_status?: ReadingStatus | null;
 }
 
 export interface ReadingListRow {
@@ -342,6 +345,71 @@ export const hideReadingProgressRow = async (rowId: string): Promise<void> => {
       r.id === rowId ? { ...r, hidden_at: new Date().toISOString() } : r,
     ),
   );
+};
+
+// ------------------------- Estados de lectura (v0.6) -------------------------
+
+/**
+ * v0.6-9: asigna el estado del tomo (leyendo/leido/en_pausa/abandonado).
+ *
+ * - Upsert sobre (user_id, chapter_id): si el usuario nunca abrió el tomo,
+ *   se CREA la fila (así la ficha registra el estado igual).
+ * - 'leyendo' → visible en "Continuar Leyendo" (hidden_at null).
+ * - Los demás estados lo OCULTAN de "Continuar Leyendo" sin borrar el
+ *   historial (mismo mecanismo Netflix del resto de la app).
+ * - Propaga el error: quien lo llama decide si muestra toast (acción manual)
+ *   o falla en silencio (autoflujo).
+ */
+export const setReadingStatus = async (
+  userId: string,
+  comicId: string,
+  chapterId: string,
+  chapterNumber: number,
+  status: ReadingStatus,
+): Promise<void> => {
+  const now = new Date().toISOString();
+
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('reading_progress').upsert(
+      {
+        user_id: userId,
+        comic_id: comicId,
+        chapter_id: chapterId,
+        chapter_number: chapterNumber,
+        reading_status: status,
+        // Determinístico: 'leyendo' implica que este tomo se está leyendo
+        // otra vez (aunque antes estuviera "Leído").
+        completed: status === 'leido',
+        hidden_at: status === 'leyendo' ? null : now,
+        updated_at: now,
+      },
+      { onConflict: 'user_id,chapter_id' },
+    );
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const all = readLocalJSON<ReadingProgressRow[]>(LOCAL_KEYS.readingProgress, []);
+  const existing = all.find((r) => r.user_id === userId && r.chapter_id === chapterId);
+  if (existing) {
+    existing.reading_status = status;
+    if (status === 'leido') existing.completed = true;
+    existing.hidden_at = status === 'leyendo' ? null : now;
+    existing.updated_at = now;
+  } else {
+    all.unshift({
+      id: uid(),
+      user_id: userId,
+      comic_id: comicId,
+      chapter_id: chapterId,
+      chapter_number: chapterNumber,
+      reading_status: status,
+      completed: status === 'leido',
+      hidden_at: status === 'leyendo' ? null : now,
+      updated_at: now,
+    });
+  }
+  writeLocalJSON(LOCAL_KEYS.readingProgress, all);
 };
 
 // ------------------------------ Listas de lectura ------------------------------

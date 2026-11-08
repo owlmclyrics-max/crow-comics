@@ -125,7 +125,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
               @{profile.username}
             </h2>
             {profile.bio?.trim() && (
-              <p className="text-sm text-mute whitespace-pre-line max-w-2xl mx-auto sm:mx-0">
+              <p className="text-sm text-mute whitespace-pre-line break-words max-w-2xl mx-auto sm:mx-0">
                 {profile.bio}
               </p>
             )}
@@ -160,6 +160,13 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             <p className="text-xs text-mute max-w-sm mx-auto mt-1">
               Aún no marcó ningún cómic como favorito.
             </p>
+            <button
+              type="button"
+              onClick={onBack}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
+            >
+              Volver
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">

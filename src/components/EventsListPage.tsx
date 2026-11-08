@@ -91,16 +91,24 @@ export const EventsListPage: React.FC<EventsListPageProps> = ({
   } else {
     content = (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-      {events.map((event, index) => {
+      {events.map((event) => {
         const { total, available } = availability.get(event.id) ?? { total: 0, available: 0 };
         const pct = total > 0 ? Math.round((available / total) * 100) : 0;
 
         return (
-          <div
+          <article
             key={event.id}
             onClick={() => onSelectEvent(event)}
-            className="group relative flex flex-col bg-surface border border-line rounded-xl overflow-hidden hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/40 smooth-transition cursor-pointer transform hover:-translate-y-1.5 animate-scale-in"
-            style={{ animationDelay: `${index * 0.05}s` }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Abrir guía de lectura: ${event.title}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectEvent(event);
+              }
+            }}
+            className="group relative flex flex-col bg-surface border border-line rounded-xl overflow-hidden hover:border-accent/40 hover:shadow-lg smooth-transition cursor-pointer hover:-translate-y-1"
           >
             {/* Portada ancha del evento (aspect-video) */}
             <div className="relative aspect-video w-full overflow-hidden bg-bg">
@@ -162,7 +170,7 @@ export const EventsListPage: React.FC<EventsListPageProps> = ({
             {/* Información del evento */}
             <div className="p-4 flex flex-col flex-1 gap-3">
               <div className="flex-1">
-                <h3 className="font-bold text-ink text-base leading-snug line-clamp-1 group-hover:text-accent transition-colors">
+                <h3 className="font-bold text-ink text-base leading-snug line-clamp-2 group-hover:text-accent smooth-transition">
                   {event.title}
                 </h3>
                 {event.description && (
@@ -192,7 +200,7 @@ export const EventsListPage: React.FC<EventsListPageProps> = ({
                 </div>
               </div>
             </div>
-          </div>
+          </article>
         );
       })}
       </div>
@@ -206,7 +214,7 @@ export const EventsListPage: React.FC<EventsListPageProps> = ({
         <div className="flex justify-end">
           <button
             onClick={() => setIsAdminModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/30 transition-all shadow-md shadow-accent/40 active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/30 transition-all shadow-md shadow-accent/20 active:scale-95"
           >
             {events.length === 0 ? (
               <>

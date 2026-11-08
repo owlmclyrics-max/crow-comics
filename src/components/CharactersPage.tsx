@@ -171,7 +171,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               key={character.id}
               type="button"
               onClick={() => onSelectCharacter(character)}
-              className="group flex flex-col items-center text-center gap-1.5 cursor-pointer focus:outline-none"
+              className="group flex flex-col items-center text-center gap-1.5 cursor-pointer"
               aria-label={`Ver la ficha de ${character.name}`}
             >
               {/* Retrato circular puro: sin cajita, la imagen ES el botón */}
@@ -201,7 +201,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               </div>
 
               <div className="w-full px-1">
-                <p className="text-xs sm:text-sm font-bold text-ink leading-tight line-clamp-1 group-hover:text-accent transition-colors">
+                <p className="text-xs sm:text-sm font-bold text-ink leading-tight line-clamp-2 group-hover:text-accent transition-colors">
                   {character.name}
                 </p>
                 {character.name_spanish && (

@@ -5,20 +5,25 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Flame,
   ArrowRight,
-  BookOpen
+  Play,
+  Pause,
+  Info
 } from 'lucide-react';
 
 interface SteamHeroCarouselProps {
   comics: Comic[];
   onSelectChapter?: (chapter: ChapterWithComic) => void;
-  onExplorePublishers: () => void;
+  /** "Más info": abre la ficha completa de la serie (opcional por compat). */
+  onSelectComic?: (comic: Comic) => void;
+  /** En desuso: se mantiene para no romper a quien ya lo pasaba. */
+  onExplorePublishers?: () => void;
 }
 
 export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   comics,
   onSelectChapter,
+  onSelectComic,
   onExplorePublishers
 }) => {
   // Crear lista plana de capítulos con información del cómic.
@@ -62,277 +67,279 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   }, [comics]);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  // Control de la rotación automática (WCAG 2.2.2: el movimiento automático
+  // debe poder pausarse) y respeto a prefers-reduced-motion.
+  const [isPaused, setIsPaused] = useState(false);
 
   // Auto-slide cada 6 segundos (se reinicia al navegar manualmente)
   useEffect(() => {
-    if (recentChapters.length <= 1) return;
+    if (recentChapters.length <= 1 || isPaused) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % recentChapters.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [recentChapters.length, activeIndex]);
+  }, [recentChapters.length, activeIndex, isPaused]);
+
+  const handleNext = () => setActiveIndex((prev) => (prev + 1) % recentChapters.length);
+  const handlePrev = () =>
+    setActiveIndex((prev) => (prev - 1 + recentChapters.length) % recentChapters.length);
 
   if (recentChapters.length === 0) {
-    // Fallback: mostrar cómics directamente si no hay tomos cargados
+    // Fallback cuando no hay tomos publicados (o datos aún cargando):
+    // mismo lenguaje full-bleed, destacando el primer cómic del catálogo.
     if (comics.length === 0) return null;
+    const fallbackComic = comics[0];
+    const fallbackChapter = fallbackComic.chapters?.[0] ?? null;
+
     return (
-      <div className="relative rounded-3xl bg-surface border border-line/90 shadow-2xl overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img
-            src={comics[0].cover_url}
-            alt={comics[0].title}
-            className="w-full h-full object-cover blur-2xl scale-125 opacity-20"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-surface/80 to-bg/60" />
-        </div>
-        <div className="relative p-8 sm:p-12 flex flex-col sm:flex-row items-center gap-8 z-10">
-          <div className="aspect-[2/3] w-36 sm:w-44 rounded-2xl overflow-hidden border-2 border-line shadow-2xl shrink-0">
-            <img src={comics[0].cover_url} alt={comics[0].title} className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 space-y-4 text-center sm:text-left">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <span className="px-3 py-1 text-xs font-bold uppercase rounded-lg bg-amber-500 text-zinc-950">{comics[0].publisher}</span>
-              <span className="px-3 py-1 text-xs font-semibold rounded-lg bg-raised text-accent border border-accent/30">{comics[0].tag}</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-ink tracking-tight">{comics[0].title}</h2>
-            <p className="text-sm text-mute leading-relaxed max-w-2xl line-clamp-3">{comics[0].synopsis}</p>
-            <div className="flex items-center justify-center sm:justify-start gap-2 pt-2">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-raised text-mute text-xs border border-line">
-                <BookOpen className="w-4 h-4" />
-                Próximamente tomos disponibles
-              </span>
+      <section
+        aria-label="Cómic destacado"
+        className="relative overflow-hidden w-full mx-[calc(50%-50vw)] h-[70svh] min-h-[500px] -mt-5 sm:-mt-8 bg-surface border-b border-line"
+      >
+        <img
+          src={fallbackComic.cover_url}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-60"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-bg/30" />
+        <div className="relative h-full flex flex-col justify-end p-6 sm:p-12 lg:px-16 space-y-3 sm:space-y-4 max-w-2xl">
+          <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-bg/70 backdrop-blur-md border border-line text-ink">
+            <Sparkles className="w-3 h-3 text-accent" />
+            Del catálogo Crow Comics
+          </span>
+          <h2 className="text-4xl sm:text-5xl font-black text-ink tracking-tight">
+            {fallbackComic.title}
+          </h2>
+          <p className="text-xs sm:text-sm text-mute leading-relaxed line-clamp-3 break-words">
+            {fallbackComic.synopsis}
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            {fallbackChapter && (
               <button
-                onClick={onExplorePublishers}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all"
+                type="button"
+                onClick={() => {
+                  if (fallbackChapter) onSelectChapter?.(toChapterWithComic(fallbackChapter, fallbackComic));
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent hover:bg-accent2 text-onaccent text-xs font-bold shadow-lg shadow-accent/20 smooth-transition active:scale-95"
               >
-                <ArrowRight className="w-4 h-4" />
-                Ver Catálogo
+                <Play className="w-4 h-4 fill-current" />
+                Leer ahora
               </button>
-            </div>
+            )}
+            {onSelectComic && (
+              <button
+                type="button"
+                onClick={() => onSelectComic(fallbackComic)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-bg/60 hover:bg-bg/80 backdrop-blur-md border border-line text-ink text-xs font-bold smooth-transition active:scale-95"
+              >
+                <Info className="w-4 h-4" />
+                Más info
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onExplorePublishers?.()}
+              className="inline-flex items-center gap-1.5 px-2 py-2.5 text-xs font-bold text-accent hover:text-accent2 smooth-transition"
+            >
+              Ver por editoriales
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  const currentIndex = Math.min(activeIndex, recentChapters.length - 1);
-  const current = recentChapters[currentIndex];
-
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % recentChapters.length);
-  };
-
-  const handlePrev = () => {
-    setActiveIndex((prev) => (prev - 1 + recentChapters.length) % recentChapters.length);
-  };
+  const current = recentChapters[activeIndex];
+  // Completamos la ficha con datos del cómic padre (editorial, tomos, estado).
+  const parentComic = comics.find((c) => c.id === current.comic_id) ?? null;
+  const capCount = parentComic?.chapters?.length ?? 0;
 
   return (
-    <div className="relative rounded-3xl bg-surface border border-accent/25 shadow-2xl overflow-hidden group smooth-transition-slow">
-      {/* Línea de luz superior del acento (marco "neón" del card) */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
-
-      {/* Contador de posición estilo gestor de UI (01 / 05) */}
-      <div className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
-        <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-3 py-1 font-mono text-[11px] font-bold tracking-widest text-white/90 shadow-lg backdrop-blur-md">
-          {String(currentIndex + 1).padStart(2, '0')}
-          <span className="mx-1 text-white/40">/</span>
-          {String(recentChapters.length).padStart(2, '0')}
-        </span>
-      </div>
-
+    <section
+      aria-label="Novedades destacadas"
+      className="group relative overflow-hidden w-full mx-[calc(50%-50vw)] h-[86svh] max-h-[950px] min-h-[620px] -mt-5 sm:-mt-8 border-b border-line bg-surface"
+    >
       {/* Fondo cinemático: TODAS las portadas apiladas con crossfade.
-          Nada se desmonta al cambiar de slide (remounts sobre capas con
-          blur/transform salen como "fantasmas" en Chromium). */}
+          Nada se desmonta al cambiar de slide (remounts con blur/transform
+          salen como "fantasmas" en Chromium). */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {recentChapters.map((chapter, idx) => (
           <img
             key={chapter.id}
             src={chapter.cover_url || chapter.comic_cover_url}
             alt=""
-            className={`absolute inset-0 w-full h-full object-cover blur-2xl scale-125 transition-opacity duration-700 ease-out ${
-              currentIndex === idx ? 'opacity-25' : 'opacity-0'
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-out ${
+              activeIndex === idx ? 'opacity-100' : 'opacity-0'
             }`}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-surface/80 to-bg/60" />
+        {/* Velo legibilidad: gradiente lateral + base hacia el fondo del sitio */}
+        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10 sm:from-bg/90 sm:via-bg/40 sm:to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-bg via-bg/55 to-transparent" />
       </div>
 
-      {/* ── Flechas de navegación flotantes a media altura ── */}
-      {/* Discos glass grandes al costado del card, estilo Steam/gestor de   */}
-      {/* UI: en escritorio aparecen al pasar el cursor; en móvil siempre    */}
-      {/* visibles. Al hover se visten del acento. */}
+      {/* Contador + pausa del autoplay (WCAG 2.2.2) arriba a la derecha */}
+      <div className="absolute top-4 right-4 z-30 sm:top-6 sm:right-8 flex items-center gap-2">
+        <span className="inline-flex items-center rounded-full border border-line bg-bg/60 px-3 py-1 font-mono text-[11px] font-bold tracking-widest text-ink/90 shadow-md backdrop-blur-md">
+          {String(activeIndex + 1).padStart(2, '0')}
+          <span className="mx-1 text-faint">/</span>
+          {String(recentChapters.length).padStart(2, '0')}
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsPaused((v) => !v)}
+          aria-label={isPaused ? 'Reanudar rotación automática' : 'Pausar rotación automática'}
+          title={isPaused ? 'Reanudar' : 'Pausar'}
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-bg/60 text-ink/90 shadow-md backdrop-blur-md transition-all duration-200 active:scale-90 hover:border-accent hover:bg-accent hover:text-onaccent"
+        >
+          {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+        </button>
+      </div>
+
+      {/* Flechas de navegación: siempre en móvil, aparecen al hover en desktop */}
       {recentChapters.length > 1 && (
         <>
           <button
             type="button"
             onClick={handlePrev}
-            aria-label="Anterior novedad"
+            aria-label="Novedad anterior"
             title="Anterior"
-            className="absolute left-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 shadow-xl backdrop-blur-md transition-all duration-200 opacity-100 active:scale-95 hover:scale-110 hover:border-accent hover:bg-accent hover:text-onaccent hover:shadow-accent/50 sm:left-4 sm:h-12 sm:w-12 sm:opacity-0 sm:group-hover:opacity-100"
+            className="absolute left-2 sm:left-4 top-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-bg/60 text-ink shadow-lg backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 active:scale-95 hover:bg-accent hover:border-accent hover:text-onaccent"
           >
             <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
           <button
             type="button"
             onClick={handleNext}
-            aria-label="Siguiente novedad"
+            aria-label="Novedad siguiente"
             title="Siguiente"
-            className="absolute right-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 shadow-xl backdrop-blur-md transition-all duration-200 opacity-100 active:scale-95 hover:scale-110 hover:border-accent hover:bg-accent hover:text-onaccent hover:shadow-accent/50 sm:right-4 sm:h-12 sm:w-12 sm:opacity-0 sm:group-hover:opacity-100"
+            className="absolute right-2 sm:right-4 top-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-bg/60 text-ink shadow-lg backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 active:scale-95 hover:bg-accent hover:border-accent hover:text-onaccent"
           >
             <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </>
       )}
 
-      <div className="relative p-5 sm:p-8 md:p-10 flex flex-col lg:flex-row gap-6 sm:gap-8 items-center z-10 animate-fade-in">
-        {/* LADO IZQUIERDO: Portada Principal Vertical (crossfade entre tomos,
-            sin remounts: la capa nunca se destruye al navegar) */}
-        <div
-          onClick={() => onSelectChapter?.(current)}
-          className="relative aspect-[2/3] w-48 sm:w-56 md:w-64 rounded-2xl overflow-hidden border-2 border-accent/30 shadow-2xl bg-bg shrink-0 cursor-pointer group/cover transform hover:scale-[1.03] smooth-transition"
-        >
-          <div className="absolute inset-0 transition-transform duration-500 group-hover/cover:scale-105">
-            {recentChapters.map((chapter, idx) => (
-              <img
-                key={chapter.id}
-                src={chapter.cover_url || chapter.comic_cover_url}
-                alt={currentIndex === idx ? current.title : ''}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out ${
-                  currentIndex === idx ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Badge de Novedad / Destacado estilo Steam */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-accent text-onaccent shadow-md flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 fill-onaccent" />
-              Tomo #{current.chapter_number}
+      {/* ── CONTENIDO: título gigante + ficha + CTAs, abajo a la izquierda.
+          Re-anima suavemente al cambiar de slide (key = slide activo). ── */}
+      <div
+        key={current.id}
+        className="absolute left-0 bottom-28 sm:bottom-36 px-5 sm:px-10 lg:px-16 max-w-xl sm:max-w-2xl space-y-2.5 sm:space-y-4 text-left animate-fade-in"
+      >
+        {/* Ranking factual (posición en novedades) + género del tomo */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-bg/70 backdrop-blur-md border border-line text-[10px] font-black uppercase tracking-wider text-ink">
+            <Sparkles className="w-3 h-3 text-accent" />
+            #{activeIndex + 1} en novedades
+          </span>
+          {current.comic_tag && (
+            <span className="px-2.5 py-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
+              {current.comic_tag}
             </span>
-            {current.comic_publisher && (
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-bg/90 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                {current.comic_publisher}
-              </span>
-            )}
-          </div>
-
-          <div className="absolute bottom-3 right-3">
-            <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-bg/80 backdrop-blur-md text-ink border border-line">
-              {current.comic_status}
-            </span>
-          </div>
+          )}
         </div>
 
-        {/* LADO DERECHO: Información, Sinopsis, Tomos y Botones (el texto
-            re-anima al cambiar de slide, sin recrear imágenes) */}
-        <div className="flex-1 text-center lg:text-left">
-          <div key={current.id} className="space-y-4 animate-fade-in">
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              Recién Publicado · {current.comic_tag}
-            </div>
-            {current.comic_year && (
-              <span className="text-xs text-mute font-mono">
-                · {current.comic_year}
-              </span>
-            )}
-          </div>
+        {/* Título del tomo (Archivo desde la base global) */}
+        <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-ink tracking-tight leading-[1.05] drop-shadow-sm">
+          {current.title}
+        </h2>
+        <p className="text-sm sm:text-base text-mute font-semibold">
+          {current.comic_title}
+        </p>
 
-          <div>
-            <h2
-              onClick={() => onSelectChapter?.(current)}
-              className="text-2xl sm:text-4xl font-black text-ink tracking-tight cursor-pointer hover:text-accent2 transition-colors line-clamp-1 flex items-baseline gap-2 sm:gap-3"
-            >
-              <span className="text-accent group-hover:text-accent2 leading-none">#{current.chapter_number}</span>
-              <span className="truncate">{current.title}</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-mute italic mt-0.5">
-              {current.comic_title}
-            </p>
-          </div>
+        {/* Meta factual: año · editorial · tomos · estado */}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs text-mute font-semibold">
+          {current.comic_year && <span>{current.comic_year}</span>}
+          {current.comic_year && parentComic?.publisher && <span className="text-faint">·</span>}
+          {parentComic?.publisher && <span className="text-accent">{parentComic.publisher}</span>}
+          {(current.comic_year || parentComic?.publisher) && <span className="text-faint">·</span>}
+          <span>{capCount} {capCount === 1 ? 'tomo' : 'tomos'}</span>
+          <span className="text-faint">·</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                parentComic?.status === 'En curso' ? 'bg-accent' : 'bg-faint'
+              }`}
+              aria-hidden="true"
+            />
+            {parentComic?.status ?? current.comic_status}
+          </span>
+        </p>
 
-          {/* Sinopsis destacada */}
-          <p className="text-xs sm:text-sm text-mute leading-relaxed line-clamp-3 sm:line-clamp-4 max-w-2xl bg-bg/40 p-4 rounded-2xl border border-line/80 text-left">
-            {current.comic_synopsis}
-          </p>
+        {/* Sinopsis (sin caja: texto directo, estilo Netflix) */}
+        <p className="hidden sm:block text-xs lg:text-sm text-mute leading-relaxed line-clamp-3 break-words drop-shadow">
+          {current.comic_synopsis}
+        </p>
 
-          {/* Metadata de Guión y Maquetación */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-mute">
-            <span>
-              <strong className="text-mute">Guion:</strong> {current.comic_writer}
-            </span>
-            <span>•</span>
-            <span>
-              <strong className="text-mute">Maqueta:</strong> <span className="text-accent">{current.comic_translator_typesetter}</span>
-            </span>
-            {current.pages_count && (
-              <>
-                <span>•</span>
-                <span className="text-mute font-medium">
-                  {current.pages_count} páginas
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Botones de Acción */}
-          <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+        {/* CTAs: leer el tomo / ficha completa de la serie */}
+        <div className="pt-1 flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => onSelectChapter?.(current)}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-accent hover:bg-accent2 text-onaccent text-xs sm:text-sm font-bold shadow-lg shadow-accent/20 smooth-transition hover:scale-[1.03] active:scale-95"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            Leer ahora
+          </button>
+          {onSelectComic && parentComic && (
             <button
-              onClick={() => onSelectChapter?.(current)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs shadow-lg shadow-accent/20 transition-all hover:scale-105 active:scale-95"
+              type="button"
+              onClick={() => onSelectComic(parentComic)}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-bg/60 hover:bg-bg/80 backdrop-blur-md border border-line text-ink text-xs sm:text-sm font-bold smooth-transition hover:scale-[1.03] active:scale-95"
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Ver Tomo & Descargas</span>
+              <Info className="w-4 h-4" />
+              Más info
             </button>
-
-            <button
-              onClick={onExplorePublishers}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-raised hover:bg-ink/10 text-mute hover:text-ink font-semibold text-xs transition-colors border border-line"
-            >
-              <span>Ver por Editoriales</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Miniaturas Inferiores estilo Selector de Steam */}
-      {recentChapters.length > 1 && (
-        <div className="border-t border-accent/20 bg-bg/70 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none flex-1">
-            <span className="text-[11px] font-bold text-mute uppercase tracking-wider mr-2 shrink-0 hidden sm:inline">
-              Últimas 5 Novedades:
-            </span>
-            {recentChapters.map((chapter, idx) => {
-              const isActive = currentIndex === idx;
-              return (
-                <button
-                  key={chapter.id}
-                  onClick={() => setActiveIndex(idx)}
-                  aria-label={`Ir a ${chapter.title}`}
-                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all shrink-0 border active:scale-95 ${
+      {/* ── TIRA DE MINIATURAS (la navegación principal, estilo Netflix):
+          #1–#5, la activa resaltada con su título debajo. ── */}
+      <div className="absolute inset-x-0 bottom-0 z-20 px-5 sm:px-10 lg:px-14 pb-3 sm:pb-4 pt-10 bg-gradient-to-t from-bg/90 via-bg/50 to-transparent">
+        <div className="flex items-end gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {recentChapters.map((chapter, idx) => {
+            const isActive = idx === activeIndex;
+            return (
+              <button
+                key={chapter.id}
+                type="button"
+                onClick={() => setActiveIndex(idx)}
+                aria-label={`Ver novedad #${idx + 1}: ${chapter.title}`}
+                aria-current={isActive || undefined}
+                className="group/thumb w-28 sm:w-36 shrink-0 text-left"
+              >
+                <span
+                  className={`block aspect-video rounded-lg overflow-hidden bg-bg border smooth-transition ${
                     isActive
-                      ? 'bg-raised border-accent text-ink shadow-md shadow-accent/20'
-                      : 'bg-surface/60 border-line/80 text-mute hover:text-ink hover:bg-raised'
+                      ? 'border-accent ring-2 ring-accent/40'
+                      : 'border-line opacity-55 hover:opacity-100'
                   }`}
                 >
                   <img
                     src={chapter.cover_url || chapter.comic_cover_url}
-                    alt={chapter.title}
-                    className={`w-5 h-7 object-cover rounded shrink-0 transition-all ${isActive ? 'ring-1 ring-accent' : 'opacity-70'}`}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-105"
                   />
-                  <span className="text-xs font-semibold truncate max-w-[120px] sm:max-w-[160px]">
-                    {chapter.title}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                </span>
+                <span
+                  className={`block mt-1.5 text-[10px] font-bold truncate ${
+                    isActive ? 'text-ink' : 'text-faint group-hover/thumb:text-mute'
+                  }`}
+                >
+                  {chapter.title}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 };

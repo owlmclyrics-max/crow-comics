@@ -339,6 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
                 <button
                   onClick={closeSearch}
+                  aria-label="Cerrar búsqueda"
                   className="absolute right-2.5 p-1 text-mute hover:text-ink transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -347,6 +348,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={() => setIsSearchOpen(true)}
+                aria-label="Buscar cómic o perfil"
                 className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all hover:border-faint group"
                 title="Buscar cómic (Ctrl + K)"
               >
@@ -371,10 +373,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                     <div className="divide-y divide-line border-b border-line">
                       {matchingProfiles.map((p) => (
-                        <div
+                        <button
                           key={p.id}
+                          type="button"
                           onClick={() => handleOpenProfileResult(p.id)}
-                          className="p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
+                          className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
                         >
                           <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-line bg-raised shrink-0">
                             {p.avatar_url ? (
@@ -398,7 +401,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               {p.bio?.trim() || 'Lector de Crow Comics'}
                             </p>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </>
@@ -421,13 +424,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ) : (
                   <div className="max-h-80 overflow-y-auto divide-y divide-line">
                     {matchingComics.map((comic) => (
-                      <div
+                      <button
                         key={comic.id}
+                        type="button"
                         onClick={() => {
                           onSelectComic(comic);
                           closeSearch();
                         }}
-                        className="p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
+                        className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
                       >
                         <img
                           src={comic.cover_url}
@@ -450,7 +454,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <span>{comic.translator_typesetter}</span>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -464,6 +468,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div>
                 <button
                   onClick={() => { setIsUserMenuOpen((v) => !v); setShowReports(false); }}
+                  aria-label="Abrir menú de mi cuenta"
+                  aria-expanded={isUserMenuOpen}
                   className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-surface border transition-all ${
                     isUserMenuOpen
                       ? 'border-accent/40'
@@ -633,7 +639,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </span>
                         )}
                       </div>
-                      <button onClick={() => setShowReports(false)} className="p-1 rounded text-faint hover:text-mute transition-colors">
+                      <button
+                        onClick={() => setShowReports(false)}
+                        aria-label="Cerrar reportes"
+                        className="p-1 rounded text-faint hover:text-mute transition-colors"
+                      >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -672,6 +682,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                   <>
                                     <button
                                       onClick={() => handleUpdateReport(report.id, 'resolved')}
+                                      aria-label="Marcar reporte como resuelto"
                                       className="p-1 rounded-lg bg-accent/15 hover:bg-accent/30 text-accent transition-colors border border-accent/40"
                                       title="Marcar como resuelto"
                                     >
@@ -679,6 +690,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                     </button>
                                     <button
                                       onClick={() => handleUpdateReport(report.id, 'dismissed')}
+                                      aria-label="Descartar reporte"
                                       className="p-1 rounded-lg bg-raised hover:bg-raised text-mute transition-colors border border-line"
                                       title="Descartar reporte"
                                     >

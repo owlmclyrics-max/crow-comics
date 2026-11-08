@@ -84,7 +84,7 @@ const ChapterEditor: React.FC<{
   onUpdateLink: <K extends keyof ChapterLink>(li: number, field: K, value: ChapterLink[K]) => void;
   onRemoveLink: (li: number) => void;
 }> = ({ chapter, onUpdate, onAddLink, onUpdateLink, onRemoveLink }) => (
-  <div className="space-y-5 h-full">
+  <div className="space-y-5">
     {/* Datos básicos */}
     <div className="grid grid-cols-2 gap-3">
       <Field label="Título" col2>
@@ -406,7 +406,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   const selectedChapter = chapters[selectedChapterIdx];
 
   const renderChapters = () => (
-    <div className="flex flex-col md:flex-row gap-4 min-h-0 md:h-full md:min-h-[420px]">
+    <div className="flex flex-col md:flex-row gap-4 md:min-h-[420px]">
 
       {/* ── COLUMNA IZQUIERDA: lista compacta ── */}
       <div className="w-full md:w-52 md:shrink-0 flex flex-col gap-2">
@@ -482,7 +482,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       <div className="hidden md:block w-px bg-line shrink-0" />
 
       {/* ── COLUMNA DERECHA: editor ── */}
-      <div className="flex-1 min-w-0 md:overflow-y-auto">
+      <div className="flex-1 min-w-0">
         {selectedChapter ? (
           <div className="space-y-1 mb-3">
             <div className="flex items-center gap-2">
@@ -568,7 +568,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
 
       {/* Content */}
-      <div className={`flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5 ${currentStep === 'chapters' ? 'md:overflow-hidden' : ''}`}>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5">
         {errorMsg && (
           <div className="mb-4 p-3.5 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-3">
             <AlertCircle className="w-4 h-4 shrink-0 text-accent2" />

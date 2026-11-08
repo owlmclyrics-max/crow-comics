@@ -79,7 +79,7 @@ export const ChaptersModal: React.FC<ChaptersModalProps> = ({
               title="Modo cuadrícula"
               className={`p-2.5 rounded-xl transition-all border ${
                 viewMode === 'grid'
-                  ? 'bg-accent text-onaccent border-accent/30 shadow-md shadow-accent/40'
+                  ? 'bg-accent text-onaccent border-accent/30 shadow-md shadow-accent/20'
                   : 'bg-raised text-mute hover:text-ink border border-line hover:bg-line'
               }`}
             >
@@ -90,7 +90,7 @@ export const ChaptersModal: React.FC<ChaptersModalProps> = ({
               title="Modo lista"
               className={`p-2.5 rounded-xl transition-all border ${
                 viewMode === 'list'
-                  ? 'bg-accent text-onaccent border-accent/30 shadow-md shadow-accent/40'
+                  ? 'bg-accent text-onaccent border-accent/30 shadow-md shadow-accent/20'
                   : 'bg-raised text-mute hover:text-ink border border-line hover:bg-line'
               }`}
             >

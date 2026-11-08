@@ -262,7 +262,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                 Biografía
               </h3>
               {character.description ? (
-                <p className="text-sm sm:text-[15px] text-mute leading-relaxed whitespace-pre-line">
+                <p className="text-sm sm:text-[15px] text-mute leading-relaxed whitespace-pre-line break-words">
                   {character.description}
                 </p>
               ) : (
@@ -307,7 +307,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                       type="button"
                       key={name}
                       onClick={() => match && onSelectCharacter?.(match)}
-                      className={`group/enemy flex w-24 shrink-0 flex-col items-center gap-2 text-center focus:outline-none ${
+                      className={`group/enemy flex w-24 shrink-0 flex-col items-center gap-2 text-center ${
                         onSelectCharacter ? 'cursor-pointer' : 'cursor-default'
                       }`}
                       aria-label={`Ver la ficha de ${name}`}
@@ -402,7 +402,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                         key={chapter.id}
                         type="button"
                         onClick={() => onSelectChapter(chapter, selectedComic)}
-                        className="group/ch flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center focus:outline-none"
+                        className="group/ch flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center"
                         aria-label={`Leer ${chapter.title}`}
                       >
                         <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/ch:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">
@@ -433,7 +433,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                         key={comic.id}
                         type="button"
                         onClick={() => setSelectedComicId(comic.id)}
-                        className="group/cast flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center focus:outline-none"
+                        className="group/cast flex w-28 sm:w-32 shrink-0 flex-col items-center gap-2 text-center"
                         aria-label={`Ver capítulos de ${comic.title}`}
                       >
                         <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/cast:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">

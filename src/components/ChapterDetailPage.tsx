@@ -21,7 +21,6 @@ import {
   X,
   Send,
   CheckCircle,
-  Check,
   SkipForward,
   Bookmark,
   Layers,
@@ -30,7 +29,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
-import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter } from '../lib/profile';
+import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter, setReadingStatus } from '../lib/profile';
+import type { ReadingStatus } from '../lib/readingStatus';
+import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
 import { fetchChapterCharacters } from '../lib/chapterCharacters';
 import { CommentsSection } from './CommentsSection';
@@ -90,7 +91,7 @@ const ChapterNavCards: React.FC<ChapterNavCardsProps> = ({ prevChapter, nextChap
             <button
               onClick={() => onRead('next')}
               disabled={navDirection !== null}
-              className="group flex-1 min-w-0 inline-flex items-center justify-center gap-3 px-4 sm:px-6 py-3.5 rounded-2xl bg-accent hover:bg-accent2 text-onaccent text-xs sm:text-sm font-black transition-all shadow-xl shadow-accent/50 hover:scale-[1.02] active:scale-95 disabled:opacity-60"
+              className="group flex-1 min-w-0 inline-flex items-center justify-center gap-3 px-4 sm:px-6 py-3.5 rounded-2xl bg-accent hover:bg-accent2 text-onaccent text-xs sm:text-sm font-black smooth-transition shadow-lg shadow-accent/20 hover:scale-[1.02] active:scale-95 disabled:opacity-60"
             >
               {navDirection === 'next' ? (
                 <span className="w-4 h-4 border-2 border-zinc-950/40 border-t-zinc-950 rounded-full animate-spin shrink-0" />
@@ -160,27 +161,6 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     return previous.reduce((a, b) => (b.chapter_number > a.chapter_number ? b : a));
   }, [parentComic, chapter.chapter_number]);
 
-  const [markingAsRead, setMarkingAsRead] = useState(false);
-
-  // Tarea 1: quita este tomo del historial ("Continuar Leyendo") y regresa al cómic
-  const handleMarkAsRead = async () => {
-    if (!user?.id) {
-      showToast('Inicia sesión para marcar tomos como terminados', 'info');
-      return;
-    }
-    setMarkingAsRead(true);
-    try {
-      // Netflix-style: sale de "Continuar Leyendo" pero QUEDA en el historial.
-      await hideReadingProgress(user.id, chapter.id);
-      showToast('¡Añadido a terminados! Sigue en tu historial');
-      onBack();
-    } catch (err) {
-      showToast(`No se pudo marcar como terminado: ${err instanceof Error ? err.message : 'error desconocido'}`, 'error');
-    } finally {
-      setMarkingAsRead(false);
-    }
-  };
-
   // Dirección en curso para mostrar el spinner en el botón correspondiente
   const [navDirection, setNavDirection] = useState<'prev' | 'next' | null>(null);
 
@@ -211,19 +191,55 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   // visor: "Tu marcador: página X".
   const [savedPage, setSavedPage] = useState(0);
 
+  // ── v0.6: estado de lectura del tomo (leyendo/leido/en_pausa/abandonado) ──
+  const [currentStatus, setCurrentStatus] = useState<ReadingStatus | null>(null);
+  const [savingStatus, setSavingStatus] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     setSavedPage(0);
+    setCurrentStatus(null);
     if (!user?.id) return;
     getReadingProgressForChapter(user.id, chapter.id).then((row) => {
-      if (!cancelled && row?.page_number) setSavedPage(row.page_number);
+      if (cancelled) return;
+      if (row?.page_number) setSavedPage(row.page_number);
+      if (row?.reading_status) setCurrentStatus(row.reading_status);
+      // Reabrir un tomo pausado/abandonado/terminado implica que se está
+      // leyendo de nuevo: el estado vuelve a "Leyendo" (y el tomo regresa
+      // a "Continuar Leyendo"). Falla en silencio si la columna aún no existe.
+      if (row?.reading_status && row.reading_status !== 'leyendo') {
+        setReadingStatus(user.id, chapter.comic_id, chapter.id, chapter.chapter_number, 'leyendo')
+          .then(() => setCurrentStatus('leyendo'))
+          .catch(() => { /* columna reading_status pendiente de migrar */ });
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [user?.id, chapter.id]);
+  }, [user?.id, chapter.id, chapter.comic_id, chapter.chapter_number]);
+
+  // Cambia el estado del tomo (selector de la ficha). La columna reading_status
+  // debe existir en Supabase (add-reading-status.sql).
+  const handleSetStatus = async (status: ReadingStatus) => {
+    if (!user?.id) {
+      showToast('Inicia sesión para guardar el estado del tomo', 'info');
+      return;
+    }
+    if (status === currentStatus) return;
+    setSavingStatus(true);
+    try {
+      await setReadingStatus(user.id, chapter.comic_id, chapter.id, chapter.chapter_number, status);
+      setCurrentStatus(status);
+      showToast(`Estado del tomo: ${READING_STATUSES.find((s) => s.value === status)?.label}`, 'success');
+    } catch (err) {
+      showToast(`No se pudo guardar el estado: ${err instanceof Error ? err.message : 'error desconocido'}`, 'error');
+    } finally {
+      setSavingStatus(false);
+    }
+  };
 
   const [isPageModalOpen, setIsPageModalOpen] = useState(false);
+  const [reportingLink, setReportingLink] = useState<ChapterLink | null>(null);
   const [pageInput, setPageInput] = useState('');
   const [savingPage, setSavingPage] = useState(false);
 
@@ -269,6 +285,26 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isImmersive]);
 
+  // Mini-modales (marcador / reporte): Escape cierra y se bloquea el scroll
+  // del fondo. El Escape NO debe salir del modo inmersivo a la vez.
+  useEffect(() => {
+    const anyMiniModalOpen = isPageModalOpen || !!reportingLink;
+    if (!anyMiniModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsPageModalOpen(false);
+        setReportingLink(null);
+      }
+    };
+    document.body.classList.add('crow-modal-open');
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      document.body.classList.remove('crow-modal-open');
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [isPageModalOpen, reportingLink]);
+
   const handleSavePage = async () => {
     const pageNumber = parseInt(pageInput, 10);
     if (!Number.isFinite(pageNumber) || pageNumber < 1) return;
@@ -304,7 +340,15 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     }
     setFinishingPage(true);
     try {
-      await hideReadingProgress(user.id, chapter.id);
+      // v0.6: "Finalizado" ahora registra el estado "Leído" (sale de
+      // "Continuar Leyendo" y lo muestra el historial con su chip).
+      try {
+        await setReadingStatus(user.id, chapter.comic_id, chapter.id, chapter.chapter_number, 'leido');
+      } catch {
+        // Columna reading_status pendiente de migrar: ocultado clásico.
+        await hideReadingProgress(user.id, chapter.id);
+      }
+      setCurrentStatus('leido');
       setIsPageModalOpen(false);
       setPageInput('');
       setSavedPage(0);
@@ -320,7 +364,6 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   };
 
   // Modal de reporte de enlace caído
-  const [reportingLink, setReportingLink] = useState<ChapterLink | null>(null);
   const [reporterName, setReporterName]   = useState('');
   const [reportMsg, setReportMsg]         = useState('');
   const [reportSending, setReportSending] = useState(false);
@@ -461,6 +504,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             <button
               type="button"
               onClick={openPageModal}
+              aria-label="Guardar marcador de página"
               className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
               title="Guardar marcador de página"
             >
@@ -469,6 +513,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             <button
               type="button"
               onClick={exitImmersive}
+              aria-label="Salir de pantalla completa"
               className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
               title="Salir de pantalla completa (Esc)"
             >
@@ -499,7 +544,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img
             src={chapter.cover_url || chapter.comic_cover_url}
-            alt={chapter.title}
+            alt=""
+            aria-hidden="true"
             className="w-full h-full object-cover blur-3xl scale-125 opacity-30 animate-parallax-float"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
@@ -551,7 +597,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               </div>
 
               {/* Sinopsis */}
-              <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-3xl bg-bg/60 p-4 sm:p-5 rounded-2xl border border-line text-left">
+              <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-3xl bg-bg/60 p-4 sm:p-5 rounded-2xl border border-line text-left break-words">
                 {chapter.comic_synopsis}
               </p>
 
@@ -601,25 +647,42 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                   <ChevronDown className="w-3.5 h-3.5 text-mute group-hover:translate-y-0.5 transition-transform" />
                 </button>
               )}
-              {/* Sprint 2.5: marcar como terminado (soluciona el atasco de "Continuar Leyendo") */}
-              <button
-                onClick={handleMarkAsRead}
-                disabled={markingAsRead}
-                title="Quitar este tomo de 'Continuar Leyendo'"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-emerald-50 border border-emerald-500/40 transition-all shadow-md shadow-emerald-950/40 group active:scale-95 disabled:opacity-60"
+              {/* v0.6: estado del tomo — Leyendo / Leído / En pausa / Abandonado.
+                  "Leído" remplaza al antiguo botón "Marcar como leído". */}
+              <div
+                role="group"
+                aria-label="Estado del tomo"
+                className="inline-flex items-center gap-1 pr-1 mr-1 pl-2 py-1 rounded-xl bg-bg/60 border border-line/80"
               >
-                {markingAsRead ? (
-                  <span className="w-4 h-4 border-2 border-emerald-200 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                )}
-                <span>{markingAsRead ? 'Procesando...' : 'Marcar como leído'}</span>
-              </button>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-faint pr-0.5 hidden sm:inline">
+                  Estado
+                </span>
+                {READING_STATUSES.map((opt) => {
+                  const active = currentStatus === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => void handleSetStatus(opt.value)}
+                      disabled={savingStatus}
+                      aria-pressed={active}
+                      title={opt.hint}
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border smooth-transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
+                        active
+                          ? opt.chipClass
+                          : 'text-mute bg-transparent border-transparent hover:text-ink hover:bg-raised'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
               {/* Botón ver todos los capítulos */}
               {parentComic && parentComic.chapters && parentComic.chapters.length > 1 && (
                 <button
                   onClick={() => setIsChaptersModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/40 transition-all shadow-md shadow-accent/40 group active:scale-95"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/40 transition-all shadow-md shadow-accent/20 group active:scale-95"
                 >
                   <Layers className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Ver Capítulos</span>
@@ -643,6 +706,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                     <button
                       type="button"
                       onClick={() => { setReportingLink(link); setReportSent(false); }}
+                      aria-label={`Reportar enlace caído: ${link.name}`}
                       title="Reportar enlace caído"
                       className="px-2.5 py-2.5 rounded-r-xl text-xs bg-accent/10 hover:bg-accent/20 text-accent2 hover:text-ink transition-all shadow-lg border-l border-accent/30 active:scale-95"
                     >
@@ -802,7 +866,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                   type="button"
                   key={char.id}
                   onClick={() => onSelectCharacter(char)}
-                  className="group flex w-24 sm:w-28 shrink-0 flex-col items-center gap-2 text-center cursor-pointer focus:outline-none"
+                  className="group flex w-24 sm:w-28 shrink-0 flex-col items-center gap-2 text-center cursor-pointer"
                   aria-label={`Ver la página de ${char.name}`}
                 >
                   <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors shadow-lg">
@@ -863,7 +927,13 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* MINI-MODAL: GUARDAR PÁGINA ACTUAL (Sprint 3.5)                    */}
       {/* ================================================================ */}
       {isPageModalOpen && (
-        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" onClick={() => setIsPageModalOpen(false)}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guardar marcador de página"
+          className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4 [overscroll-behavior:contain]"
+          onClick={() => setIsPageModalOpen(false)}
+        >
           <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" />
           <div
             className="relative w-full max-w-sm bg-surface rounded-2xl border border-amber-500/40 shadow-2xl p-5 space-y-4 animate-fade-in"
@@ -881,7 +951,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                   </p>
                 </div>
               </div>
-              <button type="button" onClick={() => setIsPageModalOpen(false)}
+              <button type="button" onClick={() => setIsPageModalOpen(false)} aria-label="Cerrar"
                 className="p-1.5 rounded-lg bg-raised hover:bg-raised text-mute transition-colors">
                 <X className="w-4 h-4" />
               </button>
@@ -934,7 +1004,13 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* MINI-MODAL: REPORTAR ENLACE CAÍDO                                 */}
       {/* ================================================================ */}
       {reportingLink && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setReportingLink(null)}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Reportar enlace caído"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 [overscroll-behavior:contain]"
+          onClick={() => setReportingLink(null)}
+        >
           <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" />
           <div
             className="relative w-full max-w-md bg-surface rounded-2xl border border-line shadow-2xl p-5 space-y-4 animate-fade-in"
@@ -958,7 +1034,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                       Enlace: <span className="text-mute font-semibold">{reportingLink.name}</span>
                     </p>
                   </div>
-                  <button type="button" onClick={() => setReportingLink(null)}
+                  <button type="button" onClick={() => setReportingLink(null)} aria-label="Cerrar"
                     className="p-1.5 rounded-lg bg-raised hover:bg-raised text-mute transition-colors">
                     <X className="w-4 h-4" />
                   </button>

@@ -40,6 +40,7 @@ import {
   type ReadingListItemRow,
   type PrivacySettings,
 } from '../lib/profile';
+import { readingStatusChipClass, readingStatusLabel } from '../lib/readingStatus';
 
 export type ProfileTab = 'favoritos' | 'listas' | 'historial' | 'privacidad';
 
@@ -61,6 +62,8 @@ interface ProfilePageProps {
   initialTab?: ProfileTab;
   /** Sprint 4 (dev): reabre el Onboarding Wizard para reconfigurar el perfil. */
   onOpenOnboarding?: () => void;
+  /** Lleva al catálogo (CTA de los estados vacíos). */
+  onExploreComics?: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -71,6 +74,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onOpenList,
   initialTab,
   onOpenOnboarding,
+  onExploreComics,
 }) => {
   const { user, profile, refreshProfile, isAdmin } = useAuth();
   const { comics } = useComics();
@@ -241,7 +245,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       {/* ================================================================ */}
       {/* SPRINT 4: HEADER "HOGAR" — banner, avatar solapado, XP y stats    */}
       {/* ================================================================ */}
-      <section className="relative overflow-hidden rounded-3xl border border-line bg-bg shadow-2xl shadow-black/60">
+      <section className="relative overflow-hidden rounded-3xl border border-line bg-bg shadow-2xl">
         {/* ── Banner decorativo ── */}
         <div className="relative h-32 sm:h-44">
           {/* Base de gradiente */}
@@ -281,7 +285,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ── Fila principal: avatar solapado + identidad + acciones ── */}
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             {/* Avatar grande que sobresale del banner */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-3xl overflow-hidden border-4 border-bg shadow-xl shadow-black/60 bg-surface">
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-3xl overflow-hidden border-4 border-bg shadow-xl bg-surface">
               {avatarSrc ? (
                 <img
                   src={avatarSrc}
@@ -308,7 +312,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   @{displayName}
                 </h1>
                 {/* Chip de nivel con gradiente */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase rounded-lg bg-gradient-to-r from-accent to-accent2 text-ink shadow-lg shadow-accent/60">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase rounded-lg bg-gradient-to-r from-accent to-accent2 text-ink shadow-md shadow-accent/20">
                   <Sparkles className="w-3 h-3" />
                   Nivel {level}
                 </span>
@@ -360,7 +364,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 {xp} / {xpForLevel(level + 1)} XP
               </span>
             </div>
-            <div className="relative h-2.5 rounded-full bg-surface border border-line overflow-hidden">
+            <div
+              role="progressbar"
+              aria-label="Progreso de XP hacia el siguiente nivel"
+              aria-valuenow={xpProgressPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              className="relative h-2.5 rounded-full bg-surface border border-line overflow-hidden"
+            >
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent via-accent to-accent2 transition-all duration-700"
                 style={{ width: `${xpProgressPct}%` }}
@@ -376,7 +387,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* ── Bio con estilo de cita ── */}
           {profile?.bio?.trim() ? (
             <blockquote className="border-l-2 border-accent/60 pl-4 py-1">
-              <p className="text-sm text-mute italic leading-relaxed">"{profile.bio.trim()}"</p>
+              <p className="text-sm text-mute italic leading-relaxed break-words">"{profile.bio.trim()}"</p>
             </blockquote>
           ) : (
             <p className="text-xs text-faint italic">
@@ -455,6 +466,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <p className="text-xs text-mute max-w-sm mx-auto">
                   Toca el corazón en cualquier cómic para guardarlo aquí.
                 </p>
+                {onExploreComics && (
+                  <button
+                    type="button"
+                    onClick={onExploreComics}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
+                  >
+                    Explorar cómics
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
@@ -494,7 +514,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <ListVideo className="w-10 h-10 mx-auto text-faint" />
                   <h3 className="text-base font-bold text-ink">Sin listas todavía</h3>
                   <p className="text-xs text-mute max-w-sm mx-auto">
-                    Crea tu primera colección y añade cómics desde su ficha.
+                    Crea tu primera colección con el campo de arriba y añade cómics desde su ficha.
                   </p>
                 </div>
               ) : (
@@ -509,12 +529,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         isFeatured={Boolean(list.is_featured)}
                         onClick={() => onOpenList?.(list)}
                       />
-                      {/* X de borrado (aparece al hover) */}
+                      {/* X de borrado (hover en desktop, siempre visible en táctil) */}
                       <button
                         type="button"
                         onClick={() => void handleDeleteList(list)}
+                        aria-label={`Eliminar la lista "${list.name}"`}
                         title={`Eliminar la lista "${list.name}"`}
-                        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent/30 hover:text-onaccent transition-all shadow-lg opacity-0 group-hover/list:opacity-100 focus:opacity-100 active:scale-90"
+                        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent/30 hover:text-onaccent transition-all shadow-lg opacity-0 max-sm:opacity-100 group-hover/list:opacity-100 focus:opacity-100 active:scale-90"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -534,6 +555,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <p className="text-xs text-mute max-w-sm mx-auto">
                   Abre cualquier tomo y aparecerá aquí para retomarlo donde lo dejaste.
                 </p>
+                {onExploreComics && (
+                  <button
+                    type="button"
+                    onClick={onExploreComics}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
+                  >
+                    Explorar cómics
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
@@ -581,6 +611,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           {row.completed ? 'Completado' : 'En progreso'}
                           {row.hidden_at && ' · oculto de Continuar'}
                         </p>
+                        {/* v0.6: estado que el lector asignó al tomo. Solo se
+                            muestra si fue asignado explícitamente: las filas
+                            antiguas (antes de la migración) no tienen estado. */}
+                        {row.reading_status && (
+                          <span
+                            className={`mt-1.5 inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${readingStatusChipClass(row.reading_status)}`}
+                          >
+                            {readingStatusLabel(row.reading_status)}
+                          </span>
+                        )}
                         {/* Sprint 3.5: marcador de página manual (0 = sin marcador) */}
                         {(row.page_number ?? 0) > 0 && (
                           <p className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-semibold mt-1">

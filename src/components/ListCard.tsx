@@ -28,7 +28,7 @@ export const ListCard: React.FC<ListCardProps> = ({
     <button
       type="button"
       onClick={onClick}
-      className="group relative w-full text-left rounded-2xl bg-surface border border-line hover:border-accent/50 overflow-hidden transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/40 cursor-pointer"
+      className="group relative w-full text-left rounded-2xl bg-surface border border-line hover:border-accent/50 overflow-hidden smooth-transition hover:-translate-y-1 hover:shadow-lg cursor-pointer"
     >
       {/* Collage de portadas */}
       <div className="relative aspect-[16/10] w-full overflow-hidden">

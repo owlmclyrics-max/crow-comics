@@ -343,7 +343,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
           <div className="p-4 border-t border-line">
             <button
               onClick={resetEditor}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/40 active:scale-95"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/20 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               Nueva Guía
@@ -572,7 +572,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/40 active:scale-95 disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent transition-all shadow-md shadow-accent/20 active:scale-95 disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? 'Guardando...' : editingEventId ? 'Guardar cambios' : 'Crear Guía'}

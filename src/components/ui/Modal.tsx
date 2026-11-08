@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,9 +8,14 @@ interface ModalProps {
   closeOnBackdrop?: boolean;
 }
 
+/** Selector de elementos enfocables dentro del panel (para el focus trap). */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
  * Contenedor común para los modales de la app.
- * Gestiona Escape, backdrop y la estructura visual del panel.
+ * Gestiona Escape, backdrop, focus trap, bloqueo de scroll del fondo y la
+ * estructura visual del panel.
  */
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -19,15 +24,47 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
   closeOnBackdrop = false,
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
 
+    // Foco inicial dentro del panel: evita que Tab mande al fondo de página.
+    const previousActive = document.activeElement as HTMLElement | null;
+    const focusables = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
+    focusables?.[0]?.focus();
+
+    // Bloquear el scroll de la página mientras el modal está abierto.
+    document.body.classList.add('crow-modal-open');
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Focus trap: Tab / Shift+Tab ciclan DENTRO del panel.
+      if (event.key === 'Tab' && panelRef.current) {
+        const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.classList.remove('crow-modal-open');
+      previousActive?.focus?.();
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -42,7 +79,8 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-surface border border-line rounded-2xl sm:rounded-3xl shadow-2xl w-full max-h-[calc(100dvh_-_1rem)] sm:max-h-[90dvh] overflow-hidden flex flex-col animate-scale-in ${className}`}
+        ref={panelRef}
+        className={`bg-surface border border-line rounded-2xl sm:rounded-3xl shadow-2xl w-full max-h-[calc(100dvh_-_1rem)] sm:max-h-[90dvh] overflow-hidden flex flex-col animate-scale-in [overscroll-behavior:contain] ${className}`}
       >
         {children}
       </div>

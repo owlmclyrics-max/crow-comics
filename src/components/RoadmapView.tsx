@@ -273,7 +273,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                 isActive ? 'w-4 h-4 ring-4' : 'w-2.5 h-2.5 ring-2'
               } ${
                 info.complete
-                  ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
+                  ? 'bg-emerald-500 ring-emerald-500/15 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
                   : 'bg-accent ring-accent/15 shadow-[0_0_8px_oklch(0.63_0.21_var(--crow-hue)/50%)]'
               }`}
             />
@@ -294,8 +294,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
             isActive
               ? 'scale-100 opacity-100 blur-0 saturate-100 ' +
                 (info.complete
-                  ? 'border-emerald-500 shadow-2xl shadow-emerald-500/25'
-                  : 'border-accent/60 shadow-2xl shadow-accent/30')
+                  ? 'border-emerald-500 shadow-lg shadow-emerald-500/15'
+                  : 'border-accent/60 shadow-lg shadow-accent/20')
               : // Las laterales se ven pequeñas y borrosas para todos;
                 // se lee cada una al enfocarla con flechas o clic.
                 'scale-[0.9] opacity-60 blur-[5px] saturate-[0.8] ' +
@@ -322,7 +322,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
 
               {/* Badge cuando la fase llega al 100% */}
               {info.complete ? (
-                <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.35)]">
+                <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
                   Completada ✓
                 </span>
@@ -342,7 +342,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onBack }) => {
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
                     info.complete
-                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                      ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.35)]'
                       : 'bg-accent'
                   }`}
                   style={{ width: `${percent}%` }}

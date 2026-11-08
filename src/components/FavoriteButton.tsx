@@ -55,7 +55,7 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         isLarge ? 'w-11 h-11' : 'w-7 h-7'
       } ${
         isFavorite
-          ? 'bg-accent/15 border-accent/60 shadow-md shadow-accent/40'
+          ? 'bg-accent/15 border-accent/60 shadow-md shadow-accent/20'
           : 'bg-bg/70 border-line hover:border-accent/50'
       } ${className}`}
     >

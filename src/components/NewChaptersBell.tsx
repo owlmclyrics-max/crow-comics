@@ -148,7 +148,7 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
       >
         <Bell className="w-4 h-4" />
         {badgeCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-accent text-onaccent text-[9px] font-black flex items-center justify-center shadow-lg shadow-accent/40">
+          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-accent text-onaccent text-[9px] font-black flex items-center justify-center shadow-md shadow-accent/20">
             {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         )}

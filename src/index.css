@@ -116,6 +116,22 @@
     scroll-behavior: smooth;
   }
 
+  /* Foco de teclado VISIBLE y de marca en toda la app. Solo :focus-visible:
+     el clic no lo dispara, Tab sí. Cualquier botón/enlace/input hereda esto
+     sin tener que declararlo componente por componente. */
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Identidad editorial: los titulares usan Archivo (ya cargada en
+     index.html, coste de red cero) — el cuerpo sigue en system-ui. */
+  h1, h2, h3 {
+    font-family: 'Archivo', system-ui, -apple-system, sans-serif;
+    text-wrap: balance;
+  }
+
   body {
     background-color: var(--c-bg);
     color: var(--c-ink);
@@ -223,6 +239,26 @@ html.theme-anim *::after {
   html.theme-anim *::after {
     transition: none !important;
   }
+  /* Respeta la preferencia del sistema en TODAS las animaciones propias:
+     columnas de la landing, flotación del emblema, entradas de vistas. */
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-parallax-float,
+  .heart-pop,
+  .crow-column-up,
+  .crow-column-down {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Bloqueo de scroll del fondo cuando hay un modal abierto (lo aplica ui/Modal). */
+body.crow-modal-open {
+  overflow: hidden;
 }
 
 /* Custom scrollbars */
@@ -391,13 +427,27 @@ html.theme-anim *::after {
   transition: transform 0.1s ease-out;
 }
 
-/* Transiciones suaves */
+/* Anti-patrón corregido a nivel global: la utilería `transition-all` de
+   Tailwind pone `transition-property: all`, lo que provoca repintados
+   inesperados (lo prohíbe el guideline de interfaces). Solo sobrescribimos
+   la LISTA de propiedades; duración y timing quedan en manos de las
+   utilerías duration-*/ease-* de cada componente. */
+.transition-all {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter, width, height, border-radius, backdrop-filter;
+}
+
+/* Transiciones suaves — propiedades explícitas (nunca `transition: all`:
+   causa repintados inesperados y lo prohíbe el guideline de interfaces) */
 .smooth-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter;
+  transition-duration: 0.3s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .smooth-transition-slow {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter;
+  transition-duration: 0.5s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hover effects con blur */

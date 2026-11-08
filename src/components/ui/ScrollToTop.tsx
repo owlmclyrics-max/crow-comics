@@ -22,7 +22,7 @@ export const ScrollToTop: React.FC<{ hidden?: boolean }> = ({ hidden = false }) 
       type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       aria-label="Volver arriba"
-      className="fixed bottom-20 md:bottom-6 right-4 z-40 p-3 rounded-full bg-accent text-onaccent shadow-2xl shadow-accent/30 hover:bg-accent2 transition-all hover:-translate-y-1 active:scale-90 animate-fade-in"
+      className="fixed bottom-20 md:bottom-6 right-4 z-40 p-3 rounded-full bg-accent text-onaccent shadow-lg shadow-accent/20 hover:bg-accent2 transition-all hover:-translate-y-1 active:scale-90 animate-fade-in"
     >
       <ArrowUp className="w-5 h-5" strokeWidth={2.5} />
     </button>

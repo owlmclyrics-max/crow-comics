@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Trash2, Star } from 'lucide-react';
+import { ArrowLeft, Trash2, Star, BookOpen } from 'lucide-react';
 import type { Comic } from '../types/comic';
 import type { ReadingListRow } from '../lib/profile';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,8 @@ interface ListDetailPageProps {
   onBack: () => void;
   onSelectComic: (comic: Comic) => void;
   onListChanged?: () => void;
+  /** Lleva al catálogo (CTA del estado vacío para el dueño). */
+  onExploreComics?: () => void;
 }
 
 /**
@@ -23,6 +25,7 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
   onBack,
   onSelectComic,
   onListChanged,
+  onExploreComics,
 }) => {
   const { user } = useAuth();
   const comics = useComics().comics;
@@ -98,7 +101,7 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
       ) : listComics.length === 0 ? (
         <div className="py-16 text-center rounded-3xl bg-surface/40 border border-line/60 p-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-raised text-mute mb-3">
-            <Trash2 className="w-5 h-5" />
+            <BookOpen className="w-5 h-5" />
           </div>
           <h3 className="text-base font-bold text-ink">Esta lista está vacía</h3>
           <p className="text-xs text-mute max-w-sm mx-auto mt-1">
@@ -106,6 +109,15 @@ export const ListDetailPage: React.FC<ListDetailPageProps> = ({
               ? 'Añade cómics desde su página de detalle con el botón "Añadir a lista".'
               : 'Su dueño todavía está armando esta colección.'}
           </p>
+          {isOwner && onExploreComics && (
+            <button
+              type="button"
+              onClick={onExploreComics}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all active:scale-95"
+            >
+              Explorar cómics
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">

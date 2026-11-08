@@ -541,6 +541,7 @@ export const App: React.FC = () => {
               setCurrentView('inicio');
             }}
             onSelectComic={handleOpenComicDetail}
+            onExploreComics={() => handleNavigate('comics')}
           />
         ) : currentView === 'event-detail' && selectedEvent ? (
           /* ======================================================== */
@@ -613,6 +614,7 @@ export const App: React.FC = () => {
               setOnboardingDismissed(false);
               setForceOnboarding(true);
             }}
+            onExploreComics={() => handleNavigate('comics')}
           />
         ) : currentView === 'roadmap' ? (
           /* ======================================================== */
@@ -630,10 +632,10 @@ export const App: React.FC = () => {
           />
         ) : (
           /* ======================================================== */
-          /* VISTA 1: INICIO CON HERO SHOWCASE TIPO STEAM (TOP 5)     */
+          /* VISTA 1: INICIO CON HERO FULL-BLEED ESTILO NETFLIX (TOP 5) */
           /* ======================================================== */
           <div className="space-y-10 animate-fade-in">
-            {/* NOVEDADES TIPO STEAM (TOP 5 ÚLTIMOS TOMOS PUBLICADOS) */}
+            {/* NOVEDADES FULL-BLEED (TOP 5 ÚLTIMOS TOMOS PUBLICADOS) */}
             <SteamHeroCarousel
               comics={comics}
               onSelectChapter={(chapter) => {
@@ -642,6 +644,7 @@ export const App: React.FC = () => {
                   handleOpenChapterDetail(chapter, parentComic);
                 }
               }}
+              onSelectComic={handleOpenComicDetail}
               onExplorePublishers={() => setCurrentView('comics')}
             />
 

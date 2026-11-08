@@ -36,7 +36,7 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
           onClick={() => setActiveTab('volumenes')}
           className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'volumenes'
-              ? 'bg-accent text-onaccent shadow-lg shadow-accent/40'
+              ? 'bg-accent text-onaccent shadow-md shadow-accent/20'
               : 'text-mute hover:text-ink hover:bg-raised'
           }`}
         >
@@ -47,7 +47,7 @@ export const ComicsCatalogView: React.FC<ComicsCatalogViewProps> = ({
           onClick={() => setActiveTab('guias')}
           className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeTab === 'guias'
-              ? 'bg-accent text-onaccent shadow-lg shadow-accent/40'
+              ? 'bg-accent text-onaccent shadow-md shadow-accent/20'
               : 'text-mute hover:text-ink hover:bg-raised'
           }`}
         >

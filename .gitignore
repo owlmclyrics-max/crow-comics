@@ -18,6 +18,11 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
+
+# Tooling local de OpenCode (skills/agentes, no va al repo)
+.agents/
+.opencode/
+skills-lock.json
 *.ntvs*
 *.njsproj
 *.sln

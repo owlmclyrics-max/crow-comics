@@ -102,7 +102,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
               <button
                 type="button"
                 onClick={() => handleContinue({ comic, chapter })}
-                className="group flex w-full flex-col text-left rounded-2xl bg-surface border border-line hover:border-accent/50 overflow-hidden transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/40 cursor-pointer"
+                className="group flex w-full flex-col text-left rounded-2xl bg-surface border border-line hover:border-accent/50 overflow-hidden smooth-transition hover:-translate-y-1 hover:shadow-lg cursor-pointer"
               >
                 {/* Portada del capítulo (no la de la serie); fallback a la del cómic */}
                 <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
@@ -173,7 +173,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                 }}
                 title="Quitar de Continuar Leyendo"
                 aria-label={`Quitar ${comic.title} Tomo ${row.chapter_number} de Continuar Leyendo`}
-                className="absolute top-1.5 right-1.5 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent hover:text-onaccent transition-all shadow-lg opacity-0 group-hover/card:opacity-100 focus:opacity-100 active:scale-90"
+                className="absolute top-1.5 right-1.5 z-10 p-1.5 rounded-full bg-bg/85 border border-line text-mute hover:bg-accent hover:border-accent hover:text-onaccent transition-all shadow-lg opacity-0 max-sm:opacity-100 group-hover/card:opacity-100 focus:opacity-100 active:scale-90"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

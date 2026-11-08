@@ -174,7 +174,8 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
         <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
           <img
             src={comic.cover_url}
-            alt={comic.title}
+            alt=""
+            aria-hidden="true"
             className="w-full h-full object-cover blur-3xl scale-125 opacity-30 parallax-layer animate-parallax-float"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-transparent" />
@@ -195,6 +196,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 }
                 setAddListOpen(true);
               }}
+              aria-label="Añadir a lista"
               className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-bg/70 backdrop-blur-md border border-line hover:border-accent/50 active:scale-90 transition-all"
               title="Añadir a lista"
             >
@@ -249,7 +251,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
               )}
             </div>
 
-            <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-3xl bg-bg/60 p-4 sm:p-5 rounded-2xl border border-line text-left">
+            <p className="text-xs sm:text-sm text-mute leading-relaxed max-w-3xl bg-bg/60 p-4 sm:p-5 rounded-2xl border border-line text-left break-words">
               {comic.synopsis}
             </p>
 
@@ -324,7 +326,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           {comic.chapters && comic.chapters.length > 1 && (
             <button
               onClick={() => setIsChaptersModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/40 transition-all shadow-md shadow-accent/40 group active:scale-95 shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/40 transition-all shadow-md shadow-accent/20 group active:scale-95 shrink-0"
             >
               <Layers className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span>Ver Todos los Capítulos</span>
@@ -358,12 +360,20 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
               ref={chaptersScrollerRef}
               className="flex flex-1 gap-4 sm:gap-6 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {comic.chapters.map((chapter: Chapter, index: number) => (
-                <div
+              {comic.chapters.map((chapter: Chapter) => (
+                <article
                   key={chapter.id}
                   onClick={() => onOpenChapter?.(chapter, comic)}
-                  className="group relative w-40 sm:w-44 shrink-0 rounded-2xl bg-surface border border-line hover:border-accent/60 overflow-hidden shadow-xl smooth-transition flex flex-col cursor-pointer animate-scale-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir Tomo #${chapter.chapter_number}: ${chapter.title}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onOpenChapter?.(chapter, comic);
+                    }
+                  }}
+                  className="group relative w-40 sm:w-44 shrink-0 rounded-2xl bg-surface border border-line hover:border-accent/40 overflow-hidden smooth-transition flex flex-col cursor-pointer"
                 >
                   {/* Portada del Tomo Vertical 2:3 */}
                   <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
@@ -401,10 +411,10 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                       {chapter.title}
                     </h4>
                     <p className="text-[11px] text-faint mt-1">
-                      Haz clic para ver detalles
+                      Ver detalles
                     </p>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
 

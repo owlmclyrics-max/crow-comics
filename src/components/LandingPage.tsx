@@ -220,7 +220,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               /* Ya con sesión: botón bonito directo al perfil */
               <button
                 onClick={onOpenProfile}
-                className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-2.5 py-1.5 text-[11px] font-bold text-onaccent shadow-lg shadow-accent/50 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
+                className="group flex items-center gap-2 rounded-full border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-2.5 py-1.5 text-[11px] font-bold text-onaccent shadow-lg shadow-accent/25 transition-all hover:from-accent2 hover:to-accent2 active:scale-95 sm:gap-2.5 sm:px-6 sm:py-2.5 sm:text-sm"
                 title="Ir a mi perfil"
               >
                 <span className="relative w-6 h-6 rounded-full bg-onaccent/10 overflow-hidden flex items-center justify-center text-[10px] font-black uppercase shrink-0 sm:w-7 sm:h-7 sm:text-[11px]">
@@ -250,7 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </button>
               <button
                 onClick={onOpenSignUp}
-                className="rounded-full px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide shadow-lg shadow-accent/50 bg-gradient-to-b from-accent to-accent2 border border-accent/30 text-onaccent transition-all active:scale-95 sm:px-7 sm:py-2.5 sm:text-base sm:tracking-wider"
+                className="rounded-full px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide shadow-lg shadow-accent/25 bg-gradient-to-b from-accent to-accent2 border border-accent/30 text-onaccent transition-all active:scale-95 sm:px-7 sm:py-2.5 sm:text-base sm:tracking-wider"
               >
                 <span className="sm:hidden">Crear cuenta</span>
                 <span className="hidden sm:inline">Registrarse</span>
@@ -301,7 +301,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Botón principal */}
           <button
             onClick={onEnterLibrary}
-            className="group flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-5 py-2.5 shadow-xl shadow-accent/70 transition-all hover:from-accent2 hover:to-accent2 hover:scale-[1.03] active:scale-95 sm:gap-4 sm:px-10 sm:py-4"
+            className="group flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border border-accent/30 bg-gradient-to-b from-accent to-accent2 px-5 py-2.5 shadow-xl shadow-accent/25 transition-all hover:from-accent2 hover:to-accent2 hover:scale-[1.03] active:scale-95 sm:gap-4 sm:px-10 sm:py-4"
           >
             <span className="font-landing text-base font-black uppercase tracking-[0.12em] text-onaccent drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-2xl sm:tracking-wider">
               Explorar cómics

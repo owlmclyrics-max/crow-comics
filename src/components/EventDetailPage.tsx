@@ -269,17 +269,23 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                         e.stopPropagation();
                         onSelectComic(comic);
                       }}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/30 transition-all shadow-md shadow-accent/40 active:scale-95 shrink-0"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent2 text-onaccent border border-accent/30 smooth-transition shadow-md shadow-accent/20 active:scale-95 shrink-0"
                       title={`Abrir ${comic.title}`}
                     >
                       <BookOpen className="w-4 h-4" />
                       <span>Leer</span>
                     </button>
                   ) : (
-                    <div className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-surface text-faint border border-line shrink-0">
+                    <button
+                      type="button"
+                      disabled
+                      aria-disabled="true"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-surface text-faint border border-line shrink-0 cursor-not-allowed"
+                      title="Tomo no publicado todavía"
+                    >
                       <Lock className="w-4 h-4" />
                       <span>Próximamente</span>
-                    </div>
+                    </button>
                   )}
                 </div>
               );
