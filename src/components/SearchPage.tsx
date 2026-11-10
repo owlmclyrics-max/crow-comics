@@ -4,6 +4,7 @@ import type { Comic, Profile, Character } from '../types/comic';
 import { filterComicsByQuery, matchesCharacterSearch } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
 import { useAuth } from '../context/AuthContext';
+import { getAlignmentBadgeClass } from '../lib/constants';
 import { ComicCard } from './ComicCard';
 
 interface SearchPageProps {
@@ -240,44 +241,51 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   No hay personajes que coincidan con “{query}”.
                 </p>
               ) : (
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                /* v0.9: mismo estilo que la página de Personajes — círculos
+                   limpios sin cajita, badge de rol flotando en el borde. */
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-3 gap-y-6">
                   {matchingCharacters.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => onSelectCharacter(c)}
-                      className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-accent/40 hover:bg-raised/60"
+                      className="group flex flex-col items-center text-center gap-1.5 cursor-pointer"
+                      aria-label={`Ver la ficha de ${c.name}`}
                     >
-                      <div className="w-14 h-14 shrink-0 overflow-hidden rounded-full border-2 border-line bg-raised group-hover:border-accent/60 transition-colors">
-                        {c.photo_url ? (
-                          <img
-                            src={c.photo_url}
-                            alt={c.name}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                      <div className="relative w-full">
+                        <div className="relative w-full aspect-square rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-raised transition-colors duration-300 shadow-md group-hover:shadow-accent/25">
+                          {/* Placeholder debajo: si la URL está vacía o rota se ve este ícono */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <User className="w-1/3 h-1/3 text-faint" />
+                          </div>
+                          {c.photo_url && (
+                            <img
+                              src={c.photo_url}
+                              alt={c.name}
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                        </div>
+                        {/* Rol flotando en el borde del círculo (o "Borrador" para el admin) */}
+                        {c.alignment ? (
+                          <span
+                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide rounded-full border shadow-lg backdrop-blur-sm ${getAlignmentBadgeClass(c.alignment)}`}
+                          >
+                            {c.alignment}
+                          </span>
                         ) : (
-                          <span className="flex h-full w-full items-center justify-center bg-raised">
-                            <User className="w-5 h-5 text-faint" />
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide rounded-full border bg-amber-500/15 text-amber-500 border-amber-500/40 shadow-lg">
+                            Borrador
                           </span>
                         )}
                       </div>
-                      <p className="w-full truncate text-[11px] font-bold text-ink">
+                      <p className="mt-1 w-full truncate text-xs font-bold text-ink group-hover:text-accent transition-colors">
                         {c.name}
                       </p>
-                      {/* Admin puede ver borradores: sin rol se marca como tal */}
-                      {c.alignment ? (
-                        <span className="text-[9px] font-black uppercase tracking-wide text-mute truncate w-full">
-                          {c.alignment}
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-black uppercase tracking-wide text-amber-500">
-                          Borrador
-                        </span>
-                      )}
                     </button>
                   ))}
                 </div>
