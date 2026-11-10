@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Character, Comic, Chapter } from '../types/comic';
+import type { Character, Comic, Chapter, CharacterVariant } from '../types/comic';
 import { CrowAmbience } from './ui/CrowAmbience';
 import { getAlignmentBadgeClass } from '../lib/constants';
 import {
@@ -17,6 +17,9 @@ import {
   Swords,
   Skull,
   Zap,
+  Sparkles,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -24,6 +27,7 @@ import { useCharactersContext } from '../context/CharactersContext';
 import { characterNameMatches } from '../lib/comicUtils';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
 import { showToast } from './ui/Toast';
+import { CharacterVariantModal } from './CharacterVariantModal';
 
 interface CharacterDetailPageProps {
   character: Character;
@@ -32,6 +36,8 @@ interface CharacterDetailPageProps {
   onOpenManageModal: () => void;
   /** Abre la ficha de otro personaje (ej: al hacer clic en un enemigo). */
   onSelectCharacter?: (character: Character) => void;
+  /** Callback para guardar variante (puede ser temporal, aún no conectado a Supabase) */
+  onSaveVariant?: (variant: Omit<CharacterVariant, 'id' | 'created_at'>) => Promise<void>;
 }
 
 export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
@@ -40,12 +46,18 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   onSelectChapter,
   onOpenManageModal,
   onSelectCharacter,
+  onSaveVariant,
 }) => {
   const { canManageContent } = useAuth();
   const { comics: allComics } = useComics();
   const { characters: allCharacters, deleteCharacter } = useCharactersContext();
   const [chapterIds, setChapterIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sistema de variantes
+  const [variants, setVariants] = useState<CharacterVariant[]>([]);
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<CharacterVariant | null>(null);
 
   // v0.9: eliminar la ficha desde su propia página (solo admin, con confirmación)
   const handleDeleteCharacter = async () => {
@@ -389,6 +401,119 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
             </section>
           )}
 
+          {/* Variantes del personaje */}
+          <section className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
+            <div className="flex items-center justify-between pb-4">
+              <h3 className="flex items-center gap-2.5 text-xl font-black text-ink">
+                <Sparkles className="w-5 h-5 text-accent" />
+                Variantes
+              </h3>
+              {canManageContent && (
+                <button
+                  onClick={() => setIsVariantModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent text-xs font-semibold transition-colors border border-accent/25"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Nueva variante</span>
+                </button>
+              )}
+            </div>
+
+            {variants.length > 0 ? (
+              <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => setSelectedVariant(variant)}
+                    className="group/variant flex w-32 shrink-0 flex-col items-center gap-2 text-center cursor-pointer"
+                  >
+                    <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-line group-hover/variant:border-red-400/70 bg-bg shrink-0 transition-colors shadow-lg">
+                      {variant.image_url ? (
+                        <img
+                          src={variant.image_url}
+                          alt={variant.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover/variant:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Sparkles className="w-8 h-8 text-faint" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-bold text-ink leading-tight line-clamp-2 group-hover/variant:text-red-400 transition-colors">
+                        {variant.name}
+                      </p>
+                      <p className="text-xs text-mute line-clamp-1">{variant.universe}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-faint italic">
+                No hay variantes registradas para este personaje.
+              </p>
+            )}
+
+            {/* Ficha de variante seleccionada */}
+            {selectedVariant && (
+              <div className="mt-6 p-6 rounded-2xl bg-accent/5 border border-accent/20 space-y-4 animate-fade-in">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-accent/30 bg-bg shrink-0">
+                      {selectedVariant.image_url ? (
+                        <img
+                          src={selectedVariant.image_url}
+                          alt={selectedVariant.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Sparkles className="w-8 h-8 text-faint" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-ink">{selectedVariant.name}</h4>
+                      <p className="text-sm text-mute">{selectedVariant.universe}</p>
+                      {selectedVariant.earth && (
+                        <p className="text-xs text-accent font-semibold">{selectedVariant.earth}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedVariant(null)}
+                    className="p-2 rounded-lg bg-surface hover:bg-raised text-mute hover:text-ink transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {selectedVariant.description && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-faint mb-2">Descripción</p>
+                    <p className="text-sm text-mute leading-relaxed">{selectedVariant.description}</p>
+                  </div>
+                )}
+
+                {selectedVariant.first_appearance && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-faint mb-2">Primera aparición</p>
+                    <p className="text-sm text-mute">{selectedVariant.first_appearance}</p>
+                  </div>
+                )}
+
+                {selectedVariant.differences && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-faint mb-2">Diferencias / Características</p>
+                    <p className="text-sm text-mute leading-relaxed whitespace-pre-line">{selectedVariant.differences}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* ── Aparece en: cómics → capítulos ── */}
           {loading ? (
             <div className="py-24 flex flex-col items-center justify-center space-y-3">
@@ -498,6 +623,27 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal de Nueva Variante */}
+      <CharacterVariantModal
+        isOpen={isVariantModalOpen}
+        onClose={() => setIsVariantModalOpen(false)}
+        onSave={async (variant) => {
+          // Por ahora solo agregamos al estado local
+          // TODO: Conectar con Supabase cuando se cree el hook
+          const newVariant: CharacterVariant = {
+            ...variant,
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+          };
+          setVariants([...variants, newVariant]);
+          showToast('Variante guardada (local)', 'success');
+          if (onSaveVariant) {
+            await onSaveVariant(variant);
+          }
+        }}
+        characterId={character.id}
+      />
     </div>
   );
 };

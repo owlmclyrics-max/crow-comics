@@ -86,6 +86,19 @@ export interface Character {
   created_at?: string;
 }
 
+export interface CharacterVariant {
+  id: string;
+  character_id: string;  // ID del personaje principal
+  name: string;           // Nombre de la variante (ej: "Absolute Black Canary")
+  universe: string;      // Universo / Continuidad (ej: "Absolute Universe")
+  earth?: string;         // Tierra (ej: "Tierra-616")
+  image_url: string;      // Imagen representativa
+  description: string;    // Descripción de la variante
+  first_appearance?: string; // Primera aparición
+  differences?: string;   // Diferencias / Características
+  created_at?: string;
+}
+
 export interface ChapterWithComic extends Chapter {
   comic_title: string;
   comic_cover_url: string;
