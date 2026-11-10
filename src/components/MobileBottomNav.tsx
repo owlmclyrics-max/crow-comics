@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Map as MapIcon, History, Plus, X, Check, Bell, BellRing } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Library, Send, Map as MapIcon, History, Plus, X, Check, Bell, BellRing } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
@@ -326,6 +326,23 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   style={{ color: 'oklch(0.63 0.21 var(--crow-hue))' }}
                 />
                 Color del sitio
+              </button>
+
+              <button
+                type="button"
+                onClick={() => go('biblioteca')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
+              >
+                <Library className="w-5 h-5" />
+                Mi Biblioteca
+              </button>
+              <button
+                type="button"
+                onClick={() => go('solicitudes')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
+              >
+                <Send className="w-5 h-5" />
+                Solicitar cómics
               </button>
 
               <button

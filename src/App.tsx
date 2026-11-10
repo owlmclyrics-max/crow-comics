@@ -59,6 +59,12 @@ const EventDetailPage = lazy(() =>
 const SearchPage = lazy(() =>
   import('./components/SearchPage').then((m) => ({ default: m.SearchPage })),
 );
+const LibraryPage = lazy(() =>
+  import('./components/LibraryPage').then((m) => ({ default: m.LibraryPage })),
+);
+const ComicRequestsPage = lazy(() =>
+  import('./components/ComicRequestsPage').then((m) => ({ default: m.ComicRequestsPage })),
+);
 
 // Los modales de administración también: solo el admin los usa y rara vez.
 const ComicAdminFormModal = lazy(() =>
@@ -99,7 +105,7 @@ interface CrowViewState {
 const VALID_VIEWS: CurrentView[] = [
   'landing', 'inicio', 'comics', 'personajes', 'character-detail', 'comic-detail',
   'chapter-detail', 'list-detail', 'event-detail', 'profile', 'historial',
-  'public-profile', 'roadmap', 'search',
+  'public-profile', 'roadmap', 'search', 'biblioteca', 'solicitudes',
 ];
 
 /** Lee la vista e IDs desde el hash actual (#/vista?comic=..). */
@@ -391,6 +397,14 @@ export const App: React.FC = () => {
     setCurrentView('chapter-detail');
   };
 
+  // abrir un tomo por ID (lo usa Mi Biblioteca)
+  const handleOpenChapterById = (comicId: string, chapterId: string) => {
+    const comic = comics.find((c) => c.id === comicId);
+    const chapter = comic?.chapters?.find((ch) => ch.id === chapterId);
+    if (comic && chapter) handleOpenChapterDetail(chapter, comic);
+    else if (comic) handleOpenComicDetail(comic);
+  };
+
   // Sprint 3: abre el detalle de una lista propia o destacada
   const handleOpenListDetail = (list: ReadingListRow) => {
     setSelectedList(list);
@@ -671,6 +685,25 @@ export const App: React.FC = () => {
             onSelectProfile={openSearchProfile}
             onBack={() => handleNavigate('inicio')}
           />
+        ) : currentView === 'biblioteca' ? (
+          /* ======================================================== */
+          /* VISTA: MI BIBLIOTECA (estados de lectura del usuario)     */
+          /* ======================================================== */
+          <LibraryPage
+            comics={comics}
+            onOpenComic={handleOpenComicDetail}
+            onOpenChapter={handleOpenChapterById}
+            onOpenAuth={() => {
+              setAuthModalTab('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onBack={() => handleNavigate('inicio')}
+          />
+        ) : currentView === 'solicitudes' ? (
+          /* ======================================================== */
+          /* VISTA: SOLICITUDES DE CÓMICS                             */
+          /* ======================================================== */
+          <ComicRequestsPage onBack={() => handleNavigate('inicio')} />
         ) : currentView === 'comics' ? (
           /* ======================================================== */
           /* VISTA 2: SECCIÓN CÓMICS (POR EDITORIALES MARVEL, DC, ETC) */

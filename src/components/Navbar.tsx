@@ -17,6 +17,8 @@ import {
   History,
   Moon,
   Sun,
+  Library,
+  Send,
   Map as MapIcon,
   Palette,
 } from 'lucide-react';
@@ -29,7 +31,7 @@ import { NewChaptersBell } from './NewChaptersBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
 
 // Historial vive en el menú del avatar (y en la barra inferior móvil):
 // fuera del navbar para que la barra nunca se sature.
@@ -37,6 +39,8 @@ const NAV_ITEMS = [
   { view: 'inicio', label: 'Inicio', icon: Home },
   { view: 'comics', label: 'Cómics', icon: BookOpen },
   { view: 'personajes', label: 'Personajes', icon: User },
+  { view: 'biblioteca', label: 'Mi Biblioteca', icon: Library },
+  { view: 'solicitudes', label: 'Solicitar cómic', icon: Send },
   { view: 'roadmap', label: 'Roadmap', icon: MapIcon },
 ] as const;
 
