@@ -95,7 +95,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
     return (
       <section
         aria-label="Cómic destacado"
-        className="relative overflow-hidden w-full -mx-3 sm:-mx-6 lg:-mx-8 h-[70svh] min-h-[500px] bg-surface border-b border-line"
+        className="relative overflow-hidden w-[calc(100%+1.5rem)] -mx-3 sm:w-[calc(100%+3rem)] sm:-mx-6 lg:w-[calc(100%+4rem)] lg:-mx-8 h-[70svh] min-h-[500px] bg-surface border-b border-line"
       >
         {fallbackComic.banner_url?.trim() ? (
           <img
@@ -179,7 +179,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   return (
     <section
       aria-label="Novedades destacadas"
-      className="group relative overflow-hidden w-full -mx-3 sm:-mx-6 lg:-mx-8 h-[86svh] max-h-[950px] min-h-[620px] border-b border-line bg-surface"
+      className="group relative overflow-hidden w-[calc(100%+1.5rem)] -mx-3 sm:w-[calc(100%+3rem)] sm:-mx-6 lg:w-[calc(100%+4rem)] lg:-mx-8 h-[86svh] max-h-[950px] min-h-[620px] border-b border-line bg-surface"
     >
       {/* Fondo cinemático: TODAS las capas apiladas con crossfade.
           Nada se desmonta al cambiar de slide (remounts con blur/transform
