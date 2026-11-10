@@ -28,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Si tu cuenta de Google está en esta lista, eres admin al iniciar sesión.
 const ADMIN_EMAILS = [
   'owlmclyrics@gmail.com',
+  'mabner112@gmail.com',
   // agrega más correos admin aquí (en minúsculas)
 ];
 
