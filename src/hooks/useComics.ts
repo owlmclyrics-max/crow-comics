@@ -16,6 +16,16 @@ const TODAY = new Date().toISOString().split('T')[0];
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
+  // Los errores de Postgrest (Supabase) llegan como objeto plano:
+  // { message, details, hint, code } — sin esto se veía "Error desconocido".
+  if (error && typeof error === 'object') {
+    const e = error as { message?: unknown; details?: unknown; hint?: unknown };
+    if (typeof e.message === 'string') {
+      return [e.message, e.details, e.hint]
+        .filter((part): part is string => typeof part === 'string' && part.length > 0)
+        .join(' · ');
+    }
+  }
   return 'Error desconocido';
 };
 
