@@ -8,6 +8,7 @@ import {
   Layers,
   User,
   ShieldCheck,
+  Trash2,
   AtSign,
   Dna,
   Globe,
@@ -22,6 +23,7 @@ import { useComics } from '../context/ComicsContext';
 import { useCharactersContext } from '../context/CharactersContext';
 import { characterNameMatches } from '../lib/comicUtils';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
+import { showToast } from './ui/Toast';
 
 interface CharacterDetailPageProps {
   character: Character;
@@ -41,8 +43,33 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
 }) => {
   const { canManageContent } = useAuth();
   const { comics: allComics } = useComics();
-  const { characters: allCharacters } = useCharactersContext();
+  const { characters: allCharacters, deleteCharacter } = useCharactersContext();
   const [chapterIds, setChapterIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // v0.9: eliminar la ficha desde su propia página (solo admin, con confirmación)
+  const handleDeleteCharacter = async () => {
+    if (isDeleting) return;
+    if (
+      !window.confirm(
+        `¿Eliminar a "${character.name}" del universo? Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const result = await deleteCharacter(character.id);
+      if (result.success) {
+        showToast(`"${character.name}" fue eliminado del wiki`, 'success');
+        onBack();
+      } else {
+        showToast(result.error ?? 'No se pudo eliminar el personaje', 'error');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const [loading, setLoading] = useState(true);
   // Cómic seleccionado: al hacer clic en una serie, se despliegan sus tomos
   const [selectedComicId, setSelectedComicId] = useState<string | null>(null);
@@ -137,13 +164,24 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
         </button>
 
         {canManageContent && (
-          <button
-            onClick={onOpenManageModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-raised text-ink text-xs font-semibold transition-colors border border-line"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-            <span>Editar Personaje</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* v0.9: eliminar ficha desde su propia página */}
+            <button
+              onClick={() => void handleDeleteCharacter()}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-red-500/10 text-mute hover:text-red-400 text-xs font-semibold transition-colors border border-line hover:border-red-500/40 disabled:opacity-60"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isDeleting ? 'Eliminando...' : 'Eliminar'}</span>
+            </button>
+            <button
+              onClick={onOpenManageModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-raised text-ink text-xs font-semibold transition-colors border border-line"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+              <span>Editar Personaje</span>
+            </button>
+          </div>
         )}
       </div>
 

@@ -681,7 +681,12 @@ export const App: React.FC = () => {
           <SearchPage
             initialQuery={searchPageQuery}
             comics={comics}
+            characters={characters}
             onSelectComic={handleOpenComicDetail}
+            onSelectCharacter={(character) => {
+              setSelectedCharacter(character);
+              setCurrentView('character-detail');
+            }}
             onSelectProfile={openSearchProfile}
             onBack={() => handleNavigate('inicio')}
           />
@@ -814,7 +819,12 @@ export const App: React.FC = () => {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         comics={comics}
+        characters={characters}
         onSelectComic={handleOpenComicDetail}
+        onSelectCharacter={(character) => {
+          setSelectedCharacter(character);
+          setCurrentView('character-detail');
+        }}
         onSelectProfile={openSearchProfile}
         onOpenFullSearch={openFullSearch}
       />

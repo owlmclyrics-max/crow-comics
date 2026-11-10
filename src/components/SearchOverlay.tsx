@@ -2,14 +2,17 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, CornerDownLeft, BookOpen, User } from 'lucide-react';
 import type { Comic, Profile } from '../types/comic';
-import { filterComicsByQuery } from '../lib/comicUtils';
+import { filterComicsByQuery, matchesCharacterSearch } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
+import { useAuth } from '../context/AuthContext';
 
 interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   comics: Comic[];
+  characters?: import('../types/comic').Character[];
   onSelectComic: (comic: Comic) => void;
+  onSelectCharacter?: (character: import('../types/comic').Character) => void;
   onSelectProfile: (profileId: string) => void;
   /** Enter sin resultado activo → pantalla de búsqueda completa. */
   onOpenFullSearch: (query: string) => void;
@@ -17,7 +20,7 @@ interface SearchOverlayProps {
 
 interface ResultRow {
   key: string;
-  type: 'comic' | 'profile';
+  type: 'comic' | 'profile' | 'character';
   comic?: Comic;
   profile?: Profile;
 }
@@ -31,7 +34,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   isOpen,
   onClose,
   comics,
+  characters = [],
   onSelectComic,
+  onSelectCharacter,
   onSelectProfile,
   onOpenFullSearch,
 }) => {
@@ -40,6 +45,16 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const { canManageContent } = useAuth();
+
+  // v0.9: al público solo aparecen personajes con foto y rol elegido
+  const visibleCharacters = useMemo(
+    () =>
+      canManageContent
+        ? characters
+        : characters.filter((c) => c.photo_url?.trim() && c.alignment?.trim()),
+    [characters, canManageContent],
+  );
 
   // Resetear al abrir y enfocar el input
   useEffect(() => {
@@ -85,13 +100,22 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     [comics, query],
   );
 
+  const matchingCharacters = useMemo(
+    () =>
+      query.trim()
+        ? visibleCharacters.filter((c) => matchesCharacterSearch(c, query.trim())).slice(0, 4)
+        : [],
+    [visibleCharacters, query],
+  );
+
   const rows: ResultRow[] = useMemo(() => {
     if (!query.trim()) return [];
     return [
       ...profiles.map<ResultRow>((p) => ({ key: 'p-' + p.id, type: 'profile', profile: p })),
+      ...matchingCharacters.map<ResultRow>((c) => ({ key: 'k-' + c.id, type: 'character' })),
       ...matchingComics.map<ResultRow>((c) => ({ key: 'c-' + c.id, type: 'comic', comic: c })),
     ];
-  }, [profiles, matchingComics, query]);
+  }, [profiles, matchingCharacters, matchingComics, query]);
 
   // Mantener el índice dentro de rango
   useEffect(() => {
@@ -101,6 +125,10 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const openRow = (row: ResultRow) => {
     onClose();
     if (row.type === 'comic' && row.comic) onSelectComic(row.comic);
+    if (row.type === 'character' && onSelectCharacter) {
+      const match = matchingCharacters.find((c) => 'k-' + c.id === row.key);
+      if (match) onSelectCharacter(match);
+    }
     if (row.type === 'profile' && row.profile) onSelectProfile(row.profile.id);
   };
 
@@ -247,13 +275,62 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                   );
                 })}
 
+                {matchingCharacters.length > 0 && (
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-mute">
+                    Personajes
+                  </p>
+                )}
+                {matchingCharacters.map((c, i) => {
+                  const idx = profiles.length + i;
+                  const isOpenable = Boolean(onSelectCharacter);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      data-row={isOpenable ? idx : undefined}
+                      onMouseEnter={() => isOpenable && setActiveIndex(idx)}
+                      onClick={() =>
+                        openRow({ key: 'k-' + c.id, type: 'character' })
+                      }
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                        isOpenable && activeIndex === idx ? 'bg-raised' : 'hover:bg-raised/60'
+                      }`}
+                    >
+                      <div className="relative w-9 h-9 shrink-0 overflow-hidden rounded-full border border-line bg-raised">
+                        {c.photo_url ? (
+                          <img
+                            src={c.photo_url}
+                            alt={c.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <span className="flex w-full h-full items-center justify-center bg-raised">
+                            <User className="w-4 h-4 text-faint" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-ink">{c.name}</p>
+                        <p className="truncate text-[11px] text-mute">
+                          {[c.alignment, c.publisher].filter(Boolean).join(' · ') ||
+                            'Personaje del universo'}
+                        </p>
+                      </div>
+                      <User className="h-4 w-4 shrink-0 text-faint" />
+                    </button>
+                  );
+                })}
+
                 {matchingComics.length > 0 && (
                   <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-mute">
                     Cómics
                   </p>
                 )}
                 {matchingComics.map((comic, i) => {
-                  const idx = profiles.length + i;
+                  const idx = profiles.length + matchingCharacters.length + i;
                   return (
                     <button
                       key={comic.id}

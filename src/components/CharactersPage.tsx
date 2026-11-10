@@ -27,13 +27,24 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   const filteredCharacters = useMemo(
     () =>
       characters.filter((character) => {
+        // v0.9: al público solo se le muestran personajes terminados —
+        // con foto cargada y con rol (héroe/villano...) elegido.
+        // El admin ve TODO el wiki (los borradores van solo para vos).
+        if (!canManageContent && (!character.photo_url?.trim() || !character.alignment?.trim())) {
+          return false;
+        }
         if (!matchesCharacterSearch(character, searchTerm)) return false;
         if (publisherFilter !== 'Todas' && character.publisher !== publisherFilter) return false;
         if (roleFilter !== 'Todos' && character.alignment !== roleFilter) return false;
         return true;
       }),
-    [characters, searchTerm, publisherFilter, roleFilter],
+    [characters, searchTerm, publisherFilter, roleFilter, canManageContent],
   );
+
+  // Contador de borradores que esconde el filtro público (aviso al admin)
+  const draftCount = canManageContent
+    ? characters.filter((c) => !c.photo_url?.trim() || !c.alignment?.trim()).length
+    : 0;
 
   if (loading) {
     return (
@@ -59,6 +70,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           </h1>
           <p className="text-sm text-mute mt-1">
             Explora todos los personajes de tus cómics favoritos
+            {draftCount > 0 && (
+              <span className="ml-2 text-[10px] font-bold text-amber-400">
+                {draftCount} borrador{draftCount === 1 ? '' : 'es'} oculto{draftCount === 1 ? '' : 's'} al público (sin foto o sin rol)
+              </span>
+            )}
           </p>
         </div>
 
@@ -176,18 +192,21 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
             >
               {/* Retrato circular puro: sin cajita, la imagen ES el botón */}
               <div className="relative w-full">
-                <div className="w-full aspect-square rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg transition-colors duration-300 shadow-md group-hover:shadow-xl group-hover:shadow-accent/25">
-                  {character.photo_url ? (
+                <div className="relative w-full aspect-square rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-raised transition-colors duration-300 shadow-md group-hover:shadow-xl group-hover:shadow-accent/25">
+                  {/* Placeholder SIEMPRE debajo: si la URL está vacía o rota, se ve este ícono */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <User className="w-1/3 h-1/3 text-faint" />
+                  </div>
+                  {character.photo_url && (
                     <img
                       src={character.photo_url}
                       alt={character.name}
                       loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User className="w-1/3 h-1/3 text-faint" />
-                    </div>
                   )}
                 </div>
                 {/* Rol flotando en el borde del círculo */}

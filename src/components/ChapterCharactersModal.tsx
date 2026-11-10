@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Character } from '../types/comic';
-import { X, Search, User, AlertCircle, Check, Layers, Plus } from 'lucide-react';
+import { X, User, AlertCircle, Check, Layers } from 'lucide-react';
 import { useCharactersContext } from '../context/CharactersContext';
 import { useComics } from '../context/ComicsContext';
 import {
@@ -8,8 +8,6 @@ import {
   setChapterCharacterAssigned,
   assignCharactersToChapters,
 } from '../lib/chapterCharacters';
-import { accentless, matchesCharacterSearch } from '../lib/comicUtils';
-import { getAlignmentBadgeClass } from '../lib/constants';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
 
@@ -31,7 +29,6 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
 }) => {
   const { characters, loading } = useCharactersContext();
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loadingAssigned, setLoadingAssigned] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +47,6 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       void loadAssigned();
-      setSearchTerm('');
     }
   }, [isOpen, loadAssigned]);
 
@@ -85,26 +81,6 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   const assignedCharacters = characters.filter((character) =>
     assignedIds.includes(character.id),
   );
-  const filteredCharacters = characters.filter((character) =>
-    matchesCharacterSearch(character, searchTerm),
-  );
-
-  // ── Añadir escribiendo: tecleas → sugiere → agrega → siguiente ──
-  const quickInputRef = useRef<HTMLInputElement>(null);
-  const [quickName, setQuickName] = useState('');
-  const quickQuery = quickName.trim();
-  const quickMatches = useMemo(() => {
-    const q = accentless(quickQuery);
-    if (!q) return [];
-    return characters
-      .filter((c) => !isCharacterAssigned(c.id))
-      .filter((c) => {
-        const haystacks = [c.name, c.name_spanish, c.real_name, ...(c.aliases ?? '').split('\n')];
-        return haystacks.some((value) => accentless(value ?? '').includes(q));
-      })
-      .slice(0, 5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characters, assignedIds, quickQuery]);
 
   // ── Aplicar a toda la serie: localiza el cómic de este tomo ──
   const { comics } = useComics();
@@ -165,105 +141,6 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
-        {/* Añadir escribiendo: sugiere del wiki y agrega de corrido */}
-        <div className="relative">
-          <div className="relative">
-            <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-accent pointer-events-none" />
-            <input
-              ref={quickInputRef}
-              type="text"
-              value={quickName}
-              onChange={(event) => setQuickName(event.target.value)}
-              placeholder="Añadir escribiendo... (ej: Yelena)"
-              className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-bg border border-accent/40 focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
-            />
-            {quickName && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuickName('');
-                  quickInputRef.current?.focus();
-                }}
-                aria-label="Limpiar"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-mute hover:text-ink transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Sugerencias en vivo: tocar agrega y sigue con el siguiente */}
-          {quickQuery && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-20 rounded-xl border border-line bg-surface shadow-2xl overflow-hidden animate-fade-in">
-              {quickMatches.length > 0 ? (
-                <div className="divide-y divide-line">
-                  {quickMatches.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => {
-                        void handleToggleCharacter(c);
-                        setQuickName('');
-                        quickInputRef.current?.focus();
-                      }}
-                      className="w-full flex items-center gap-2.5 p-2.5 hover:bg-raised/80 text-left transition-colors group/q"
-                    >
-                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-line group-hover/q:border-accent/70 bg-bg shrink-0 transition-colors">
-                        {c.photo_url ? (
-                          <img
-                            src={c.photo_url}
-                            alt={c.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-faint" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-ink truncate group-hover/q:text-accent transition-colors">
-                          {c.name}
-                        </p>
-                        {(c.name_spanish || c.real_name) && (
-                          <p className="text-[10px] text-mute truncate">
-                            {[c.name_spanish, c.real_name].filter(Boolean).join(' · ')}
-                          </p>
-                        )}
-                      </div>
-                      {c.alignment && (
-                        <span
-                          className={`shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide rounded-full border ${getAlignmentBadgeClass(c.alignment)}`}
-                        >
-                          {c.alignment}
-                        </span>
-                      )}
-                      <Plus className="w-4 h-4 text-accent shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="p-3 text-xs text-faint text-center">
-                  Nadie en el wiki coincide con "{quickQuery}"
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Buscador (filtra la cuadrícula de abajo) */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Nombre, alias o nombre real..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
-          />
-        </div>
-
         {error && (
           <div className="p-3.5 rounded-xl bg-accent/10 border border-accent/30 text-accent2 text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 text-accent2" />
@@ -333,13 +210,11 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
           </h3>
           {loading || loadingAssigned ? (
             <p className="text-xs text-mute">Cargando personajes...</p>
-          ) : filteredCharacters.length === 0 ? (
-            <p className="text-xs text-faint italic">
-              Nadie en el wiki coincide con "{searchTerm}"
-            </p>
+          ) : characters.length === 0 ? (
+            <p className="text-xs text-faint italic">Todavía no hay personajes en el wiki</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-3 max-h-[45dvh] overflow-y-auto">
-              {filteredCharacters.map((character) => {
+              {characters.map((character) => {
                 const assigned = isCharacterAssigned(character.id);
                 return (
                   <button

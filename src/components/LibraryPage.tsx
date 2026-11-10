@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Library, Search, BookOpen } from 'lucide-react';
+import { ArrowLeft, Library, Search, BookOpen, Feather } from 'lucide-react';
 import type { Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { getReadingProgress, type ReadingProgressRow } from '../lib/profile';
@@ -27,9 +27,16 @@ const GROUPS: LibraryGroup[] = [
   { status: 'abandonado', label: 'Abandonado' },
 ];
 
+const GROUP_DOT: Record<ReadingStatus, string> = {
+  leyendo: 'bg-accent border-accent',
+  leido: 'bg-emerald-600 border-emerald-500',
+  en_pausa: 'bg-amber-500 border-amber-500',
+  abandonado: 'bg-zinc-600 border-zinc-500',
+};
+
 /**
- * v0.7: MI BIBLIOTECA — todo lo que el lector marcó con un estado
- * (reading_status en reading_progress), agrupado por estado.
+ * v0.9: MI BIBLIOTECA — lo que marcaste con un estado (reading_status),
+ * agrupado por estado con fichas compactas: portada + chips de tomo.
  */
 export const LibraryPage: React.FC<LibraryPageProps> = ({
   comics,
@@ -62,13 +69,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
     };
   }, [user?.id]);
 
-  // Agrupar por estado; dentro de cada estado, por cómic con su tomo más alto
-  const chaptersByComic = useMemo(() => {
+  // Mapa cómics por ID para no perder el título/portada
+  const comicsById = useMemo(() => {
     const map = new Map<string, Comic>();
     comics.forEach((c) => map.set(c.id, c));
     return map;
   }, [comics]);
 
+  // Grupos: { comic, tomos (con progreso) } por estado, orden alfabético
   const byStatus = useMemo(() => {
     const groups = new Map<ReadingStatus, ReadingProgressRow[]>();
     rows.forEach((r) => {
@@ -77,12 +85,12 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
       list.push(r);
       groups.set(r.reading_status, list);
     });
-    // Dentro de cada grupo: los tomos del mismo cómic quedan juntos
+    // Agrupar tomos por cómic: filas compactas = varios tomos colapsados en chips por estado
     groups.forEach((list, key) => {
       list.sort((a, b) => {
         if (a.comic_id !== b.comic_id) {
-          const ca = chaptersByComic.get(a.comic_id)?.title ?? '';
-          const cb = chaptersByComic.get(b.comic_id)?.title ?? '';
+          const ca = comicsById.get(a.comic_id)?.title ?? '';
+          const cb = comicsById.get(b.comic_id)?.title ?? '';
           return ca.localeCompare(cb);
         }
         return a.chapter_number - b.chapter_number;
@@ -90,10 +98,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
       groups.set(key, list);
     });
     return groups;
-  }, [rows, chaptersByComic]);
+  }, [rows, comicsById]);
 
   const openRow = (r: ReadingProgressRow) => {
-    const comic = chaptersByComic.get(r.comic_id);
+    const comic = comicsById.get(r.comic_id);
     if (!comic) {
       showToast('Este cómic ya no está disponible', 'info');
       return;
@@ -109,7 +117,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   const totalItems = rows.filter((r) => r.reading_status).length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Cabecera */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button
@@ -135,7 +143,9 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
 
       {!user ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-line/60 bg-surface/40 px-6 py-16 text-center space-y-4">
-          <Library className="w-10 h-10 text-mute" />
+          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+            <Library className="w-7 h-7 text-accent" />
+          </div>
           <div className="space-y-1">
             <h2 className="text-base font-bold text-ink">Iniciá sesión para tu biblioteca</h2>
             <p className="max-w-sm text-xs text-mute">
@@ -158,7 +168,9 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
         </div>
       ) : totalItems === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-line/60 bg-surface/40 px-6 py-16 text-center space-y-3">
-          <Search className="w-10 h-10 text-mute" />
+          <div className="w-16 h-16 rounded-2xl bg-raised border border-line flex items-center justify-center">
+            <Search className="w-7 h-7 text-mute" />
+          </div>
           <h2 className="text-base font-bold text-ink">Tu biblioteca está vacía</h2>
           <p className="max-w-sm text-xs text-mute">
             Abrí un tomo y tocá <span className="font-bold text-ink">"Añadir a biblioteca"</span> para
@@ -166,9 +178,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           {GROUPS.map(({ status, label }) => {
             const list = byStatus.get(status) ?? [];
+            // Tomos del mismo cómic quedan juntos en una sola ficha
             const rowsByComic = new Map<string, ReadingProgressRow[]>();
             list.forEach((r) => {
               const arr = rowsByComic.get(r.comic_id) ?? [];
@@ -178,30 +191,24 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
             if (list.length === 0) return null;
             return (
               <section key={status} className="space-y-4">
-                <h2 className="flex items-center gap-2 text-sm font-black text-ink">
-                  <span
-                    className={`w-3 h-3 rounded-full border-2 ${
-                      status === 'leyendo'
-                        ? 'bg-accent border-accent'
-                        : status === 'leido'
-                          ? 'bg-emerald-600 border-emerald-500'
-                          : status === 'en_pausa'
-                            ? 'bg-amber-500 border-amber-500'
-                            : 'bg-raised border-line'
-                    }`}
-                  />
-                  {label}
-                  <span className="text-[10px] font-mono text-faint">{list.length}</span>
-                </h2>
+                {/* Encabezado del estado */}
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-3 h-3 rounded-full border-2 shrink-0 ${GROUP_DOT[status]}`} />
+                  <h2 className="text-sm font-black text-ink">{label}</h2>
+                  <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-mono text-mute">
+                    {list.length}
+                  </span>
+                  <div className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
+                </div>
 
-                <div className="space-y-3">
+                {/* Fichas compactas */}
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {[...rowsByComic.entries()].map(([comicId, comicRows]) => {
-                    const comic = chaptersByComic.get(comicId);
-                    const main = comicRows[0];
+                    const comic = comicsById.get(comicId);
                     return (
-                      <div
+                      <article
                         key={comicId}
-                        className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-accent/40"
+                        className="group flex gap-3 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-accent/40"
                       >
                         <button
                           type="button"
@@ -211,47 +218,69 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                           className="shrink-0"
                           aria-label={`Abrir ${comic?.title ?? 'cómic'}`}
                         >
-                          <img
-                            src={comic?.cover_url}
-                            alt=""
-                            className="h-16 w-12 rounded-lg border border-line object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          {comic?.cover_url ? (
+                            <img
+                              src={comic.cover_url}
+                              alt=""
+                              className="h-24 w-16 rounded-lg border border-line object-cover transition-transform group-hover:scale-[1.03]"
+                              onError={(e) => {
+                                e.currentTarget.style.visibility = 'hidden';
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-24 w-16 items-center justify-center rounded-lg border border-line bg-raised">
+                              <BookOpen className="w-4 h-4 text-faint" />
+                            </div>
+                          )}
                         </button>
 
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-ink">
-                            {comic?.title ?? 'Cómic'}
-                          </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            {comicRows.slice(0, 8).map((r) => (
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              comic ? onOpenComic(comic) : showToast('Cómic no disponible', 'info')
+                            }
+                            className="min-w-0 text-left"
+                          >
+                            <h3 className="truncate text-sm font-bold text-ink group-hover:text-accent transition-colors">
+                              {comic?.title ?? 'Cómic'}
+                            </h3>
+                            {comic?.publisher && (
+                              <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-mute">
+                                <Feather className="w-3 h-3 text-amber-400" />
+                                {comic.publisher}
+                              </p>
+                            )}
+                          </button>
+
+                          {/* Chips de tomo con marcador */}
+                          <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
+                            {comicRows.slice(0, 5).map((r) => (
                               <button
                                 key={r.id}
                                 type="button"
                                 onClick={() => openRow(r)}
-                                className="rounded-lg border border-line bg-raised/60 px-2 py-1 text-[10px] font-bold text-mute hover:text-accent hover:border-accent/40 transition-colors"
-                                title={r.page_number ? `Marcador: página ${r.page_number}` : 'Abrir tomo'}
+                                className="rounded-lg border border-line bg-raised/70 px-2 py-1 text-[10px] font-bold text-mute hover:border-accent/50 hover:text-accent transition-colors"
+                                title={
+                                  Number(r.page_number) > 0
+                                    ? `Marcador guardado: página ${r.page_number}`
+                                    : 'Abrir tomo'
+                                }
                               >
-                                Tomo #{r.chapter_number}
-                                {r.page_number ? ` · p${r.page_number}` : ''}
+                                T#{r.chapter_number}
+                                {Number(r.page_number) > 0 && (
+                                  <span className="ml-1 text-accent font-black">·p{r.page_number}</span>
+                                )}
                               </button>
                             ))}
-                            {comicRows.length > 8 && (
-                              <span className="text-[10px] text-faint">
-                                +{comicRows.length - 8} más
+                            {comicRows.length > 5 && (
+                              <span className="self-center text-[10px] text-faint">
+                                +{comicRows.length - 5} más
                               </span>
                             )}
                           </div>
                         </div>
-
-                        {main.page_number && (
-                          <span className="hidden sm:inline text-[10px] text-faint whitespace-nowrap">
-                            Continúa en pág. {main.page_number}
-                          </span>
-                        )}
-                      </div>
+                      </article>
                     );
                   })}
                 </div>

@@ -1,28 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Search, X, User, BookOpen } from 'lucide-react';
-import type { Comic, Profile } from '../types/comic';
-import { filterComicsByQuery } from '../lib/comicUtils';
+import { ArrowLeft, Search, X, User, BookOpen, Dna } from 'lucide-react';
+import type { Comic, Profile, Character } from '../types/comic';
+import { filterComicsByQuery, matchesCharacterSearch } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
+import { useAuth } from '../context/AuthContext';
 import { ComicCard } from './ComicCard';
 
 interface SearchPageProps {
   initialQuery: string;
   comics: Comic[];
+  characters: Character[];
   onSelectComic: (comic: Comic) => void;
+  onSelectCharacter: (character: Character) => void;
   onSelectProfile: (profileId: string) => void;
   onBack: () => void;
 }
 
-type Tab = 'all' | 'comics' | 'profiles';
+type Tab = 'all' | 'comics' | 'characters' | 'profiles';
 
 /**
  * Pantalla de búsqueda completa. Se abre al presionar Enter en la paleta
- * rápida (o desde la barra superior). Muestra todos los cómics y perfiles.
+ * rápida (o desde la barra superior). Muestra cómics, personajes y perfiles.
  */
 export const SearchPage: React.FC<SearchPageProps> = ({
   initialQuery,
   comics,
+  characters,
   onSelectComic,
+  onSelectCharacter,
   onSelectProfile,
   onBack,
 }) => {
@@ -30,6 +35,17 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   const [tab, setTab] = useState<Tab>('all');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const { canManageContent } = useAuth();
+
+  // v0.9: al público solo aparecen personajes con foto y rol elegido
+  // (mismo filtro que la página de Personajes); el admin ve todo el wiki.
+  const visibleCharacters = useMemo(
+    () =>
+      canManageContent
+        ? characters
+        : characters.filter((c) => c.photo_url?.trim() && c.alignment?.trim()),
+    [characters, canManageContent],
+  );
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -66,7 +82,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     [comics, query],
   );
 
-  const total = matchingComics.length + profiles.length;
+  const matchingCharacters = useMemo(
+    () =>
+      query.trim()
+        ? visibleCharacters.filter((c) => matchesCharacterSearch(c, query.trim()))
+        : [],
+    [visibleCharacters, query],
+  );
+
+  const total = matchingComics.length + matchingCharacters.length + profiles.length;
   const hasQuery = query.trim().length > 0;
 
   return (
@@ -124,6 +148,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
         {([
           { id: 'all', label: 'Todo', count: total },
           { id: 'comics', label: 'Cómics', count: matchingComics.length },
+          { id: 'characters', label: 'Personajes', count: matchingCharacters.length },
           { id: 'profiles', label: 'Perfiles', count: profiles.length },
         ] as { id: Tab; label: string; count: number }[]).map((t) => (
           <button
@@ -200,6 +225,63 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   </button>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* Personajes */}
+          {(tab === 'all' || tab === 'characters') && (
+            <section className="space-y-3">
+              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-mute">
+                <Dna className="w-3.5 h-3.5" />
+                Personajes
+              </h2>
+              {matchingCharacters.length === 0 ? (
+                <p className="rounded-2xl border border-line/60 bg-surface/40 px-4 py-8 text-center text-xs text-mute">
+                  No hay personajes que coincidan con “{query}”.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                  {matchingCharacters.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => onSelectCharacter(c)}
+                      className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-accent/40 hover:bg-raised/60"
+                    >
+                      <div className="w-14 h-14 shrink-0 overflow-hidden rounded-full border-2 border-line bg-raised group-hover:border-accent/60 transition-colors">
+                        {c.photo_url ? (
+                          <img
+                            src={c.photo_url}
+                            alt={c.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center bg-raised">
+                            <User className="w-5 h-5 text-faint" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="w-full truncate text-[11px] font-bold text-ink">
+                        {c.name}
+                      </p>
+                      {/* Admin puede ver borradores: sin rol se marca como tal */}
+                      {c.alignment ? (
+                        <span className="text-[9px] font-black uppercase tracking-wide text-mute truncate w-full">
+                          {c.alignment}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-black uppercase tracking-wide text-amber-500">
+                          Borrador
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

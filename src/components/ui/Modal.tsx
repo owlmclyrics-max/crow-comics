@@ -26,6 +26,15 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // v0.9: guardamos onClose en un ref para que el efecto SOLO dependa de
+  // `isOpen`. Si el callback cambia en cada render (típico: `const reqClose =
+  // () => {...}` sin useCallback), el efecto viejo re-ejecutaba el foco
+  // inicial y cada tecla escrita en un input robaba el foco → iba al botón ✕.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -39,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       // Focus trap: Tab / Shift+Tab ciclan DENTRO del panel.
@@ -65,7 +74,7 @@ export const Modal: React.FC<ModalProps> = ({
       document.body.classList.remove('crow-modal-open');
       previousActive?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
