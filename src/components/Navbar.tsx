@@ -4,9 +4,7 @@ import {
   LogOut,
   Plus,
   Feather,
-  Search,
   X,
-  Command,
   Home,
   BookOpen,
   User,
@@ -20,19 +18,18 @@ import {
   Moon,
   Sun,
   Map as MapIcon,
+  Palette,
 } from 'lucide-react';
-import type { Comic, LinkReport, Profile } from '../types/comic';
+import type { Comic, LinkReport } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { useTheme } from '../context/ThemeContext';
-import { AccentPicker } from './ui/AccentPicker';
+import { AccentDialog } from './ui/AccentPicker';
 import { NewChaptersBell } from './NewChaptersBell';
-import { filterComicsByQuery } from '../lib/comicUtils';
-import { searchProfiles } from '../lib/profiles';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
 
 // Historial vive en el menú del avatar (y en la barra inferior móvil):
 // fuera del navbar para que la barra nunca se sature.
@@ -50,8 +47,6 @@ interface NavbarProps {
   onSelectComic: (comic: Comic) => void;
   onOpenAuth: (tab?: 'signin' | 'signup' | 'admin') => void;
   onOpenProfile: () => void;
-  /** Abre el perfil PÚBLICO de otro usuario (desde resultados del buscador). */
-  onOpenPublicProfile?: (profileId: string) => void;
   onOpenNewComic: () => void;
 }
 
@@ -62,7 +57,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectComic,
   onOpenAuth,
   onOpenProfile,
-  onOpenPublicProfile,
   onOpenNewComic
 }) => {
   const { user, profile, isAdmin, canManageContent, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
@@ -132,109 +126,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const pendingCount = reports.filter(r => r.status === 'pending').length;
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const searchContainerRef = React.useRef<HTMLDivElement>(null);
-
-  const closeSearch = useCallback(() => {
-    setIsSearchOpen(false);
-    setSearchQuery('');
-  }, []);
-
-  // Focus automático cuando se abre la búsqueda
-  React.useEffect(() => {
-    if (!isSearchOpen) return;
-
-    const timeout = window.setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 50);
-
-    return () => window.clearTimeout(timeout);
-  }, [isSearchOpen]);
-
-  // ── SPRINT 4: búsqueda de PERFILES (username) con debounce ligero ──
-  const [matchingProfiles, setMatchingProfiles] = useState<Profile[]>([]);
-  React.useEffect(() => {
-    const q = searchQuery.trim();
-    if (!q) {
-      setMatchingProfiles([]);
-      return;
-    }
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      searchProfiles(q)
-        .then((res) => {
-          if (!cancelled) setMatchingProfiles(res);
-        })
-        .catch(() => {
-          if (!cancelled) setMatchingProfiles([]);
-        });
-    }, 250);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [searchQuery]);
-
-  // Clic en un resultado de perfil: si es MI perfil → vista personal;
-  // si es de otro → vista pública.
-  const handleOpenProfileResult = (profileId: string) => {
-    closeSearch();
-    if (user && profileId === user.id) {
-      onOpenProfile();
-    } else {
-      onOpenPublicProfile?.(profileId);
-    }
-  };
-
-  // Atajos de teclado:
-  // - Ctrl+K / Cmd+K: Búsqueda rápida
-  // (Ctrl+Shift+A retirado: el admin ahora se determina por la cuenta de
-  //  Google — ADMIN_EMAILS en AuthContext — y el login doble pisaba la sesión)
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsSearchOpen((prev: boolean) => !prev);
-      }
-      if (e.key === 'Escape' && isSearchOpen) {
-        closeSearch();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeSearch, isSearchOpen, onOpenAuth]);
-
-  // Cerrar búsqueda al hacer clic fuera
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        closeSearch();
-      }
-    };
-
-    if (isSearchOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [closeSearch, isSearchOpen]);
-
-  // Resultados de búsqueda
-  const matchingComics = filterComicsByQuery(comics, searchQuery).slice(0, 6);
+  const [isAccentOpen, setIsAccentOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+    <header className={`group/sidebar sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
+      isUserMenuOpen || showReports ? 'lg:w-60!' : ''
+    }`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4 lg:h-full lg:max-w-none lg:flex-col lg:items-stretch lg:justify-start lg:gap-3 lg:px-3 lg:py-4">
         {/* Brand + Navegación Principal (Inicio / Cómics) */}
-        <div className="flex items-center gap-2 sm:gap-6 md:gap-8 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-6 md:gap-8 shrink-0 lg:flex-col lg:items-stretch lg:gap-5 lg:w-full">
           <button
             type="button"
             onClick={() => onNavigate('landing')}
-            className="flex items-center gap-3 cursor-pointer group text-left"
+            className="flex items-center gap-3 cursor-pointer group text-left lg:justify-center lg:group-hover/sidebar:justify-start lg:w-full"
             title="Volver a la pantalla de bienvenida"
           >
             <div className="w-8 h-8 sm:w-10 sm:h-10 transition-transform group-hover:scale-105">
@@ -251,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             {/* Fallback si no existe crow-emblem.png: solo el icono, sin caja */}
             <Feather className="hidden w-6 h-6 stroke-[2.5] text-accent" />
-            <div>
+            <div className="lg:hidden lg:group-hover/sidebar:block">
               <div className="flex items-center gap-2">
                 <span className="text-sm sm:text-lg font-black tracking-tight text-ink uppercase font-sans">
                   CROW <span className="text-accent">COMICS</span>
@@ -273,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Links de Navegación desde lg: debajo existe la barra inferior móvil.
               Las herramientas de admin viven en el menú del avatar para que la
               barra nunca se desborde encima del menú */}
-          <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
+          <nav className="hidden lg:flex flex-col items-stretch gap-1 w-full">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -285,14 +189,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.view}
                   onClick={() => onNavigate(item.view)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all lg:justify-center lg:px-2 lg:group-hover/sidebar:justify-start lg:group-hover/sidebar:px-3.5 ${
                     isActive
                       ? 'bg-raised text-accent border border-accent/30 shadow-sm'
                       : 'text-mute hover:text-ink hover:bg-raised/60'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="lg:hidden lg:group-hover/sidebar:inline">{item.label}</span>
                 </button>
               );
             })}
@@ -300,13 +204,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Zona Derecha: Campana de nuevos tomos + Búsqueda + Panel Admin */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1" ref={searchContainerRef}>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1 lg:flex-col lg:items-center lg:justify-end lg:gap-2 lg:mt-auto lg:w-full lg:group-hover/sidebar:items-stretch">
 
           {/* Campana: capítulos subidos desde tu última visita (todos los usuarios) */}
-          <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
+          <div className="flex justify-center lg:justify-center lg:group-hover/sidebar:justify-start lg:w-full">
+            <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
+          </div>
 
           {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 lg:w-full lg:flex-col lg:items-center lg:gap-1.5 lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
             <button
               type="button"
               onClick={handleToggleTheme}
@@ -316,161 +222,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-
-            {/* El acento vive en xl+ y en el perfil; en pantallas medianas
-                sobraba y empujaba todo encima del menú */}
-            <div className="hidden xl:block">
-              <AccentPicker variant="box" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsAccentOpen(true)}
+              aria-label="Cambiar color de acento"
+              title="Color de acento"
+              className="p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all active:scale-90"
+            >
+              <Palette className="w-4 h-4" style={{ color: 'oklch(0.63 0.21 var(--crow-hue))' }} />
+            </button>
           </div>
 
-          {/* Lupa / Input Expandible */}
-          <div className="relative flex items-center">
-            {isSearchOpen ? (
-              <div className="relative flex items-center w-[min(68vw,20rem)] sm:w-80 md:w-96 transition-all duration-300">
-                <Search className="absolute left-3 w-4 h-4 text-accent pointer-events-none" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar cómic o perfil..."
-                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-surface border border-accent/50 text-xs text-ink placeholder:text-mute focus:outline-none focus:ring-1 focus:ring-accent shadow-xl"
-                />
-                <button
-                  onClick={closeSearch}
-                  aria-label="Cerrar búsqueda"
-                  className="absolute right-2.5 p-1 text-mute hover:text-ink transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                aria-label="Buscar cómic o perfil"
-                className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all hover:border-faint group"
-                title="Buscar cómic (Ctrl + K)"
-              >
-                <Search className="w-4 h-4 text-mute group-hover:text-accent transition-colors" />
-                <span className="text-xs text-mute group-hover:text-mute hidden xl:inline">
-                  Buscar...
-                </span>
-                <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-bg text-mute border border-line">
-                  <Command className="w-2.5 h-2.5" /> K
-                </kbd>
-              </button>
-            )}
-
-            {/* Dropdown flotante con resultados inmediatos */}
-            {isSearchOpen && searchQuery.trim() && (
-              <div className="absolute right-0 top-full mt-2 w-[min(90vw,24rem)] bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
-                {/* ── Perfiles (Sprint 4) ── */}
-                {matchingProfiles.length > 0 && (
-                  <>
-                    <div className="p-2 border-b border-line text-[11px] font-semibold text-mute uppercase tracking-wider flex items-center justify-between">
-                      <span>Perfiles ({matchingProfiles.length})</span>
-                    </div>
-                    <div className="divide-y divide-line border-b border-line">
-                      {matchingProfiles.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handleOpenProfileResult(p.id)}
-                          className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
-                        >
-                          <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-line bg-raised shrink-0">
-                            {p.avatar_url ? (
-                              <img
-                                src={p.avatar_url}
-                                alt={p.username}
-                                className="w-full h-full object-cover"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <span className="w-full h-full flex items-center justify-center text-xs font-black text-ink bg-gradient-to-br from-accent to-accent2">
-                                {p.username.slice(0, 2).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-bold text-ink truncate group-hover:text-accent transition-colors">
-                              @{p.username}
-                            </h4>
-                            <p className="text-[11px] text-mute truncate mt-0.5">
-                              {p.bio?.trim() || 'Lector de Crow Comics'}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* ── Cómics ── */}
-                <div className="p-2 border-b border-line text-[11px] font-semibold text-mute uppercase tracking-wider flex items-center justify-between">
-                  <span>Cómics ({matchingComics.length})</span>
-                  <span className="text-[10px] text-mute">Esc para cerrar</span>
-                </div>
-
-                {matchingComics.length === 0 && matchingProfiles.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-mute">
-                    No se encontraron cómics ni perfiles para "{searchQuery}"
-                  </div>
-                ) : matchingComics.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-faint">
-                    Sin cómics con ese nombre — prueba con otra palabra
-                  </div>
-                ) : (
-                  <div className="max-h-80 overflow-y-auto divide-y divide-line">
-                    {matchingComics.map((comic) => (
-                      <button
-                        key={comic.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectComic(comic);
-                          closeSearch();
-                        }}
-                        className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
-                      >
-                        <img
-                          src={comic.cover_url}
-                          alt={comic.title}
-                          className="w-10 h-14 object-cover rounded-md border border-line shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=200';
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-xs font-bold text-ink truncate group-hover:text-accent transition-colors">
-                            {comic.title}
-                          </h4>
-                          <p className="text-[11px] text-mute truncate mt-0.5">
-                            <span className="text-amber-400 font-semibold">{comic.publisher}</span> · {comic.tag}
-                          </p>
-                          <div className="flex items-center gap-2 text-[10px] text-mute mt-1">
-                            <span>{comic.chapters?.length || 0} caps.</span>
-                            <span>•</span>
-                            <span>{comic.translator_typesetter}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
 
           {/* Zona de usuario: Google / Menú de cuenta */}
-          <div className="relative shrink-0" ref={userMenuRef}>
+          <div className="relative shrink-0 lg:w-full lg:flex lg:justify-center lg:group-hover/sidebar:justify-start" ref={userMenuRef}>
             {user ? (
-              <div>
+              <div className="lg:flex lg:justify-center lg:group-hover/sidebar:justify-start lg:w-full">
                 <button
                   onClick={() => { setIsUserMenuOpen((v) => !v); setShowReports(false); }}
                   aria-label="Abrir menú de mi cuenta"
                   aria-expanded={isUserMenuOpen}
-                  className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-surface border transition-all ${
+                  className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-surface border transition-all lg:w-auto lg:justify-center lg:group-hover/sidebar:w-full lg:group-hover/sidebar:justify-start ${
                     isUserMenuOpen
                       ? 'border-accent/40'
                       : 'border-line hover:border-faint'
@@ -489,14 +261,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                       avatarInitials
                     )}
                   </div>
-                  <span className="hidden md:inline text-xs font-bold text-ink max-w-[120px] truncate">
+                  <span className="hidden md:inline lg:hidden lg:group-hover/sidebar:inline text-xs font-bold text-ink max-w-[120px] truncate">
                     {profile?.username?.trim() || (user.email ?? 'Cuenta').split('@')[0]}
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-mute transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-mute transition-transform lg:hidden lg:group-hover/sidebar:block lg:group-hover/sidebar:ml-auto ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in lg:left-0 lg:right-auto lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
                     {/* Info de cuenta */}
                     <div className="px-4 py-3 border-b border-line flex items-center gap-3">
                       <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-accent to-accent2 text-onaccent flex items-center justify-center text-xs font-black shrink-0">
@@ -579,6 +351,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <UserCircle className="w-4 h-4" />
                         Mi Perfil
                       </button>
+
+                      {/* Color de acento: ahora se abre desde el icono de
+                          paleta del sidebar (diálogo centrado, sin recortes) */}
+
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
@@ -595,11 +371,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               !authLoading && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 lg:flex-col lg:items-center lg:group-hover/sidebar:items-stretch lg:w-full">
                   {/* Acceso con email (modal completo) */}
                   <button
                     onClick={() => onOpenAuth()}
-                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink text-xs font-bold border border-line hover:border-faint transition-all"
+                    className="hidden md:inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink text-xs font-bold border border-line hover:border-faint transition-all lg:hidden lg:group-hover/sidebar:inline-flex lg:w-full"
                   >
                     Entrar
                   </button>
@@ -608,7 +384,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => void handleGoogleSignIn()}
                     disabled={googleLoading}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-60 lg:w-auto lg:group-hover/sidebar:w-full"
                     title="Continuar con Google"
                   >
                     {googleLoading ? (
@@ -616,7 +392,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ) : (
                       <GoogleIcon className="w-4 h-4" />
                     )}
-                    <span className="hidden sm:inline">Continuar con Google</span>
+                    <span className="hidden sm:inline lg:hidden lg:group-hover/sidebar:inline">Continuar con Google</span>
                   </button>
                 </div>
               )
@@ -626,9 +402,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Herramientas admin (Nuevo Cómic / Reportes): en el menú del avatar.
               El dropdown de reportes se ancla aquí, junto a la cuenta. */}
           {isAdmin && (
-            <div className="relative" ref={reportsRef}>
+            <div className="relative lg:w-full" ref={reportsRef}>
                 {showReports && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in lg:left-0 lg:right-auto lg:bottom-full lg:top-auto lg:mb-2 lg:mt-0">
                     <div className="px-4 py-3 border-b border-line flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Flag className="w-3.5 h-3.5 text-accent2" />
@@ -722,6 +498,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
+
+      <AccentDialog isOpen={isAccentOpen} onClose={() => setIsAccentOpen(false)} />
     </header>
   );
 };

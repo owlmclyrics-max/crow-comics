@@ -95,15 +95,34 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
     return (
       <section
         aria-label="Cómic destacado"
-        className="relative overflow-hidden w-full mx-[calc(50%-50vw)] h-[70svh] min-h-[500px] -mt-5 sm:-mt-8 bg-surface border-b border-line"
+        className="relative overflow-hidden w-full -mx-3 sm:-mx-6 lg:-mx-8 h-[70svh] min-h-[500px] bg-surface border-b border-line"
       >
-        <img
-          src={fallbackComic.cover_url}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-60"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-bg/30" />
+        {fallbackComic.banner_url?.trim() ? (
+          <img
+            src={fallbackComic.banner_url}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+          />
+        ) : (
+          <>
+            <img
+              src={fallbackComic.cover_url}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-75"
+            />
+            <div className="absolute inset-y-0 right-0 h-full w-[68%] sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
+              <img
+                src={fallbackComic.cover_url}
+                alt=""
+                aria-hidden="true"
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+          </>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10" />
         <div className="relative h-full flex flex-col justify-end p-6 sm:p-12 lg:px-16 space-y-3 sm:space-y-4 max-w-2xl">
           <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-bg/70 backdrop-blur-md border border-line text-ink">
             <Sparkles className="w-3 h-3 text-accent" />
@@ -160,25 +179,58 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   return (
     <section
       aria-label="Novedades destacadas"
-      className="group relative overflow-hidden w-full mx-[calc(50%-50vw)] h-[86svh] max-h-[950px] min-h-[620px] -mt-5 sm:-mt-8 border-b border-line bg-surface"
+      className="group relative overflow-hidden w-full -mx-3 sm:-mx-6 lg:-mx-8 h-[86svh] max-h-[950px] min-h-[620px] border-b border-line bg-surface"
     >
-      {/* Fondo cinemático: TODAS las portadas apiladas con crossfade.
+      {/* Fondo cinemático: TODAS las capas apiladas con crossfade.
           Nada se desmonta al cambiar de slide (remounts con blur/transform
-          salen como "fantasmas" en Chromium). */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {recentChapters.map((chapter, idx) => (
-          <img
-            key={chapter.id}
-            src={chapter.cover_url || chapter.comic_cover_url}
-            alt=""
-            aria-hidden="true"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-out ${
-              activeIndex === idx ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-        ))}
+          salen como "fantasmas" en Chromium).
+          v0.6b: si el cómic tiene banner horizontal se usa a sangre; si no,
+          la portada vertical se ANCLA a la derecha (object-contain) y se
+          rellena el resto con una copia difuminada — nunca se estira. */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none bg-bg">
+        {recentChapters.map((chapter, idx) => {
+          const parent = comics.find((c) => c.id === chapter.comic_id);
+          const banner = parent?.banner_url?.trim();
+          const cover = chapter.cover_url || chapter.comic_cover_url;
+          return (
+            <div
+              key={chapter.id}
+              aria-hidden="true"
+              className={`absolute inset-0 transition-opacity duration-1000 ease-out ${
+                activeIndex === idx ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {banner ? (
+                <img
+                  src={banner}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <>
+                  {/* Relleno difuminado (evita el pixelado de estirar la portada) */}
+                  <img
+                    src={cover}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-75 saturate-125"
+                  />
+                  {/* Portada nítida: panel pegado al borde DERECHO, altura
+                      completa (sin cortes abajo) y fundido SOLO en su borde
+                      izquierdo para que se disuelva con el relleno. */}
+                  <div className="absolute inset-y-0 right-0 h-full w-[68%] sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
+                    <img
+                      src={cover}
+                      alt=""
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
         {/* Velo legibilidad: gradiente lateral + base hacia el fondo del sitio */}
-        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10 sm:from-bg/90 sm:via-bg/40 sm:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10 sm:from-bg/90 sm:via-bg/45 sm:to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-bg via-bg/55 to-transparent" />
       </div>
 
@@ -243,16 +295,16 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           )}
         </div>
 
-        {/* Título del tomo (Archivo desde la base global) */}
+        {/* Título del CÓMIC (no del tomo) — el tomo va en el chip inferior */}
         <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-ink tracking-tight leading-[1.05] drop-shadow-sm">
-          {current.title}
-        </h2>
-        <p className="text-sm sm:text-base text-mute font-semibold">
           {current.comic_title}
-        </p>
+        </h2>
 
-        {/* Meta factual: año · editorial · tomos · estado */}
+        {/* Meta factual: tomo actual · año · editorial · tomos · estado */}
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs text-mute font-semibold">
+          <span className="px-2 py-0.5 rounded-md bg-accent/15 border border-accent/40 text-accent font-black uppercase tracking-wide">
+            Tomo #{current.chapter_number}
+          </span>
           {current.comic_year && <span>{current.comic_year}</span>}
           {current.comic_year && parentComic?.publisher && <span className="text-faint">·</span>}
           {parentComic?.publisher && <span className="text-accent">{parentComic.publisher}</span>}
@@ -304,12 +356,14 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
         <div className="flex items-end gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {recentChapters.map((chapter, idx) => {
             const isActive = idx === activeIndex;
+            const parent = comics.find((c) => c.id === chapter.comic_id);
+            const thumb = parent?.banner_url?.trim() || chapter.cover_url || chapter.comic_cover_url;
             return (
               <button
                 key={chapter.id}
                 type="button"
                 onClick={() => setActiveIndex(idx)}
-                aria-label={`Ver novedad #${idx + 1}: ${chapter.title}`}
+                aria-label={`Ver novedad #${idx + 1}: ${chapter.comic_title}, tomo ${chapter.chapter_number}`}
                 aria-current={isActive || undefined}
                 className="group/thumb w-28 sm:w-36 shrink-0 text-left"
               >
@@ -321,7 +375,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                   }`}
                 >
                   <img
-                    src={chapter.cover_url || chapter.comic_cover_url}
+                    src={thumb}
                     alt=""
                     aria-hidden="true"
                     loading="lazy"
@@ -333,7 +387,8 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                     isActive ? 'text-ink' : 'text-faint group-hover/thumb:text-mute'
                   }`}
                 >
-                  {chapter.title}
+                  {chapter.comic_title}
+                  <span className="text-accent"> · T{chapter.chapter_number}</span>
                 </span>
               </button>
             );

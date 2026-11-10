@@ -16,6 +16,8 @@ import {
   Download,
   Edit3,
   Check,
+  Eye,
+  Sparkles,
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
 import { Modal } from './ui/Modal';
@@ -73,6 +75,111 @@ const Field: React.FC<{
 );
 
 const inputCls = 'w-full px-3 py-2 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors';
+
+/* ══════════════════════════════════════════════════
+   VISTA PREVIA (cómo se verá en el hero y en la ficha)
+   Replica en pequeño el lenguaje visual real: banner a sangre,
+   título del CÓMIC + chip "Tomo #N", y la ficha con su portada.
+══════════════════════════════════════════════════ */
+const ComicFormPreview: React.FC<{
+  title: string;
+  coverUrl: string;
+  bannerUrl: string;
+  synopsis: string;
+  publisher: string;
+  year: string;
+  status: string;
+  chapterCount: number;
+}> = ({ title, coverUrl, bannerUrl, synopsis, publisher, year, status, chapterCount }) => {
+  const displayTitle = title.trim() || 'Título del cómic';
+  const art = bannerUrl.trim() || coverUrl.trim();
+  const hasBanner = Boolean(bannerUrl.trim());
+
+  return (
+    <div className="rounded-2xl border border-line bg-bg/60 p-3 space-y-4">
+      <div className="flex items-center gap-2">
+        <Eye className="w-3.5 h-3.5 text-accent" />
+        <span className="text-[11px] font-bold text-mute uppercase tracking-wide">Vista previa</span>
+        {!hasBanner && (
+          <span className="text-[10px] text-amber-400 font-semibold">· sin banner, se usa la portada</span>
+        )}
+      </div>
+
+      {/* ── MOCK HERO ── */}
+      <div className="relative overflow-hidden rounded-xl aspect-[16/7] bg-surface border border-line">
+        {art ? (
+          hasBanner ? (
+            <img src={art} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <>
+              {/* Relleno difuminado para no estirar la portada vertical */}
+              <img
+                src={art}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 opacity-50"
+              />
+              <img
+                src={art}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-y-0 right-0 h-full w-auto max-w-[55%] object-contain object-right"
+              />
+            </>
+          )
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-[11px] text-faint">
+            Pega una portada o un banner para verlo aquí
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/50 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
+
+        <div className="absolute left-0 bottom-0 p-4 max-w-[75%] space-y-1.5">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bg/70 backdrop-blur-md border border-line text-[9px] font-black uppercase tracking-wider text-ink">
+            <Sparkles className="w-2.5 h-2.5 text-accent" /> #1 en novedades
+          </span>
+          <h3 className="text-lg sm:text-2xl font-black text-ink leading-tight line-clamp-2">
+            {displayTitle}
+          </h3>
+          <p className="flex flex-wrap items-center gap-x-1.5 text-[10px] text-mute font-semibold">
+            <span className="px-1.5 py-0.5 rounded bg-accent/15 border border-accent/30 text-accent font-bold">
+              Tomo #1
+            </span>
+            {year.trim() && <span>{year}</span>}
+            {publisher.trim() && <span className="text-accent">· {publisher}</span>}
+            <span>· {chapterCount} {chapterCount === 1 ? 'tomo' : 'tomos'}</span>
+            {status.trim() && <span>· {status}</span>}
+          </p>
+        </div>
+      </div>
+
+      {/* ── MOCK FICHA ── */}
+      <div className="rounded-xl border border-line bg-surface/40 p-3">
+        <p className="text-[10px] font-bold text-faint uppercase tracking-wide mb-2">Ficha del cómic</p>
+        <div className="flex gap-3">
+          <div className="w-16 shrink-0 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line">
+            {coverUrl.trim() ? (
+              <img src={coverUrl} alt="" aria-hidden="true" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[9px] text-faint">Portada</div>
+            )}
+          </div>
+          <div className="min-w-0 space-y-1">
+            <h4 className="text-sm font-bold text-ink truncate">{displayTitle}</h4>
+            <p className="text-[10px] text-mute font-semibold">
+              {[year.trim(), publisher.trim(), status.trim()].filter(Boolean).join(' · ') || 'Año · Editorial · Estado'}
+            </p>
+            <p className="text-[10px] text-mute leading-snug line-clamp-3">
+              {synopsis.trim() || 'La sinopsis aparecerá aquí…'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 /* ══════════════════════════════════════════════════
    EDITOR DE UN CAPÍTULO (panel derecho)
@@ -217,6 +324,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   const [title, setTitle]                               = useState(comicToEdit?.title ?? '');
   const [originalTitle, setOriginalTitle]               = useState(comicToEdit?.original_title ?? '');
   const [coverUrl, setCoverUrl]                         = useState(comicToEdit?.cover_url ?? '');
+  const [bannerUrl, setBannerUrl]                       = useState(comicToEdit?.banner_url ?? '');
   const [synopsis, setSynopsis]                         = useState(comicToEdit?.synopsis ?? '');
   const [publisher, setPublisher]                       = useState<ComicPublisher>(comicToEdit?.publisher ?? 'Marvel');
   const [tag, setTag]                                   = useState<ComicTag>(comicToEdit?.tag ?? 'Novedad');
@@ -244,6 +352,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
 
   const [saving, setSaving]     = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // v0.6: vista previa del hero (banner) y de la ficha antes de guardar.
+  const [showPreview, setShowPreview] = useState(false);
 
   const steps = [
     { id: 'info',     label: 'Editar Cómic',    icon: BookOpen, desc: 'Info + pack completo' },
@@ -264,6 +374,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         title: title.trim(),
         original_title: originalTitle.trim() || undefined,
         cover_url: coverUrl.trim(),
+        banner_url: bannerUrl.trim() || undefined,
         synopsis: synopsis.trim(),
         publisher, tag, status,
         writer: writer.trim(),
@@ -322,7 +433,43 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           <input type="text" value={originalTitle} onChange={e => setOriginalTitle(e.target.value)}
             placeholder="Original title" className={inputCls} />
         </Field>
-        <ImageUploadField label="Portada del cómic *" value={coverUrl} onChange={setCoverUrl} compact />
+        <div className="md:col-span-2 space-y-3">
+          <ImageUploadField label="Portada del cómic * (vertical 2:3)" value={coverUrl} onChange={setCoverUrl} compact />
+          <ImageUploadField
+            label="Banner del hero (horizontal, opcional)"
+            value={bannerUrl}
+            onChange={setBannerUrl}
+            compact
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPreview(v => !v)}
+              aria-expanded={showPreview}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-raised hover:bg-line text-ink text-[11px] font-bold border border-line transition-colors active:scale-95"
+            >
+              <Eye className="w-3.5 h-3.5 text-accent" />
+              {showPreview ? 'Ocultar vista previa' : 'Ver vista previa'}
+            </button>
+            <p className="text-[10px] text-faint">
+              {bannerUrl.trim()
+                ? 'Se verá a sangre completa en el hero del inicio.'
+                : 'Sin banner, la portada se ancla a la derecha con relleno difuminado.'}
+            </p>
+          </div>
+          {showPreview && (
+            <ComicFormPreview
+              title={title}
+              coverUrl={coverUrl}
+              bannerUrl={bannerUrl}
+              synopsis={synopsis}
+              publisher={publisher}
+              year={year}
+              status={status}
+              chapterCount={chapters.length || 1}
+            />
+          )}
+        </div>
         <Field label="Editorial">
           <select value={publisher} onChange={e => setPublisher(e.target.value as ComicPublisher)} className={inputCls}>
             {PUBLISHERS.map(p => <option key={p} value={p}>{p}</option>)}

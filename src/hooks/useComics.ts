@@ -111,10 +111,13 @@ export const useComicsData = () => {
         try {
           let comicId = comicData.id;
 
-          const comicPayload = {
+          const basePayload = {
             title: comicData.title,
             original_title: comicData.original_title ?? null,
             cover_url: comicData.cover_url,
+            // v0.6: imagen horizontal del hero. Si la columna aún no existe,
+            // saveComic reintenta sin ella (ver más abajo).
+            banner_url: comicData.banner_url ?? null,
             synopsis: comicData.synopsis,
             publisher: comicData.publisher,
             tag: comicData.tag,
@@ -127,22 +130,50 @@ export const useComicsData = () => {
             full_download_links: comicData.full_download_links ?? [],
           };
 
+          // Si la columna banner_url todavía no existe en Supabase, guardamos
+          // el resto sin romper el alta (el SQL migrate-missing-columns.sql la crea).
+          const withoutBanner = () => {
+            const { banner_url: _banner, ...rest } = basePayload;
+            void _banner;
+            return rest;
+          };
+
           if (comicId) {
             const { error: updateError } = await supabase
               .from('comics')
-              .update(comicPayload)
+              .update(basePayload)
               .eq('id', comicId);
 
-            if (updateError) throw updateError;
+            if (updateError) {
+              if (/banner_url/i.test(updateError.message)) {
+                console.warn('comics.banner_url no existe; guardando sin banner. Corre migrate-missing-columns.sql.');
+                const { error: retryError } = await supabase
+                  .from('comics')
+                  .update(withoutBanner())
+                  .eq('id', comicId);
+                if (retryError) throw retryError;
+              } else {
+                throw updateError;
+              }
+            }
           } else {
-            const { data, error: insertError } = await supabase
+            let insertResult = await supabase
               .from('comics')
-              .insert([comicPayload])
+              .insert([basePayload])
               .select('id')
               .single();
 
-            if (insertError) throw insertError;
-            comicId = data.id as string;
+            if (insertResult.error && /banner_url/i.test(insertResult.error.message)) {
+              console.warn('comics.banner_url no existe; insertando sin banner. Corre migrate-missing-columns.sql.');
+              insertResult = await supabase
+                .from('comics')
+                .insert([withoutBanner()])
+                .select('id')
+                .single();
+            }
+
+            if (insertResult.error) throw insertResult.error;
+            comicId = insertResult.data.id as string;
           }
 
           if (comicId) {

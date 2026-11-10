@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Map as MapIcon, History, Plus, X, Check, Bell, BellRing } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Map as MapIcon, History, Plus, X, Check, Bell, BellRing } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { AccentDialog } from './ui/AccentPicker';
 import { showToast } from './ui/Toast';
 import {
   getInstallPrompt,
@@ -50,6 +51,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const { canManageContent, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [isAccentOpen, setIsAccentOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // Notificaciones push de tomos nuevos (v0.5): estado del permiso/suscripción.
   const [pushState, setPushState] = useState<PushState>('default');
@@ -316,6 +318,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
               <button
                 type="button"
+                onClick={() => setIsAccentOpen(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
+              >
+                <Palette
+                  className="w-5 h-5"
+                  style={{ color: 'oklch(0.63 0.21 var(--crow-hue))' }}
+                />
+                Color del sitio
+              </button>
+
+              <button
+                type="button"
                 onClick={() => go('roadmap')}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
               >
@@ -349,6 +363,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </div>
         </div>
       )}
+      <AccentDialog isOpen={isAccentOpen} onClose={() => setIsAccentOpen(false)} />
     </>
   );
 };

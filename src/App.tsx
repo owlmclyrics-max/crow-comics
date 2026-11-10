@@ -15,6 +15,8 @@ import { AuthSplash } from './components/AuthSplash';
 import { ContinueReadingRow } from './components/ContinueReadingRow';
 import { FeaturedListsRow } from './components/FeaturedListsRow';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { TopSearchBar } from './components/TopSearchBar';
+import { SearchOverlay } from './components/SearchOverlay';
 import { ScrollToTop } from './components/ui/ScrollToTop';
 import type { ReadingListRow } from './lib/profile';
 import { ToastHost, showToast } from './components/ui/Toast';
@@ -53,6 +55,9 @@ const ListDetailPage = lazy(() =>
 );
 const EventDetailPage = lazy(() =>
   import('./components/EventDetailPage').then((m) => ({ default: m.EventDetailPage })),
+);
+const SearchPage = lazy(() =>
+  import('./components/SearchPage').then((m) => ({ default: m.SearchPage })),
 );
 
 // Los modales de administración también: solo el admin los usa y rara vez.
@@ -94,7 +99,7 @@ interface CrowViewState {
 const VALID_VIEWS: CurrentView[] = [
   'landing', 'inicio', 'comics', 'personajes', 'character-detail', 'comic-detail',
   'chapter-detail', 'list-detail', 'event-detail', 'profile', 'historial',
-  'public-profile', 'roadmap',
+  'public-profile', 'roadmap', 'search',
 ];
 
 /** Lee la vista e IDs desde el hash actual (#/vista?comic=..). */
@@ -234,8 +239,11 @@ export const App: React.FC = () => {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
     () => initialHash.profileId ?? initialSaved?.profileId ?? null,
   );
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
+
+  // Buscador global: paleta rápida + pantalla completa
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchPageQuery, setSearchPageQuery] = useState('');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);  const [authModalTab, setAuthModalTab] = useState<'signin' | 'signup' | 'admin'>('signin');
   const [isAdminFormOpen, setIsAdminFormOpen] = useState(false);
   const [isCharactersModalOpen, setIsCharactersModalOpen] = useState(false);
   const [isCharacterFormOpen, setIsCharacterFormOpen] = useState(false);
@@ -427,6 +435,36 @@ export const App: React.FC = () => {
     }
   };
 
+  // ── Buscador global ──
+  const openFullSearch = (query: string) => {
+    setSearchPageQuery(query);
+    setIsSearchOpen(false);
+    setCurrentView('search');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openSearchProfile = (profileId: string) => {
+    setIsSearchOpen(false);
+    if (user && profileId === user.id) {
+      setCurrentView('profile');
+    } else {
+      setSelectedProfileId(profileId);
+      setCurrentView('public-profile');
+    }
+  };
+
+  // Ctrl+K / Cmd+K abre la paleta de búsqueda desde cualquier vista
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Modo lectura inmersivo (v0.6): ChapterDetailPage avisa al entrar/salir y
   // aquí ocultamos Navbar y barra móvil para que el visor quede 100% limpio.
   const [isImmersiveReading, setIsImmersiveReading] = useState(false);
@@ -473,16 +511,17 @@ export const App: React.FC = () => {
             setIsAuthModalOpen(true);
           }}
           onOpenProfile={() => setCurrentView('profile')}
-          onOpenPublicProfile={(profileId) => {
-            setSelectedProfileId(profileId);
-            setCurrentView('public-profile');
-          }}
           onOpenNewComic={handleOpenNewComic}
         />
       )}
 
+      {/* Barra de búsqueda superior (glass) — fuera del <main> para quedar pegada arriba */}
+      {!isImmersiveReading && currentView !== 'chapter-detail' && currentView !== 'search' && (
+        <TopSearchBar onOpen={() => setIsSearchOpen(true)} />
+      )}
+
       {/* Contenido Principal según Vista */}
-      <main className="box-border relative z-10 flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
+      <main className={`box-border relative z-10 flex-1 min-w-0 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 lg:max-w-none lg:w-auto lg:mx-0 ${isImmersiveReading ? 'lg:ml-0' : 'lg:ml-[4.5rem]'}`}>
         {error && (
           <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs flex items-center gap-3">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
@@ -621,6 +660,17 @@ export const App: React.FC = () => {
           /* VISTA 8: ROADMAP INTERACTIVO (por versión, persistente)    */
           /* ======================================================== */
           <RoadmapView onBack={() => handleNavigate('inicio')} />
+        ) : currentView === 'search' ? (
+          /* ======================================================== */
+          /* VISTA: BÚSQUEDA COMPLETA (Enter desde la paleta)          */
+          /* ======================================================== */
+          <SearchPage
+            initialQuery={searchPageQuery}
+            comics={comics}
+            onSelectComic={handleOpenComicDetail}
+            onSelectProfile={openSearchProfile}
+            onBack={() => handleNavigate('inicio')}
+          />
         ) : currentView === 'comics' ? (
           /* ======================================================== */
           /* VISTA 2: SECCIÓN CÓMICS (POR EDITORIALES MARVEL, DC, ETC) */
@@ -727,6 +777,14 @@ export const App: React.FC = () => {
         />
       )}
       <ScrollToTop />
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        comics={comics}
+        onSelectComic={handleOpenComicDetail}
+        onSelectProfile={openSearchProfile}
+        onOpenFullSearch={openFullSearch}
+      />
         </>
       )}
 
