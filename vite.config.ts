@@ -5,9 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // Ruta base desplegable: si más adelante publicas en GitHub Pages u otro host
-  // en subcarpeta, solo define VITE_BASE=/nombre-repo/ en el .env o en el host.
-  // En Cloudflare Pages/Vercel no hace falta nada (raíz por defecto "/").
-  base: process.env.VITE_BASE || '/',
+  // Ruta base para GitHub Pages: /crow-comics/
+  base: process.env.VITE_BASE || '/crow-comics/',
 })
 
