@@ -4,12 +4,10 @@ import { X, User, AlertCircle, Check, Layers, Search } from 'lucide-react';
 import { useCharactersContext } from '../context/CharactersContext';
 import { useComics } from '../context/ComicsContext';
 import {
-  fetchChapterCast,
+  fetchChapterCharacterIds,
   setChapterCharacterAssigned,
   assignCharactersToChapters,
-  setChapterCharacterVariant,
 } from '../lib/chapterCharacters';
-import type { ChapterCastEntry } from '../lib/chapterCharacters';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
 
@@ -39,21 +37,13 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
 }) => {
   const { characters, loading } = useCharactersContext();
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
-  // v0.9.9: reparto por personaje con su variante elegida + variantes disponibles
-  const [castEntries, setCastEntries] = useState<Record<string, ChapterCastEntry>>({});
   const [loadingAssigned, setLoadingAssigned] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadAssigned = useCallback(async () => {
     setLoadingAssigned(true);
     try {
-      // v0.9.9: el reparto trae también la variante elegida por personaje y
-      // las variantes disponibles de cada uno (para el selector del modal).
-      const entries = await fetchChapterCast(chapterId);
-      setAssignedIds(entries.map((entry) => entry.character.id));
-      setCastEntries(
-        Object.fromEntries(entries.map((entry) => [entry.character.id, entry])),
-      );
+      setAssignedIds(await fetchChapterCharacterIds(chapterId));
     } catch (err: unknown) {
       console.error('Error cargando personajes asignados:', err);
       setError('No se pudieron cargar los personajes asignados');
@@ -99,54 +89,6 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
   const assignedCharacters = characters.filter((character) =>
     assignedIds.includes(character.id),
   );
-
-  // v0.9.9: elegir qué variante del personaje muestra el reparto de este tomo.
-  const handleChooseVariant = async (characterId: string, variantId: string | null) => {
-    const previous = castEntries[characterId]?.variant?.id ?? null;
-    // Optimista
-    setCastEntries((current) => {
-      const entry = current[characterId];
-      if (!entry) return current;
-      return {
-        ...current,
-        [characterId]: {
-          ...entry,
-          variant: variantId
-            ? (entry.variants.find((v) => v.id === variantId) ?? null)
-            : null,
-        },
-      };
-    });
-    try {
-      await setChapterCharacterVariant(chapterId, characterId, variantId);
-      showToast(
-        variantId
-          ? 'El reparto de este tomo muestra la variante elegida'
-          : 'El reparto vuelve a la versión principal',
-        'success',
-      );
-    } catch (err: unknown) {
-      console.error('Error eligiendo variante del reparto:', err);
-      // Revertir
-      setCastEntries((current) => {
-        const entry = current[characterId];
-        if (!entry) return current;
-        return {
-          ...current,
-          [characterId]: {
-            ...entry,
-            variant: previous
-              ? (entry.variants.find((v) => v.id === previous) ?? null)
-              : null,
-          },
-        };
-      });
-      showToast(
-        'No se pudo guardar la variante. ¿Ya corriste el SQL add-chapter-character-variant.sql?',
-        'error',
-      );
-    }
-  };
 
   // ── v0.9.9: buscador para filtrar la cuadrícula de personajes ──
   const [search, setSearch] = useState('');
@@ -247,63 +189,36 @@ export const ChapterCharactersModal: React.FC<ChapterCharactersModalProps> = ({
               )}
             </div>
             <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {assignedCharacters.map((character) => {
-                const entry = castEntries[character.id];
-                return (
-                  <div
-                    key={character.id}
-                    className="group/as relative shrink-0 flex flex-col items-center gap-1 w-16"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => void handleToggleCharacter(character)}
-                      title={`Quitar a ${character.name}`}
-                      className="flex flex-col items-center gap-1 focus:outline-none w-16"
-                    >
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-accent/60 bg-bg shrink-0 transition-colors group-hover/as:border-red-400/80">
-                        {character.photo_url ? (
-                          <img
-                            src={character.photo_url}
-                            alt={character.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-faint" />
-                          </div>
-                        )}
+              {assignedCharacters.map((character) => (
+                <button
+                  key={character.id}
+                  type="button"
+                  onClick={() => void handleToggleCharacter(character)}
+                  title={`Quitar a ${character.name}`}
+                  className="group/as relative shrink-0 flex flex-col items-center gap-1 focus:outline-none w-16"
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-accent/60 bg-bg shrink-0 transition-colors group-hover/as:border-red-400/80">
+                    {character.photo_url ? (
+                      <img
+                        src={character.photo_url}
+                        alt={character.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-faint" />
                       </div>
-                      <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/as:flex">
-                        <X className="w-3 h-3 text-red-400" />
-                      </span>
-                      <p className="w-16 text-[10px] text-mute truncate group-hover/as:text-red-400 transition-colors">
-                        {character.name}
-                      </p>
-                    </button>
-                    {/* v0.9.9: selector de variante para el reparto de este tomo
-                        (fuera del botón para que sus clics no lo alteren) */}
-                    {entry?.variants?.length ? (
-                      <select
-                        value={entry.variant?.id ?? ''}
-                        onChange={(e) =>
-                          void handleChooseVariant(character.id, e.target.value || null)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Versión de ${character.name} en este tomo`}
-                        className="w-16 px-1 py-0.5 rounded-md bg-raised border border-line text-[8px] font-bold text-mute hover:text-ink focus:border-accent focus:outline-none cursor-pointer transition-colors"
-                      >
-                        <option value="">Principal</option>
-                        {entry.variants.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : null}
+                    )}
                   </div>
-                );
-              })}
+                  <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-raised border border-line items-center justify-center hidden group-hover/as:flex">
+                    <X className="w-3 h-3 text-red-400" />
+                  </span>
+                  <p className="w-16 text-[10px] text-mute truncate group-hover/as:text-red-400 transition-colors">
+                    {character.name}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
         )}

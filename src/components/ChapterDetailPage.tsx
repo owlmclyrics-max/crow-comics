@@ -35,8 +35,9 @@ import type { ReadingStatus } from '../lib/readingStatus';
 import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
 import { ChapterStatusModal } from './ChapterStatusModal';
-import { fetchChapterCast, setChapterCharacterVariant } from '../lib/chapterCharacters';
+import { fetchChapterCast } from '../lib/chapterCharacters';
 import type { ChapterCastEntry } from '../lib/chapterCharacters';
+import { ChapterVariantPickerModal } from './ChapterVariantPickerModal';
 import { CommentsSection } from './CommentsSection';
 import { StarRating } from './ui/StarRating';
 import { ChaptersModal } from './ChaptersModal';
@@ -411,6 +412,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   // Estado de personajes en este tomo (reparto con variante elegida, v0.9.9)
   const [cast, setCast] = useState<ChapterCastEntry[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
+  // v0.9.9.2: modal "Añadir variante" (elegir versión a mostrar en el reparto)
+  const [isVariantPickerOpen, setIsVariantPickerOpen] = useState(false);
 
   const loadChapterCharacters = useCallback(async () => {
     setLoadingCharacters(true);
@@ -427,43 +430,6 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   useEffect(() => {
     void loadChapterCharacters();
   }, [loadChapterCharacters]);
-
-  // v0.9.9: elegir qué variante del personaje muestra este tomo (solo admin).
-  const handleChooseVariant = useCallback(
-    async (entry: ChapterCastEntry, variantId: string | null) => {
-      const { character } = entry;
-      // Optimista: el círculo cambia al instante; se revierte si falla.
-      const applyChoice = (chosen: string | null) =>
-        setCast((current) =>
-          current.map((item) =>
-            item.character.id === character.id
-              ? {
-                  ...item,
-                  variant: chosen
-                    ? (item.variants.find((v) => v.id === chosen) ?? null)
-                    : null,
-                }
-              : item,
-          ),
-        );
-
-      applyChoice(variantId);
-      try {
-        await setChapterCharacterVariant(chapter.id, character.id, variantId);
-        showToast(
-          variantId
-            ? `Ahora "${character.name}" aparece como su variante en este tomo`
-            : `"${character.name}" vuelve a su versión principal en este tomo`,
-          'success',
-        );
-      } catch (err) {
-        console.error('Error eligiendo variante del reparto:', err);
-        applyChoice(entry.variant?.id ?? null);
-        showToast('No se pudo guardar la variante elegida', 'error');
-      }
-    },
-    [chapter.id],
-  );
 
   const updateCharacterScroll = useCallback(() => {
     const el = charactersScrollerRef.current;
@@ -869,15 +835,27 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               Personajes que aparecen en este capítulo
             </p>
           </div>
-          {canManageContent && (
-            <button
-              onClick={() => onOpenCharactersModal(loadChapterCharacters)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Asignar Personajes</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {canManageContent && (
+              <button
+                onClick={() => setIsVariantPickerOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface hover:bg-raised border border-accent/40 text-accent text-xs font-bold transition-all"
+                title="Elegir qué variante de cada personaje muestra este tomo"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Añadir variante</span>
+              </button>
+            )}
+            {canManageContent && (
+              <button
+                onClick={() => onOpenCharactersModal(loadChapterCharacters)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Asignar Personajes</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {loadingCharacters ? (
@@ -922,20 +900,24 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                 return (
                   <div
                     key={char.id}
-                    className="flex w-24 sm:w-28 shrink-0 flex-col items-center gap-1.5 text-center"
+                    className={`relative flex w-24 sm:w-28 shrink-0 flex-col items-center gap-1.5 text-center ${
+                      variant ? 'pt-4' : ''
+                    }`}
                   >
+                    {/* Chip flotante FUERA del círculo (antes quedaba cortado
+                        por el overflow-hidden del recorte circular) */}
+                    {variant && (
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-accent text-onaccent text-[8px] font-black uppercase tracking-wide shadow-lg whitespace-nowrap">
+                        Variante
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => onSelectCharacter(char)}
                       className="group flex w-full flex-col items-center gap-2 text-center cursor-pointer"
-                      aria-label={`Ver la página de ${char.name}`}
+                      aria-label={`Ver la página de ${variant ? variant.name : char.name}`}
                     >
-                      <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors shadow-lg">
-                        {variant ? (
-                          <span className="absolute top-0 left-0 z-10 px-1.5 py-0.5 rounded-br-lg bg-accent text-onaccent text-[8px] font-black uppercase tracking-wide">
-                            Variante
-                          </span>
-                        ) : null}
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors shadow-lg">
                         {variant ? (
                           <img
                             src={variant.image_url}
@@ -971,24 +953,17 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                       </div>
                     </button>
 
-                    {/* Admin: elegir qué versión del personaje muestra este tomo */}
+                    {/* Admin: atajo para elegir la versión de este personaje */}
                     {canManageContent && variants.length > 0 && (
-                      <select
-                        value={variant?.id ?? ''}
-                        onChange={(e) =>
-                          void handleChooseVariant(entry, e.target.value || null)
-                        }
-                        aria-label={`Versión de ${char.name} a mostrar en este tomo`}
-                        title="Elegir versión a mostrar en este tomo"
-                        className="w-full max-w-[7rem] px-1.5 py-1 rounded-lg bg-raised border border-line text-[9px] font-bold text-mute hover:text-ink focus:border-accent focus:outline-none cursor-pointer transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => setIsVariantPickerOpen(true)}
+                        className="mt-0.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-line text-[9px] font-bold text-mute hover:text-accent hover:border-accent/40 transition-colors"
+                        title="Elegir otra versión para este tomo"
                       >
-                        <option value="">Versión: principal</option>
-                        {variants.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name}
-                          </option>
-                        ))}
-                      </select>
+                        <Sparkles className="w-3 h-3" />
+                        Cambiar versión
+                      </button>
                     )}
                   </div>
                 );
@@ -1019,6 +994,16 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
         onRatingChange={setUserRating}
         showRatingInput
         subheading="Lee y comparte opiniones sobre este tomo con la comunidad."
+      />
+
+      {/* v0.9.9.2: elegir la variante a mostrar en el reparto de este tomo */}
+      <ChapterVariantPickerModal
+        isOpen={isVariantPickerOpen}
+        chapterId={chapter.id}
+        onClose={() => {
+          setIsVariantPickerOpen(false);
+          void loadChapterCharacters();
+        }}
       />
 
       {/* ================================================================ */}
