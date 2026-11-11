@@ -835,27 +835,15 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               Personajes que aparecen en este capítulo
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {canManageContent && (
-              <button
-                onClick={() => setIsVariantPickerOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface hover:bg-raised border border-accent/40 text-accent text-xs font-bold transition-all"
-                title="Elegir qué variante de cada personaje muestra este tomo"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Añadir variante</span>
-              </button>
-            )}
-            {canManageContent && (
-              <button
-                onClick={() => onOpenCharactersModal(loadChapterCharacters)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20"
-              >
-                <Edit3 className="w-4 h-4" />
-                <span>Asignar Personajes</span>
-              </button>
-            )}
-          </div>
+          {canManageContent && (
+            <button
+              onClick={() => onOpenCharactersModal(loadChapterCharacters)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-all shadow-md shadow-accent/20"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Asignar Personajes</span>
+            </button>
+          )}
         </div>
 
         {loadingCharacters ? (
