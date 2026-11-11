@@ -201,11 +201,29 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
               }`}
             >
               {banner ? (
-                <img
-                  src={banner}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <>
+                  {/* Móvil: el banner se muestra ENTERO (object-contain) sobre
+                      un relleno difuminado — en pantallas verticales el
+                      object-cover recortaba los costados del arte. */}
+                  <img
+                    src={banner}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-60 sm:hidden"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center sm:hidden">
+                    <img
+                      src={banner}
+                      alt=""
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  {/* Desktop: banner a sangre (cover) como siempre */}
+                  <img
+                    src={banner}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover hidden sm:block"
+                  />
+                </>
               ) : (
                 <>
                   {/* Relleno difuminado (evita el pixelado de estirar la portada) */}
@@ -351,9 +369,13 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
       </div>
 
       {/* ── TIRA DE MINIATURAS (la navegación principal, estilo Netflix):
-          #1–#5, la activa resaltada con su título debajo. ── */}
-      <div className="absolute inset-x-0 bottom-0 z-20 px-5 sm:px-10 lg:px-14 pb-3 sm:pb-4 pt-10 bg-gradient-to-t from-bg/90 via-bg/50 to-transparent">
-        <div className="flex items-end gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          #1–#5, la activa resaltada con su título debajo.
+          v0.9.4: el contenedor invisible de esta zona tapaba los CTAs
+          "Leer ahora / Más info" en celular (la zona se superpone) — ahora
+          el contenedor NO captura toques (pointer-events-none) y solo la
+          tira de miniaturas sí los captura (pointer-events-auto). ── */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-5 sm:px-10 lg:px-14 pb-3 sm:pb-4 pt-10 bg-gradient-to-t from-bg/90 via-bg/50 to-transparent">
+        <div className="pointer-events-auto flex items-end gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {recentChapters.map((chapter, idx) => {
             const isActive = idx === activeIndex;
             const parent = comics.find((c) => c.id === chapter.comic_id);
