@@ -22,6 +22,7 @@ export const CharacterVariantModal: React.FC<CharacterVariantModalProps> = ({
   const [description, setDescription] = useState('');
   const [firstAppearance, setFirstAppearance] = useState('');
   const [differences, setDifferences] = useState('');
+  const [aliases, setAliases] = useState('');
 
   if (!isOpen) return null;
 
@@ -41,6 +42,7 @@ export const CharacterVariantModal: React.FC<CharacterVariantModalProps> = ({
       description,
       first_appearance: firstAppearance || undefined,
       differences: differences || undefined,
+      aliases: aliases || undefined,
     });
 
     // Reset form
@@ -51,6 +53,7 @@ export const CharacterVariantModal: React.FC<CharacterVariantModalProps> = ({
     setDescription('');
     setFirstAppearance('');
     setDifferences('');
+    setAliases('');
     onClose();
   };
 

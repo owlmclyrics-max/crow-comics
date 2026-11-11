@@ -96,6 +96,7 @@ export interface CharacterVariant {
   description: string;    // Descripción de la variante
   first_appearance?: string; // Primera aparición
   differences?: string;   // Diferencias / Características
+  aliases?: string;        // Alias de la variante (uno por línea)
   created_at?: string;
 }
 

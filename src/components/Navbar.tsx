@@ -212,13 +212,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             queden alineados con los ítems del menú (antes tocaban el borde). */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-3 relative justify-end flex-1 lg:flex-col lg:items-stretch lg:justify-end lg:gap-2 lg:mt-auto lg:w-full lg:group-hover/sidebar:items-stretch lg:px-2.5 lg:group-hover/sidebar:px-3.5">
 
-          {/* Campana: capítulos subidos desde tu última visita (todos los usuarios) */}
-          <div className="flex justify-center lg:justify-center lg:group-hover/sidebar:justify-start lg:w-full">
+          {/* v0.9: herramientas en UNA sola fila — campana + tema + paleta.
+              Colapsado: centradas. Expandido: alineadas a la izquierda con
+              el mismo padding que los ítems del menú. */}
+          <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 lg:flex-col lg:w-full lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
+            {/* Campana: capítulos subidos desde tu última visita (todos) */}
             <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
-          </div>
-
-          {/* ── Personalización: tema (negro/blanco) y acento (tono de color) ── */}
-          <div className="flex items-center justify-center gap-1.5 shrink-0 lg:w-full lg:flex-col lg:items-center lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
             <button
               type="button"
               onClick={handleToggleTheme}
