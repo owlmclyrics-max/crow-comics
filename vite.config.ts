@@ -5,7 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // Ruta base para GitHub Pages: /crow-comics/
-  base: process.env.VITE_BASE || '/crow-comics/',
+  // Cloudflare Pages (prod) sirve en la raíz → '/'.
+  // GitHub Pages sirve en subruta → el workflow pasa VITE_BASE=/crow-comics/.
+  base: process.env.VITE_BASE || '/',
 })
 

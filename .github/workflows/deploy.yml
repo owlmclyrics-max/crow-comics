@@ -29,6 +29,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # GitHub Pages sirve el sitio en una subruta (/crow-comics/):
+          # sin esto, los assets se pedirían desde la raíz y la página queda en blanco.
+          VITE_BASE: /crow-comics/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
