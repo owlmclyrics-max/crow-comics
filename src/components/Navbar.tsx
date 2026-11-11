@@ -133,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isAccentOpen, setIsAccentOpen] = useState(false);
 
   return (
-    <header className={`group/sidebar sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
+    <header className={`group/sidebar crow-sidebar-vt sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
       isUserMenuOpen || showReports ? 'lg:w-60!' : ''
     }`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4 lg:h-full lg:max-w-none lg:flex-col lg:items-stretch lg:justify-start lg:gap-3 lg:px-3 lg:py-4">

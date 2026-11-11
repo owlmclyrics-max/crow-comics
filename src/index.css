@@ -220,6 +220,24 @@ html.theme-anim *::after {
   animation: vt-circle-in 0.5s ease-in-out;
 }
 
+/* v0.9.7: el sidebar NO participa de la revelación circular. La captura
+   "nueva" de la transición pierde el :hover (el pointer está congelado) y
+   el sidebar parpadeaba de vuelta a columna durante ~500ms. Con su propio
+   grupo mostramos SOLO la captura vieja (expandida) durante la animación;
+   al terminar, el DOM real (que sigue en hover) retoma sin salto. */
+.crow-sidebar-vt {
+  view-transition-name: crow-sidebar;
+}
+
+::view-transition-old(crow-sidebar) {
+  animation: none;
+}
+
+::view-transition-new(crow-sidebar) {
+  animation: none;
+  opacity: 0;
+}
+
 @keyframes vt-circle-in {
   from {
     clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));

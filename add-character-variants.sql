@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.character_variants (
     description TEXT NOT NULL,           -- Descripción de la variante
     first_appearance TEXT,               -- Primera aparición
     differences TEXT,                    -- Diferencias / Características
+    aliases TEXT,                        -- Alias de la variante (uno por línea)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 

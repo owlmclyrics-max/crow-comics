@@ -28,6 +28,7 @@ import { characterNameMatches } from '../lib/comicUtils';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
 import { showToast } from './ui/Toast';
 import { CharacterVariantModal } from './CharacterVariantModal';
+import { useCharacterVariants } from '../hooks/useCharacterVariants';
 
 interface CharacterDetailPageProps {
   character: Character;
@@ -36,8 +37,6 @@ interface CharacterDetailPageProps {
   onOpenManageModal: () => void;
   /** Abre la ficha de otro personaje (ej: al hacer clic en un enemigo). */
   onSelectCharacter?: (character: Character) => void;
-  /** Callback para guardar variante (puede ser temporal, aún no conectado a Supabase) */
-  onSaveVariant?: (variant: Omit<CharacterVariant, 'id' | 'created_at'>) => Promise<void>;
 }
 
 export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
@@ -46,7 +45,6 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   onSelectChapter,
   onOpenManageModal,
   onSelectCharacter,
-  onSaveVariant,
 }) => {
   const { canManageContent } = useAuth();
   const { comics: allComics } = useComics();
@@ -54,10 +52,16 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
   const [chapterIds, setChapterIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Sistema de variantes
-  const [variants, setVariants] = useState<CharacterVariant[]>([]);
+  // Sistema de variantes (v0.9.7: conectado a Supabase con respaldo local)
+  const {
+    variants,
+    loading: loadingVariants,
+    addVariant,
+    deleteVariant,
+  } = useCharacterVariants(character.id);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<CharacterVariant | null>(null);
+  const [isDeletingVariant, setIsDeletingVariant] = useState(false);
 
   // v0.9: eliminar la ficha desde su propia página (solo admin, con confirmación)
   const handleDeleteCharacter = async () => {
@@ -419,7 +423,9 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
               )}
             </div>
 
-            {variants.length > 0 ? (
+            {loadingVariants ? (
+              <p className="text-sm text-faint italic">Cargando variantes…</p>
+            ) : variants.length > 0 ? (
               <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {variants.map((variant) => (
                   <button
@@ -482,12 +488,36 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedVariant(null)}
-                    className="p-2 rounded-lg bg-surface hover:bg-raised text-mute hover:text-ink transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {canManageContent && (
+                      <button
+                        onClick={async () => {
+                          if (isDeletingVariant) return;
+                          if (!window.confirm(`¿Eliminar la variante "${selectedVariant.name}"? Esta acción no se puede deshacer.`)) return;
+                          setIsDeletingVariant(true);
+                          const result = await deleteVariant(selectedVariant.id);
+                          setIsDeletingVariant(false);
+                          if (result.success) {
+                            showToast('Variante eliminada', 'success');
+                            setSelectedVariant(null);
+                          } else {
+                            showToast(`No se pudo eliminar: ${result.error ?? 'error desconocido'}`, 'error');
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-surface hover:bg-raised text-red-400 hover:text-red-300 transition-colors"
+                        aria-label="Eliminar variante"
+                        title="Eliminar variante"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedVariant(null)}
+                      className="p-2 rounded-lg bg-surface hover:bg-raised text-mute hover:text-ink transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {selectedVariant.description && (
@@ -508,6 +538,13 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                   <div>
                     <p className="text-xs font-bold uppercase tracking-widest text-faint mb-2">Diferencias / Características</p>
                     <p className="text-sm text-mute leading-relaxed whitespace-pre-line">{selectedVariant.differences}</p>
+                  </div>
+                )}
+
+                {selectedVariant.aliases && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-faint mb-2">Alias</p>
+                    <p className="text-sm text-mute leading-relaxed whitespace-pre-line">{selectedVariant.aliases}</p>
                   </div>
                 )}
               </div>
@@ -629,17 +666,12 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
         isOpen={isVariantModalOpen}
         onClose={() => setIsVariantModalOpen(false)}
         onSave={async (variant) => {
-          // Por ahora solo agregamos al estado local
-          // TODO: Conectar con Supabase cuando se cree el hook
-          const newVariant: CharacterVariant = {
-            ...variant,
-            id: crypto.randomUUID(),
-            created_at: new Date().toISOString(),
-          };
-          setVariants([...variants, newVariant]);
-          showToast('Variante guardada (local)', 'success');
-          if (onSaveVariant) {
-            await onSaveVariant(variant);
+          const result = await addVariant(variant);
+          if (result.success) {
+            showToast('Variante guardada en la wiki', 'success');
+            if (result.variant) setSelectedVariant(result.variant);
+          } else {
+            showToast(`No se pudo guardar la variante: ${result.error ?? 'error desconocido'}`, 'error');
           }
         }}
         characterId={character.id}
