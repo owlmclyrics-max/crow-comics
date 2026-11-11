@@ -35,7 +35,8 @@ import type { ReadingStatus } from '../lib/readingStatus';
 import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
 import { ChapterStatusModal } from './ChapterStatusModal';
-import { fetchChapterCharacters } from '../lib/chapterCharacters';
+import { fetchChapterCast, setChapterCharacterVariant } from '../lib/chapterCharacters';
+import type { ChapterCastEntry } from '../lib/chapterCharacters';
 import { CommentsSection } from './CommentsSection';
 import { StarRating } from './ui/StarRating';
 import { ChaptersModal } from './ChaptersModal';
@@ -407,14 +408,14 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   // Estado de calificación del usuario
   const [userRating, setUserRating] = useState(0);
 
-  // Estado de personajes en este tomo
-  const [chapterCharacters, setChapterCharacters] = useState<Character[]>([]);
+  // Estado de personajes en este tomo (reparto con variante elegida, v0.9.9)
+  const [cast, setCast] = useState<ChapterCastEntry[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
 
   const loadChapterCharacters = useCallback(async () => {
     setLoadingCharacters(true);
     try {
-      setChapterCharacters(await fetchChapterCharacters(chapter.id));
+      setCast(await fetchChapterCast(chapter.id));
     } catch (err) {
       console.error('Error cargando personajes del tomo:', err);
     } finally {
@@ -426,6 +427,43 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   useEffect(() => {
     void loadChapterCharacters();
   }, [loadChapterCharacters]);
+
+  // v0.9.9: elegir qué variante del personaje muestra este tomo (solo admin).
+  const handleChooseVariant = useCallback(
+    async (entry: ChapterCastEntry, variantId: string | null) => {
+      const { character } = entry;
+      // Optimista: el círculo cambia al instante; se revierte si falla.
+      const applyChoice = (chosen: string | null) =>
+        setCast((current) =>
+          current.map((item) =>
+            item.character.id === character.id
+              ? {
+                  ...item,
+                  variant: chosen
+                    ? (item.variants.find((v) => v.id === chosen) ?? null)
+                    : null,
+                }
+              : item,
+          ),
+        );
+
+      applyChoice(variantId);
+      try {
+        await setChapterCharacterVariant(chapter.id, character.id, variantId);
+        showToast(
+          variantId
+            ? `Ahora "${character.name}" aparece como su variante en este tomo`
+            : `"${character.name}" vuelve a su versión principal en este tomo`,
+          'success',
+        );
+      } catch (err) {
+        console.error('Error eligiendo variante del reparto:', err);
+        applyChoice(entry.variant?.id ?? null);
+        showToast('No se pudo guardar la variante elegida', 'error');
+      }
+    },
+    [chapter.id],
+  );
 
   const updateCharacterScroll = useCallback(() => {
     const el = charactersScrollerRef.current;
@@ -452,7 +490,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       el.removeEventListener('scroll', updateCharacterScroll);
       observer.disconnect();
     };
-  }, [updateCharacterScroll, chapterCharacters.length]);
+  }, [updateCharacterScroll, cast.length]);
 
   const scrollCharacters = (direction: -1 | 1) => {
     const el = charactersScrollerRef.current;
@@ -847,7 +885,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             <p className="text-xs text-mute">Cargando personajes...</p>
           </div>
-        ) : chapterCharacters.length === 0 ? (
+        ) : cast.length === 0 ? (
           <div className="bg-surface/60 border border-line rounded-2xl p-6">
             <p className="text-sm text-mute text-center">
               {canManageContent
@@ -873,40 +911,88 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               ref={charactersScrollerRef}
               className="flex flex-1 gap-3 sm:gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {chapterCharacters.map((char) => (
-                <button
-                  type="button"
-                  key={char.id}
-                  onClick={() => onSelectCharacter(char)}
-                  className="group flex w-24 sm:w-28 shrink-0 flex-col items-center gap-2 text-center cursor-pointer"
-                  aria-label={`Ver la página de ${char.name}`}
-                >
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors shadow-lg">
-                    {char.photo_url ? (
-                      <img
-                        src={char.photo_url}
-                        alt={char.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-9 h-9 text-faint" />
+              {cast.map((entry) => {
+                const { character: char, variant, variants } = entry;
+                // v0.9.9: si el admin eligió una variante para este tomo, el
+                // círculo muestra la imagen/nombre de esa versión.
+                const displayName = variant ? variant.name : char.name;
+                const subtitle = variant
+                  ? variant.universe
+                  : char.name_spanish || char.real_name;
+                return (
+                  <div
+                    key={char.id}
+                    className="flex w-24 sm:w-28 shrink-0 flex-col items-center gap-1.5 text-center"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onSelectCharacter(char)}
+                      className="group flex w-full flex-col items-center gap-2 text-center cursor-pointer"
+                      aria-label={`Ver la página de ${char.name}`}
+                    >
+                      <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-line group-hover:border-accent/70 bg-bg shrink-0 transition-colors shadow-lg">
+                        {variant ? (
+                          <span className="absolute top-0 left-0 z-10 px-1.5 py-0.5 rounded-br-lg bg-accent text-onaccent text-[8px] font-black uppercase tracking-wide">
+                            Variante
+                          </span>
+                        ) : null}
+                        {variant ? (
+                          <img
+                            src={variant.image_url}
+                            alt={variant.name}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : char.photo_url ? (
+                          <img
+                            src={char.photo_url}
+                            alt={char.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User className="w-9 h-9 text-faint" />
+                          </div>
+                        )}
                       </div>
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-ink leading-tight line-clamp-2 group-hover:text-accent transition-colors">
+                          {displayName}
+                        </p>
+                        {subtitle && (
+                          <p
+                            className={`text-xs line-clamp-1 ${
+                              variant ? 'text-accent2' : 'text-accent'
+                            }`}
+                          >
+                            {subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Admin: elegir qué versión del personaje muestra este tomo */}
+                    {canManageContent && variants.length > 0 && (
+                      <select
+                        value={variant?.id ?? ''}
+                        onChange={(e) =>
+                          void handleChooseVariant(entry, e.target.value || null)
+                        }
+                        aria-label={`Versión de ${char.name} a mostrar en este tomo`}
+                        title="Elegir versión a mostrar en este tomo"
+                        className="w-full max-w-[7rem] px-1.5 py-1 rounded-lg bg-raised border border-line text-[9px] font-bold text-mute hover:text-ink focus:border-accent focus:outline-none cursor-pointer transition-colors"
+                      >
+                        <option value="">Versión: principal</option>
+                        {variants.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-ink leading-tight line-clamp-2 group-hover:text-accent transition-colors">
-                      {char.name}
-                    </p>
-                    {char.name_spanish && (
-                      <p className="text-xs text-accent line-clamp-1">{char.name_spanish}</p>
-                    )}
-                    {char.real_name && (
-                      <p className="text-xs text-faint line-clamp-1">{char.real_name}</p>
-                    )}
-                  </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
 
             {(characterScroll.left || characterScroll.right) && (

@@ -4,6 +4,7 @@ export const LOCAL_KEYS = {
   characters: 'crow_characters_local_cache_v1',
   chapterCharacters: 'crow_chapter_characters_local_cache_v1',
   characterVariants: 'crow_character_variants_local_cache_v1',
+  chapterCharacterVariants: 'crow_chapter_character_variants_local_cache_v1',
 } as const;
 
 export const readLocalJSON = <T>(key: string, fallback: T): T => {

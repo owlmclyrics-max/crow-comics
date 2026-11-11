@@ -1,4 +1,4 @@
-import type { Character } from '../types/comic';
+import type { Character, CharacterVariant } from '../types/comic';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { LOCAL_KEYS, readLocalJSON, writeLocalJSON } from './localStore';
 
@@ -9,6 +9,27 @@ const readAssignments = (): LocalAssignments =>
 
 const writeAssignments = (assignments: LocalAssignments): void =>
   writeLocalJSON(LOCAL_KEYS.chapterCharacters, assignments);
+
+/** Mapa local "chapterId:characterId" → variantId a mostrar en el reparto. */
+type LocalVariantChoices = Record<string, string | null>;
+
+const readVariantChoices = (): LocalVariantChoices =>
+  readLocalJSON<LocalVariantChoices>(LOCAL_KEYS.chapterCharacterVariants, {});
+
+const writeVariantChoices = (choices: LocalVariantChoices): void =>
+  writeLocalJSON(LOCAL_KEYS.chapterCharacterVariants, choices);
+
+/**
+ * v0.9.9: entrada del REPARTO de un tomo — el personaje asignado y la
+ * variante elegida para mostrarse en ese tomo (null = ficha principal).
+ * `variants` trae TODAS las variantes del personaje (para que el admin
+ * pueda elegir cuál mostrar sin otra consulta).
+ */
+export interface ChapterCastEntry {
+  character: Character;
+  variant: CharacterVariant | null;
+  variants: CharacterVariant[];
+}
 
 export const fetchChapterCharacterIds = async (chapterId: string): Promise<string[]> => {
   if (isSupabaseConfigured && supabase) {
@@ -52,6 +73,122 @@ export const fetchChapterCharacters = async (chapterId: string): Promise<Charact
 
   const allCharacters = readLocalJSON<Character[]>(LOCAL_KEYS.characters, []);
   return allCharacters.filter((character) => ids.includes(character.id));
+};
+
+/**
+ * v0.9.9: reparto de un tomo con la variante elegida para cada personaje.
+ * Si la columna variant_id aún no existe (SQL pendiente), cae con gracia:
+ * se muestra la ficha principal de cada personaje.
+ */
+export const fetchChapterCast = async (chapterId: string): Promise<ChapterCastEntry[]> => {
+  const ids = await fetchChapterCharacterIds(chapterId);
+  if (ids.length === 0) return [];
+
+  const variantsByCharacter = (variants: CharacterVariant[]) => {
+    const map = new Map<string, CharacterVariant[]>();
+    variants.forEach((v) => {
+      const list = map.get(v.character_id) ?? [];
+      list.push(v);
+      map.set(v.character_id, list);
+    });
+    return map;
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const [charsRes, variantsRes, rowsRes] = await Promise.all([
+        supabase.from('characters').select('*').in('id', ids),
+        supabase.from('character_variants').select('*').in('character_id', ids),
+        supabase
+          .from('chapter_characters')
+          .select('character_id, variant_id')
+          .eq('chapter_id', chapterId),
+      ]);
+
+      if (charsRes.error) throw charsRes.error;
+      // La consulta de variantes puede fallar si la tabla no existe aún.
+      const variantList = (variantsRes.error ? [] : (variantsRes.data ?? [])) as CharacterVariant[];
+      const variantMap = variantsByCharacter(variantList);
+
+      // variant_id puede no existir aún → request de rows con fallback.
+      const chosenById = new Map<string, string | null>();
+      if (!rowsRes.error) {
+        (rowsRes.data ?? []).forEach((row) => {
+          chosenById.set(row.character_id as string, (row.variant_id as string | null) ?? null);
+        });
+      } else if (!/column|variant_id/i.test(rowsRes.error.message ?? '')) {
+        throw rowsRes.error;
+      }
+
+      return ((charsRes.data ?? []) as Character[])
+        .sort(
+          (a, b) =>
+            ids.indexOf(a.id) - ids.indexOf(b.id),
+        )
+        .map((character) => {
+          const options = variantMap.get(character.id) ?? [];
+          const chosenId = chosenById.get(character.id) ?? null;
+          const variant = chosenId ? (options.find((v) => v.id === chosenId) ?? null) : null;
+          return { character, variant, variants: options };
+        });
+    } catch (err: unknown) {
+      const msg = getChapterCastError(err);
+      if (!/column|variant_id/i.test(msg)) throw err;
+      // Columna variant_id inexistente: reparto sin variantes elegidas.
+      const characters = await fetchChapterCharacters(chapterId);
+      return characters.map((character) => ({ character, variant: null, variants: [] }));
+    }
+  }
+
+  // Modo local
+  const allCharacters = readLocalJSON<Character[]>(LOCAL_KEYS.characters, []);
+  const choices = readVariantChoices();
+  const allVariants = readLocalJSON<CharacterVariant[]>(LOCAL_KEYS.characterVariants, []);
+  const variantMap = variantsByCharacter(
+    allVariants.filter((v) => ids.includes(v.character_id)),
+  );
+
+  return allCharacters
+    .filter((character) => ids.includes(character.id))
+    .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+    .map((character) => {
+      const options = variantMap.get(character.id) ?? [];
+      const chosenId = choices[`${chapterId}:${character.id}`] ?? null;
+      const variant = chosenId ? (options.find((v) => v.id === chosenId) ?? null) : null;
+      return { character, variant, variants: options };
+    });
+};
+
+const getChapterCastError = (error: unknown): string => {
+  if (error && typeof error === 'object') {
+    const e = error as { message?: unknown };
+    if (typeof e.message === 'string') return e.message;
+  }
+  return String(error ?? '');
+};
+
+/**
+ * v0.9.9: guarda qué variante del personaje se muestra en el reparto de
+ * este tomo (null = volver a la ficha principal).
+ */
+export const setChapterCharacterVariant = async (
+  chapterId: string,
+  characterId: string,
+  variantId: string | null,
+): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase
+      .from('chapter_characters')
+      .update({ variant_id: variantId })
+      .eq('chapter_id', chapterId)
+      .eq('character_id', characterId);
+    if (error) throw error;
+    return;
+  }
+
+  const choices = readVariantChoices();
+  choices[`${chapterId}:${characterId}`] = variantId;
+  writeVariantChoices(choices);
 };
 
 export const setChapterCharacterAssigned = async (

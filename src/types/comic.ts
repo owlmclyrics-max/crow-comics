@@ -131,6 +131,8 @@ export interface ChapterCharacter {
   chapter_id: string;
   character_id: string;
   role?: string;
+  /** v0.9.9: variante a mostrar en el reparto (null = ficha principal). */
+  variant_id?: string | null;
   created_at?: string;
 }
 
