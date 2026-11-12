@@ -2,7 +2,7 @@
 // Preview de Discord/WhatsApp para links de cómics compartidos:
 //   GET /comic/<slug>  →  HTML con OG tags + salto a #/comic/<slug>
 // ============================================================================
-import { comicSlugOf, loadComics, loadChapters, embedPage, htmlResponse } from './_shared.js';
+import { comicSlugOf, loadComics, loadChapters, trim, embedPage, htmlResponse } from './_shared.js';
 
 export async function onRequestGet(context) {
   const slug = context.params.slug;
@@ -43,7 +43,7 @@ export async function onRequestGet(context) {
     return htmlResponse(
       embedPage({
         title: 'Crow Comics',
-        description: 'Catálogo de cómics para leer online. (v3)',
+        description: `Error: ${err instanceof Error ? err.message : String(err)} (v3)`,
         image: `${origin}/crow-512.png`,
         redirect: `${origin}/#/inicio`,
       }),
