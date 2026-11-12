@@ -54,7 +54,7 @@ const escapeHtml = (value) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-const trim = (value, max) => {
+export const trim = (value, max) => {
   const text = String(value ?? '').trim();
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 };
