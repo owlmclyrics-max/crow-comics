@@ -55,7 +55,7 @@ export async function onRequestGet(context) {
     return htmlResponse(
       embedPage({
         title: 'Crow Comics',
-        description: 'Catálogo de cómics para leer online.',
+        description: 'Catálogo de cómics para leer online. (v3)',
         image: `${origin}/crow-512.png`,
         redirect: `${origin}/#/inicio`,
       }),
