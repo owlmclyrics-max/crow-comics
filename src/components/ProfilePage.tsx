@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Heart,
   ListVideo,
@@ -19,6 +19,8 @@ import {
   ChevronDown,
   Clock,
   CheckCircle,
+  List,
+  LayoutGrid,
 } from 'lucide-react';
 import type { Comic, Chapter } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -147,6 +149,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     'all' | 'today' | 'week' | 'month' | 'year'
   >('all');
   const [clearingHistory, setClearingHistory] = useState(false);
+  // v0.9.9.6.2: vista lista/cuadrícula + dropdown custom de cómic
+  const [historyView, setHistoryView] = useState<'list' | 'grid'>('list');
+  const [isComicMenuOpen, setIsComicMenuOpen] = useState(false);
+  const comicMenuRef = useRef<HTMLDivElement>(null);
   const [lists, setLists] = useState<ReadingListRow[]>([]);
   const [listItems, setListItems] = useState<Record<string, ReadingListItemRow[]>>({});
   const [privacy, setPrivacy] = useState<PrivacySettings>(DEFAULT_PRIVACY);
@@ -203,6 +209,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   }, [user?.id]);
 
   // ── v0.9.9.6: filtrado y agrupado del historial ──
+  // Cerrar el dropdown de cómic al hacer clic fuera o con Escape.
+  useEffect(() => {
+    if (!isComicMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (comicMenuRef.current && !comicMenuRef.current.contains(e.target as Node)) {
+        setIsComicMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsComicMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isComicMenuOpen]);
+
   // Cómics presentes en el historial (para el selector de filtro).
   const historyComicOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -703,6 +728,40 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       {filteredHistory.length} de {progress.length}
                     </span>
                   </div>
+                <div className="flex items-center gap-2">
+                  {/* v0.9.9.6.2: vista lista o cuadrícula */}
+                  <div
+                    className="flex items-center gap-0.5 p-1 rounded-xl bg-surface border border-line"
+                    role="group"
+                    aria-label="Cambiar vista del historial"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setHistoryView('list')}
+                      aria-pressed={historyView === 'list'}
+                      title="Vista lista"
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        historyView === 'list'
+                          ? 'bg-accent text-onaccent shadow-sm shadow-accent/20'
+                          : 'text-mute hover:text-ink hover:bg-raised/60'
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryView('grid')}
+                      aria-pressed={historyView === 'grid'}
+                      title="Vista cuadrícula"
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        historyView === 'grid'
+                          ? 'bg-accent text-onaccent shadow-sm shadow-accent/20'
+                          : 'text-mute hover:text-ink hover:bg-raised/60'
+                      }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={handleClearHistory}
@@ -713,26 +772,86 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <Trash2 className="w-3.5 h-3.5" />
                     {clearingHistory ? 'Borrando…' : 'Borrar todo'}
                   </button>
+                  </div>
                 </div>
 
-                {/* ── Filtros compactos: select de cómic (oscuro, con chevron
-                    custom) + pills de fecha (nada de selects nativos) ── */}
+                {/* ── Filtros compactos: dropdown custom de cómic + pills de
+                    fecha (los selects nativos no se pueden estilizar) ── */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative">
-                    <select
-                      value={historyComicFilter}
-                      onChange={(e) => setHistoryComicFilter(e.target.value)}
-                      aria-label="Filtrar por cómic"
-                      className="appearance-none pl-3 pr-8 py-2 rounded-xl bg-surface border border-line text-xs text-ink font-semibold hover:border-accent/40 focus:border-accent/60 outline-none cursor-pointer transition-colors max-w-[13rem]"
+                  <div className="relative" ref={comicMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsComicMenuOpen((v) => !v)}
+                      aria-haspopup="listbox"
+                      aria-expanded={isComicMenuOpen}
+                      className="inline-flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl bg-surface border border-line text-xs text-ink font-semibold hover:border-accent/40 transition-colors max-w-[14rem]"
                     >
-                      <option value="all">Todos los cómics</option>
-                      {historyComicOptions.map(([id, title]) => (
-                        <option key={id} value={id}>
-                          {title}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
+                      <span className="truncate">
+                        {historyComicFilter === 'all'
+                          ? 'Todos los cómics'
+                          : (historyComicOptions.find(([id]) => id === historyComicFilter)?.[1] ?? 'Todos los cómics')}
+                      </span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-faint shrink-0 transition-transform ${isComicMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {isComicMenuOpen && (
+                      <div
+                        role="listbox"
+                        className="absolute z-30 left-0 mt-2 w-64 max-h-72 overflow-y-auto rounded-xl bg-surface border border-line shadow-2xl p-1.5 space-y-0.5 animate-fade-in"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHistoryComicFilter('all');
+                            setIsComicMenuOpen(false);
+                          }}
+                          role="option"
+                          aria-selected={historyComicFilter === 'all'}
+                          className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left text-xs font-semibold transition-colors ${
+                            historyComicFilter === 'all'
+                              ? 'bg-accent/10 text-accent'
+                              : 'text-mute hover:text-ink hover:bg-raised'
+                          }`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                          Todos los cómics
+                        </button>
+                        {historyComicOptions.map(([id, title]) => {
+                          const comic = comics.find((c) => c.id === id);
+                          const active = historyComicFilter === id;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                setHistoryComicFilter(id);
+                                setIsComicMenuOpen(false);
+                              }}
+                              role="option"
+                              aria-selected={active}
+                              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs font-semibold transition-colors ${
+                                active
+                                  ? 'bg-accent/10 text-accent'
+                                  : 'text-mute hover:text-ink hover:bg-raised'
+                              }`}
+                            >
+                              <span className="w-6 aspect-[2/3] rounded overflow-hidden bg-bg border border-line shrink-0">
+                                {comic?.cover_url && (
+                                  <img
+                                    src={comic.cover_url}
+                                    alt=""
+                                    loading="lazy"
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </span>
+                              <span className="truncate">{title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div
@@ -793,8 +912,87 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       Quitar filtros
                     </button>
                   </div>
+                ) : historyView === 'grid' ? (
+                  /* ── Vista CUADRÍCULA: tarjetas con portada grande ── */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {filteredHistory.map((row) => {
+                      const comic = comics.find((c) => c.id === row.comic_id) ?? null;
+                      const chapter = comic?.chapters?.find((ch) => ch.id === row.chapter_id) ?? null;
+                      const dateLabel = historyDateLabel(row.updated_at);
+                      return (
+                        <div
+                          key={row.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
+                            if (comic && chapter) onSelectChapter(chapter, comic);
+                            else if (comic) onSelectComic(comic);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              if (comic && chapter) onSelectChapter(chapter, comic);
+                              else if (comic) onSelectComic(comic);
+                            }
+                          }}
+                          className="relative group/card rounded-2xl overflow-hidden border border-line bg-surface hover:border-accent/50 transition-all cursor-pointer outline-none focus:border-accent/60 animate-fade-in"
+                        >
+                          <div className="relative aspect-[2/3] bg-bg">
+                            <img
+                              src={chapter?.cover_url || comic?.cover_url || ''}
+                              alt={comic?.title ?? 'Cómic'}
+                              loading="lazy"
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                            />
+                            {/* Badge del tomo */}
+                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-zinc-950/85 border border-white/10 text-[9px] font-black text-ink">
+                              Tomo #{row.chapter_number}
+                            </span>
+                            {/* Borrar (aparece al hover) */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProgress((prev) => prev.filter((r) => r.id !== row.id));
+                                void deleteReadingProgressRow(row.id);
+                                showToast('Borrado del historial', 'info');
+                              }}
+                              title="Borrar del historial"
+                              aria-label={`Borrar ${comic?.title ?? 'cómic'} Tomo ${row.chapter_number} del historial`}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-950/75 border border-white/10 text-faint hover:text-red-400 opacity-0 group-hover/card:opacity-100 focus:opacity-100 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Info sobre degradado */}
+                            <div className="absolute inset-x-0 bottom-0 p-2.5 pt-10 bg-gradient-to-t from-zinc-950 via-zinc-950/85 to-transparent space-y-1.5">
+                              <p className="text-xs font-bold text-ink truncate group-hover/card:text-accent transition-colors">
+                                {comic?.title ?? 'Cómic eliminado'}
+                              </p>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {row.completed ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                    <CheckCircle className="w-2 h-2" />
+                                    Completado
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-accent/25 text-accent border border-accent/40">
+                                    En progreso
+                                  </span>
+                                )}
+                                {dateLabel && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-[8px] font-bold text-mute whitespace-nowrap">
+                                    <Clock className="w-2 h-2" />
+                                    {dateLabel}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  /* ── Lista agrupada por fecha ── */
+                  /* ── Vista LISTA: agrupada por fecha ── */
                   groupedHistory.map((group) => (
                     <div key={group.label} className="space-y-2.5">
                       {/* Separador de grupo de fecha */}
