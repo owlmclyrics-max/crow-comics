@@ -306,6 +306,30 @@ export const deleteReadingProgressRow = async (rowId: string): Promise<void> => 
 };
 
 /**
+ * v0.9.9.6: borra TODO el historial de lectura del usuario (botón "Borrar
+ * todo" de la pestaña Historial). BORRADO REAL: las filas desaparecen del
+ * historial y de la fila "Continuar Leyendo".
+ */
+export const deleteAllReadingProgress = async (userId: string): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    // La RLS garantiza que solo se borran las filas del propio usuario
+    const { error } = await supabase
+      .from('reading_progress')
+      .delete()
+      .eq('user_id', userId);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  writeLocalJSON(
+    LOCAL_KEYS.readingProgress,
+    readLocalJSON<ReadingProgressRow[]>(LOCAL_KEYS.readingProgress, []).filter(
+      (r) => r.user_id !== userId,
+    ),
+  );
+};
+
+/**
  * Netflix-style: OCULTAR un tomo de "Continuar Leyendo" SIN borrarlo del
  * historial. La fila queda con hidden_at y el historial la conserva.
  */

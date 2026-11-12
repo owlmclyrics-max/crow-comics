@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Heart,
   ListVideo,
@@ -14,6 +14,9 @@ import {
   Code2,
   Sparkles,
   Award,
+  Filter,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import type { Comic, Chapter } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +34,7 @@ import {
   createReadingList,
   deleteReadingList,
   deleteReadingProgressRow,
+  deleteAllReadingProgress,
   getPrivacySettings,
   savePrivacySettings,
   DEFAULT_PRIVACY,
@@ -43,6 +47,40 @@ import {
 import { readingStatusChipClass, readingStatusLabel } from '../lib/readingStatus';
 
 export type ProfileTab = 'favoritos' | 'listas' | 'historial' | 'privacidad';
+
+// ── v0.9.9.6: helpers de fecha para el HISTORIAL ──
+/** Etiqueta amable de fecha: "Hoy · 14:32" / "3 nov" / "12 oct 2025". */
+const historyDateLabel = (iso: string | undefined): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (sameDay) {
+    return `Hoy · ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+  if (date.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return date.toLocaleDateString('es-ES', opts);
+};
+
+/** Grupo de fecha para agrupar visualmente el historial. */
+const historyDateGroup = (iso: string | undefined): string => {
+  if (!iso) return 'Más antiguo';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Más antiguo';
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = date.getTime();
+  if (t >= startOfToday) return 'Hoy';
+  if (t >= startOfToday - 86_400_000) return 'Ayer';
+  if (t >= startOfToday - 7 * 86_400_000) return 'Esta semana';
+  if (t >= startOfToday - 30 * 86_400_000) return 'Este mes';
+  return 'Más antiguo';
+};
 
 const TABS: { id: ProfileTab; label: string; icon: React.ElementType }[] = [
   { id: 'favoritos', label: 'Favoritos', icon: Heart },
@@ -89,6 +127,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   // Datos por pestaña
   const [favorites, setFavorites] = useState<FavoriteRow[]>([]);
   const [progress, setProgress] = useState<ReadingProgressRow[]>([]);
+  // v0.9.9.6: filtros del historial (por cómic y por fecha) + borrado total
+  const [historyComicFilter, setHistoryComicFilter] = useState<string>('all');
+  const [historyDateFilter, setHistoryDateFilter] = useState<
+    'all' | 'today' | 'week' | 'month' | 'year'
+  >('all');
+  const [clearingHistory, setClearingHistory] = useState(false);
   const [lists, setLists] = useState<ReadingListRow[]>([]);
   const [listItems, setListItems] = useState<Record<string, ReadingListItemRow[]>>({});
   const [privacy, setPrivacy] = useState<PrivacySettings>(DEFAULT_PRIVACY);
@@ -143,6 +187,74 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       cancelled = true;
     };
   }, [user?.id]);
+
+  // ── v0.9.9.6: filtrado y agrupado del historial ──
+  // Cómics presentes en el historial (para el selector de filtro).
+  const historyComicOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of progress) {
+      const comic = comics.find((c) => c.id === row.comic_id);
+      if (comic && !map.has(comic.id)) map.set(comic.id, comic.title);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [progress, comics]);
+
+  // Filas ya filtradas por cómic y rango de fecha (más nuevas primero).
+  const filteredHistory = useMemo(() => {
+    let rows = progress;
+    if (historyComicFilter !== 'all') {
+      rows = rows.filter((r) => r.comic_id === historyComicFilter);
+    }
+    if (historyDateFilter !== 'all') {
+      const start = new Date();
+      if (historyDateFilter === 'today') start.setHours(0, 0, 0, 0);
+      else if (historyDateFilter === 'week') start.setDate(start.getDate() - 7);
+      else if (historyDateFilter === 'month') start.setMonth(start.getMonth() - 1);
+      else start.setMonth(0, 1); // year → 1 de enero
+      const min = start.getTime();
+      rows = rows.filter((r) => new Date(r.updated_at || 0).getTime() >= min);
+    }
+    return rows;
+  }, [progress, historyComicFilter, historyDateFilter]);
+
+  // Agrupadas por etiqueta de fecha (Hoy / Ayer / Esta semana / Este mes / ...).
+  const groupedHistory = useMemo(() => {
+    const groups: { label: string; rows: ReadingProgressRow[] }[] = [];
+    for (const row of filteredHistory) {
+      const label = historyDateGroup(row.updated_at);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.rows.push(row);
+      else groups.push({ label, rows: [row] });
+    }
+    return groups;
+  }, [filteredHistory]);
+
+  const historyHasFilters = historyComicFilter !== 'all' || historyDateFilter !== 'all';
+
+  // Borrar TODO el historial (con confirmación).
+  const handleClearHistory = () => {
+    if (!user?.id || progress.length === 0 || clearingHistory) return;
+    if (
+      !window.confirm(
+        `¿Borrar TODO el historial (${progress.length} registro${progress.length === 1 ? '' : 's'})? No se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+    setClearingHistory(true);
+    deleteAllReadingProgress(user.id)
+      .then(() => {
+        setProgress([]);
+        setHistoryComicFilter('all');
+        setHistoryDateFilter('all');
+        showToast('Historial borrado por completo', 'success');
+      })
+      .catch((err) => {
+        console.error('Error borrando historial:', err);
+        showToast('No se pudo borrar el historial', 'error');
+      })
+      .finally(() => setClearingHistory(false));
+  };
 
   // --------------------------------- Sin sesión ---------------------------------
   if (!user) {
@@ -547,6 +659,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           )}
 
           {/* ------------------------------ HISTORIAL ------------------------------ */}
+          {/* v0.9.9.6: rediseño — header con contador, filtros por cómic y
+              rango de fecha, agrupado por fecha y borrado total. */}
           {activeTab === 'historial' && (
             progress.length === 0 ? (
               <div className="py-20 text-center rounded-3xl bg-surface/40 border border-line/60 p-8 space-y-3 animate-fade-in">
@@ -566,87 +680,197 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
-                {progress.map((row) => {
-                  const comic = comics.find((c) => c.id === row.comic_id) ?? null;
-                  const chapter = comic?.chapters?.find((ch) => ch.id === row.chapter_id) ?? null;
-                  const chapterTitle = chapter ? chapter.title : `Capítulo ${row.chapter_number}`;
-                  const sameTitleAsComic =
-                    comic && chapterTitle.trim().toLowerCase() === comic.title.trim().toLowerCase();
+              <div className="space-y-5 animate-fade-in">
+                {/* ── Header: contador + borrar todo ── */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-sm font-black text-ink">Historial de lectura</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-accent text-[10px] font-bold">
+                      {filteredHistory.length} de {progress.length}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    disabled={clearingHistory}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 text-xs font-bold transition-all active:scale-95 disabled:opacity-60"
+                    title="Borrar todo el historial de lectura"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {clearingHistory ? 'Borrando…' : 'Borrar todo'}
+                  </button>
+                </div>
 
-                  return (
-                    <div
-                      key={row.id}
-                      role="button"
-                      tabIndex={0}
+                {/* ── Filtros: por cómic y por fecha ── */}
+                <div className="flex flex-wrap items-center gap-2.5 p-3 rounded-2xl bg-surface/60 border border-line">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-mute">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
+                    Filtros
+                  </span>
+                  <select
+                    value={historyComicFilter}
+                    onChange={(e) => setHistoryComicFilter(e.target.value)}
+                    aria-label="Filtrar por cómic"
+                    className="px-3 py-2 rounded-xl bg-bg border border-line text-xs text-ink font-semibold focus:border-accent/60 focus:outline-none cursor-pointer transition-colors max-w-[13rem]"
+                  >
+                    <option value="all">Todos los cómics</option>
+                    {historyComicOptions.map(([id, title]) => (
+                      <option key={id} value={id}>
+                        {title}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={historyDateFilter}
+                    onChange={(e) =>
+                      setHistoryDateFilter(e.target.value as typeof historyDateFilter)
+                    }
+                    aria-label="Filtrar por fecha"
+                    className="px-3 py-2 rounded-xl bg-bg border border-line text-xs text-ink font-semibold focus:border-accent/60 focus:outline-none cursor-pointer transition-colors"
+                  >
+                    <option value="all">Cualquier fecha</option>
+                    <option value="today">Hoy</option>
+                    <option value="week">Últimos 7 días</option>
+                    <option value="month">Último mes</option>
+                    <option value="year">Este año</option>
+                  </select>
+                  {historyHasFilters && (
+                    <button
+                      type="button"
                       onClick={() => {
-                        if (comic && chapter) onSelectChapter(chapter, comic);
-                        else if (comic) onSelectComic(comic);
+                        setHistoryComicFilter('all');
+                        setHistoryDateFilter('all');
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          if (comic && chapter) onSelectChapter(chapter, comic);
-                          else if (comic) onSelectComic(comic);
-                        }
-                      }}
-                      className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 transition-all text-left cursor-pointer group outline-none focus:border-accent/60"
+                      className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-bold text-mute hover:text-ink hover:bg-raised transition-colors"
                     >
-                      {/* Portada del tomo (fallback: portada de la serie) */}
-                      <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line shrink-0">
-                        <img
-                          src={chapter?.cover_url || comic?.cover_url || ''}
-                          alt={comic?.title ?? 'Cómic'}
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                        />
+                      <X className="w-3.5 h-3.5" />
+                      Quitar filtros
+                    </button>
+                  )}
+                </div>
+
+                {filteredHistory.length === 0 ? (
+                  /* Nada con los filtros actuales */
+                  <div className="py-14 text-center rounded-2xl bg-surface/40 border border-line/60 p-8 space-y-2">
+                    <Filter className="w-7 h-7 mx-auto text-faint" />
+                    <p className="text-xs text-mute">
+                      No hay entradas con esos filtros.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHistoryComicFilter('all');
+                        setHistoryDateFilter('all');
+                      }}
+                      className="text-[11px] font-bold text-accent hover:text-accent2 transition-colors"
+                    >
+                      Quitar filtros
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Lista agrupada por fecha ── */
+                  groupedHistory.map((group) => (
+                    <div key={group.label} className="space-y-2.5">
+                      {/* Separador de grupo de fecha */}
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-faint">
+                          {group.label}
+                        </span>
+                        <span className="flex-1 h-px bg-line" />
+                        <span className="text-[10px] font-bold text-faint">
+                          {group.rows.length}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
-                          {comic?.title ?? 'Cómic eliminado'}
-                        </h4>
-                        <p className="text-[11px] text-mute mt-0.5">
-                          Tomo {row.chapter_number}
-                          {!sameTitleAsComic && chapter ? ` · ${chapter.title}` : ''}
-                          {' · '}
-                          {row.completed ? 'Completado' : 'En progreso'}
-                          {row.hidden_at && ' · oculto de Continuar'}
-                        </p>
-                        {/* v0.6: estado que el lector asignó al tomo. Solo se
-                            muestra si fue asignado explícitamente: las filas
-                            antiguas (antes de la migración) no tienen estado. */}
-                        {row.reading_status && (
-                          <span
-                            className={`mt-1.5 inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${readingStatusChipClass(row.reading_status)}`}
+                      {group.rows.map((row) => {
+                        const comic = comics.find((c) => c.id === row.comic_id) ?? null;
+                        const chapter = comic?.chapters?.find((ch) => ch.id === row.chapter_id) ?? null;
+                        const chapterTitle = chapter ? chapter.title : `Capítulo ${row.chapter_number}`;
+                        const sameTitleAsComic =
+                          comic && chapterTitle.trim().toLowerCase() === comic.title.trim().toLowerCase();
+                        const dateLabel = historyDateLabel(row.updated_at);
+
+                        return (
+                          <div
+                            key={row.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              if (comic && chapter) onSelectChapter(chapter, comic);
+                              else if (comic) onSelectComic(comic);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                if (comic && chapter) onSelectChapter(chapter, comic);
+                                else if (comic) onSelectComic(comic);
+                              }
+                            }}
+                            className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 hover:bg-raised/40 transition-all text-left cursor-pointer group outline-none focus:border-accent/60"
                           >
-                            {readingStatusLabel(row.reading_status)}
-                          </span>
-                        )}
-                        {/* Sprint 3.5: marcador de página manual (0 = sin marcador) */}
-                        {(row.page_number ?? 0) > 0 && (
-                          <p className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-semibold mt-1">
-                            <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
-                            Te quedaste en la página {row.page_number}
-                          </p>
-                        )}
-                      </div>
-                      {/* Borrado REAL del historial (independiente de "Continuar Leyendo") */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setProgress((prev) => prev.filter((r) => r.id !== row.id));
-                          void deleteReadingProgressRow(row.id);
-                          showToast('Borrado del historial', 'info');
-                        }}
-                        title="Borrar del historial"
-                        aria-label={`Borrar ${comic?.title ?? 'cómic'} Tomo ${row.chapter_number} del historial`}
-                        className="shrink-0 p-1.5 rounded-lg text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                            {/* Portada del tomo (fallback: portada de la serie) */}
+                            <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line shrink-0">
+                              <img
+                                src={chapter?.cover_url || comic?.cover_url || ''}
+                                alt={comic?.title ?? 'Cómic'}
+                                loading="lazy"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
+                                {comic?.title ?? 'Cómic eliminado'}
+                              </h4>
+                              <p className="text-[11px] text-mute mt-0.5">
+                                Tomo {row.chapter_number}
+                                {!sameTitleAsComic && chapter ? ` · ${chapter.title}` : ''}
+                                {' · '}
+                                {row.completed ? 'Completado' : 'En progreso'}
+                                {row.hidden_at && ' · oculto de Continuar'}
+                              </p>
+                              {/* v0.6: estado que el lector asignó al tomo. Solo se
+                                  muestra si fue asignado explícitamente: las filas
+                                  antiguas (antes de la migración) no tienen estado. */}
+                              {row.reading_status && (
+                                <span
+                                  className={`mt-1.5 inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${readingStatusChipClass(row.reading_status)}`}
+                                >
+                                  {readingStatusLabel(row.reading_status)}
+                                </span>
+                              )}
+                              {/* Sprint 3.5: marcador de página manual (0 = sin marcador) */}
+                              {(row.page_number ?? 0) > 0 && (
+                                <p className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-semibold mt-1">
+                                  <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
+                                  Te quedaste en la página {row.page_number}
+                                </p>
+                              )}
+                            </div>
+                            {/* Fecha de la última lectura */}
+                            {dateLabel && (
+                              <span className="hidden sm:block shrink-0 text-[10px] font-semibold text-faint">
+                                {dateLabel}
+                              </span>
+                            )}
+                            {/* Borrado REAL del historial (independiente de "Continuar Leyendo") */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProgress((prev) => prev.filter((r) => r.id !== row.id));
+                                void deleteReadingProgressRow(row.id);
+                                showToast('Borrado del historial', 'info');
+                              }}
+                              title="Borrar del historial"
+                              aria-label={`Borrar ${comic?.title ?? 'cómic'} Tomo ${row.chapter_number} del historial`}
+                              className="shrink-0 p-1.5 rounded-lg text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  ))
+                )}
               </div>
             )
           )}
