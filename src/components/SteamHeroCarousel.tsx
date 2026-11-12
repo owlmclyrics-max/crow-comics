@@ -95,7 +95,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
     return (
       <section
         aria-label="Cómic destacado"
-        className="relative overflow-hidden w-[calc(100%+1.5rem)] -mx-3 sm:w-[calc(100%+3rem)] sm:-mx-6 lg:w-[calc(100%+4rem)] lg:-mx-8 h-[70svh] min-h-[500px] bg-surface border-b border-line"
+        className="relative overflow-hidden w-[calc(100%_+_1.5rem)] -mx-3 sm:w-[calc(100%_+_3rem)] sm:-mx-6 lg:w-[calc(100%_+_4rem)] lg:-mx-8 h-[70svh] min-h-[500px] bg-surface border-b border-line"
       >
         {fallbackComic.banner_url?.trim() ? (
           <img
@@ -179,14 +179,16 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   return (
     <section
       aria-label="Novedades destacadas"
-      className="group relative overflow-hidden w-[calc(100%+1.5rem)] -mx-3 sm:w-[calc(100%+3rem)] sm:-mx-6 lg:w-[calc(100%+4rem)] lg:-mx-8 h-[86svh] max-h-[950px] min-h-[620px] border-b border-line bg-surface"
+      className="group relative overflow-hidden w-[calc(100%_+_1.5rem)] -mx-3 sm:w-[calc(100%_+_3rem)] sm:-mx-6 lg:w-[calc(100%_+_4rem)] lg:-mx-8 h-[86svh] max-h-[950px] min-h-[620px] border-b border-line bg-surface"
     >
       {/* Fondo cinemático: TODAS las capas apiladas con crossfade.
           Nada se desmonta al cambiar de slide (remounts con blur/transform
           salen como "fantasmas" en Chromium).
-          v0.6b: si el cómic tiene banner horizontal se usa a sangre; si no,
+          ── v0.6b: si el cómic tiene banner horizontal se usa a sangre; si no,
           la portada vertical se ANCLA a la derecha (object-contain) y se
-          rellena el resto con una copia difuminada — nunca se estira. */}
+          rellena el resto con una copia difuminada — nunca se estira.
+          v0.9.9.4: el banner llena toda la pantalla también en celular
+          (object-cover): antes quedaban franjas del fondo a los costados. ── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none bg-bg">
         {recentChapters.map((chapter, idx) => {
           const parent = comics.find((c) => c.id === chapter.comic_id);
@@ -201,29 +203,11 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
               }`}
             >
               {banner ? (
-                <>
-                  {/* Móvil: el banner se muestra ENTERO (object-contain) sobre
-                      un relleno difuminado — en pantallas verticales el
-                      object-cover recortaba los costados del arte. */}
-                  <img
-                    src={banner}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-60 sm:hidden"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center sm:hidden">
-                    <img
-                      src={banner}
-                      alt=""
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                  {/* Desktop: banner a sangre (cover) como siempre */}
-                  <img
-                    src={banner}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover hidden sm:block"
-                  />
-                </>
+                <img
+                  src={banner}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               ) : (
                 <>
                   {/* Relleno difuminado (evita el pixelado de estirar la portada) */}

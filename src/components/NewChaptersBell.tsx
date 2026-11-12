@@ -109,6 +109,15 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
     setSeenAt(now);
   }, []);
 
+  // v0.9.9.4: marcar como visto AL CERRAR la campana, no al abrir. Antes se
+  // marcaba en el mismo click de abrir y la lista se vaciaba ANTES de
+  // mostrarse (el panel abría siempre en "Ya viste todo" aunque el badge
+  // tuviera número).
+  const closeBell = useCallback(() => {
+    setIsOpen(false);
+    if (newChapters.length > 0) markAllSeen();
+  }, [newChapters.length, markAllSeen]);
+
   // Refresco silencioso cada 5 min: sube tomo nuevo → la campana despierta.
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -122,23 +131,23 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        closeBell();
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen]);
-
-  const count = newChapters.length;
+  }, [isOpen, closeBell]);
 
   return (
     <div className="relative shrink-0" ref={containerRef}>
       <button
         type="button"
         onClick={() => {
-          setIsOpen((v) => !v);
-          // Al abrir la campana ya cuenta como visto: la novedad es la novedad.
-          if (!isOpen && count > 0) markAllSeen();
+          if (isOpen) {
+            closeBell();
+          } else {
+            setIsOpen(true);
+          }
         }}
         className={`relative p-2 rounded-xl bg-surface hover:bg-raised border border-line transition-colors ${
           badgeCount > 0 ? 'text-accent' : 'text-mute hover:text-ink'
@@ -171,7 +180,7 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
               )}
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={closeBell}
               className="p-1 rounded text-faint hover:text-mute transition-colors"
               aria-label="Cerrar"
             >
@@ -228,7 +237,7 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
                   type="button"
                   onClick={() => {
                     onSelectComic(comic);
-                    setIsOpen(false);
+                    closeBell();
                   }}
                   className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
                 >
