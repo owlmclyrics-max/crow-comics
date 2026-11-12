@@ -2,6 +2,12 @@ import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'rea
 import { useComics } from './context/ComicsContext';
 import type { Comic, ComicTag, Chapter, Character, ReadingEvent } from './types/comic';
 import { toChapterWithComic } from './lib/comicUtils';
+import {
+  comicSlug,
+  chapterSlug,
+  findChapterByRef,
+  findComicByRef,
+} from './lib/slug';
 import { Navbar, type CurrentView } from './components/Navbar';
 import { CategoryBar } from './components/CategoryBar';
 import { ComicCard } from './components/ComicCard';
@@ -123,6 +129,21 @@ const readHashState = (): {
     }
     const [path, qs] = raw.split('?');
     const params = new URLSearchParams(qs ?? '');
+
+    // v0.9.9.4: formato nuevo y legible — #/comic/<slug> y
+    // #/comic/<slug>/tomo-<n>. El "id" guardado puede ser slug o UUID viejo;
+    // findComicByRef/findChapterByRef resuelven ambos.
+    const segments = path.split('/').filter(Boolean);
+    if (segments[0] === 'comic' && segments[1]) {
+      return {
+        view: (segments[2] ? 'chapter-detail' : 'comic-detail') as CurrentView,
+        comicId: decodeURIComponent(segments[1]),
+        chapterId: segments[2] ? decodeURIComponent(segments[2]) : null,
+        profileId: params.get('profile'),
+        characterId: params.get('character'),
+      };
+    }
+
     const view = VALID_VIEWS.includes(path as CurrentView) ? (path as CurrentView) : null;
     return {
       view,
@@ -146,8 +167,27 @@ const readSavedState = (): CrowViewState | null => {
   }
 };
 
-/** Construye el hash correspondiente a un estado de navegación. */
-const viewToHash = (state: CrowViewState): string => {
+/**
+ * Construye el hash correspondiente a un estado de navegación.
+ * v0.9.9.4: cómics y tomos usan links legibles (#/comic/<slug>/tomo-<n>).
+ * Antes de que cargue el catálogo (o con ids locales) cae al formato viejo
+ * con query params, que sigue siendo compatible.
+ */
+const viewToHash = (state: CrowViewState, comics: Comic[] = []): string => {
+  if (
+    state.comicId &&
+    (state.view === 'comic-detail' || state.view === 'chapter-detail')
+  ) {
+    const comic = findComicByRef(state.comicId, comics);
+    if (comic) {
+      const slug = comicSlug(comic, comics);
+      if (state.view === 'comic-detail') return `#/comic/${slug}`;
+      const chapter = findChapterByRef(comic, state.chapterId);
+      return chapter
+        ? `#/comic/${slug}/${chapterSlug(chapter)}`
+        : `#/comic/${slug}`;
+    }
+  }
   const params = new URLSearchParams();
   if (state.comicId) params.set('comic', state.comicId);
   if (state.chapterId) params.set('chapter', state.chapterId);
@@ -299,9 +339,9 @@ export const App: React.FC = () => {
       sessionStorage.setItem(CROW_VIEW_STATE_KEY, JSON.stringify(state));
     } catch { /* noop */ }
     try {
-      history.replaceState(null, '', viewToHash(state));
+      history.replaceState(null, '', viewToHash(state, comics));
     } catch { /* noop */ }
-  }, [currentView, selectedComicId, selectedChapterId, selectedProfileId, selectedCharacter, selectedList, selectedEvent]);
+  }, [currentView, selectedComicId, selectedChapterId, selectedProfileId, selectedCharacter, selectedList, selectedEvent, comics]);
 
   // Mantener la ficha abierta SIEMPRE sincronizada con el catálogo: al guardar
   // ediciones (o si otro dispositivo cambia algo), el detalle y su formulario
@@ -339,13 +379,15 @@ export const App: React.FC = () => {
   // Derivamos los detalles del catálogo para que las ediciones y los ratings
   // se reflejen sin guardar copias obsoletas en el estado.
   const selectedComic = useMemo(
-    () => comics.find((comic) => comic.id === selectedComicId) ?? null,
+    // v0.9.9.4: el "id" guardado puede ser UUID (links viejos) o slug nuevo.
+    () => findComicByRef(selectedComicId, comics),
     [comics, selectedComicId]
   );
 
   const selectedChapter = useMemo(() => {
     if (!selectedComic || !selectedChapterId) return null;
-    const chapter = selectedComic.chapters?.find((item) => item.id === selectedChapterId);
+    // v0.9.9.4: resuelve UUID viejo o slug legible (tomo-N) por igual.
+    const chapter = findChapterByRef(selectedComic, selectedChapterId);
     return chapter ? toChapterWithComic(chapter, selectedComic) : null;
   }, [selectedComic, selectedChapterId]);
 

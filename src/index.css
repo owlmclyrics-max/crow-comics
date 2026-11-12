@@ -160,6 +160,13 @@
     max-width: 100%;
   }
 
+  /* v0.9.9.4: el hero de novedades NECESITA sangrar más allá del padding de
+     main (w-[calc(100%+1.5rem)] -mx-3). El max-width:100% de arriba lo capaba
+     en el ancho del padding y dejaba una franja del fondo a la derecha. */
+  main section[aria-label="Novedades destacadas"] {
+    max-width: none;
+  }
+
   img,
   iframe,
   video {
