@@ -15,8 +15,10 @@ import {
   Sparkles,
   Award,
   Filter,
-  SlidersHorizontal,
   X,
+  ChevronDown,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
 import type { Comic, Chapter } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -81,6 +83,18 @@ const historyDateGroup = (iso: string | undefined): string => {
   if (t >= startOfToday - 30 * 86_400_000) return 'Este mes';
   return 'Más antiguo';
 };
+
+/** v0.9.9.6: opciones del filtro de fecha (pills, no selects nativos). */
+const HISTORY_DATE_OPTIONS: {
+  value: 'all' | 'today' | 'week' | 'month' | 'year';
+  label: string;
+}[] = [
+  { value: 'all', label: 'Todo' },
+  { value: 'today', label: 'Hoy' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'year', label: 'Año' },
+];
 
 const TABS: { id: ProfileTab; label: string; icon: React.ElementType }[] = [
   { id: 'favoritos', label: 'Favoritos', icon: Heart },
@@ -701,39 +715,51 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </button>
                 </div>
 
-                {/* ── Filtros: por cómic y por fecha ── */}
-                <div className="flex flex-wrap items-center gap-2.5 p-3 rounded-2xl bg-surface/60 border border-line">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-mute">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
-                    Filtros
-                  </span>
-                  <select
-                    value={historyComicFilter}
-                    onChange={(e) => setHistoryComicFilter(e.target.value)}
-                    aria-label="Filtrar por cómic"
-                    className="px-3 py-2 rounded-xl bg-bg border border-line text-xs text-ink font-semibold focus:border-accent/60 focus:outline-none cursor-pointer transition-colors max-w-[13rem]"
-                  >
-                    <option value="all">Todos los cómics</option>
-                    {historyComicOptions.map(([id, title]) => (
-                      <option key={id} value={id}>
-                        {title}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={historyDateFilter}
-                    onChange={(e) =>
-                      setHistoryDateFilter(e.target.value as typeof historyDateFilter)
-                    }
+                {/* ── Filtros compactos: select de cómic (oscuro, con chevron
+                    custom) + pills de fecha (nada de selects nativos) ── */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <select
+                      value={historyComicFilter}
+                      onChange={(e) => setHistoryComicFilter(e.target.value)}
+                      aria-label="Filtrar por cómic"
+                      className="appearance-none pl-3 pr-8 py-2 rounded-xl bg-surface border border-line text-xs text-ink font-semibold hover:border-accent/40 focus:border-accent/60 outline-none cursor-pointer transition-colors max-w-[13rem]"
+                    >
+                      <option value="all">Todos los cómics</option>
+                      {historyComicOptions.map(([id, title]) => (
+                        <option key={id} value={id}>
+                          {title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
+                  </div>
+
+                  <div
+                    className="flex items-center gap-0.5 p-1 rounded-xl bg-surface border border-line"
+                    role="group"
                     aria-label="Filtrar por fecha"
-                    className="px-3 py-2 rounded-xl bg-bg border border-line text-xs text-ink font-semibold focus:border-accent/60 focus:outline-none cursor-pointer transition-colors"
                   >
-                    <option value="all">Cualquier fecha</option>
-                    <option value="today">Hoy</option>
-                    <option value="week">Últimos 7 días</option>
-                    <option value="month">Último mes</option>
-                    <option value="year">Este año</option>
-                  </select>
+                    {HISTORY_DATE_OPTIONS.map((opt) => {
+                      const active = historyDateFilter === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setHistoryDateFilter(opt.value)}
+                          aria-pressed={active}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                            active
+                              ? 'bg-accent text-onaccent shadow-sm shadow-accent/20'
+                              : 'text-mute hover:text-ink hover:bg-raised/60'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   {historyHasFilters && (
                     <button
                       type="button"
@@ -741,10 +767,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         setHistoryComicFilter('all');
                         setHistoryDateFilter('all');
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-bold text-mute hover:text-ink hover:bg-raised transition-colors"
+                      className="inline-flex items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-bold text-mute hover:text-ink hover:bg-raised transition-colors"
                     >
                       <X className="w-3.5 h-3.5" />
-                      Quitar filtros
+                      Quitar
                     </button>
                   )}
                 </div>
@@ -772,12 +798,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   groupedHistory.map((group) => (
                     <div key={group.label} className="space-y-2.5">
                       {/* Separador de grupo de fecha */}
-                      <div className="flex items-center gap-3 pt-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-faint">
+                      <div className="flex items-center gap-2.5 pt-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-accent/80">
                           {group.label}
                         </span>
-                        <span className="flex-1 h-px bg-line" />
-                        <span className="text-[10px] font-bold text-faint">
+                        <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
+                        <span className="px-1.5 py-0.5 rounded-md bg-raised border border-line text-[9px] font-bold text-faint">
                           {group.rows.length}
                         </span>
                       </div>
@@ -804,49 +830,71 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                                 else if (comic) onSelectComic(comic);
                               }
                             }}
-                            className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface border border-line hover:border-accent/50 hover:bg-raised/40 transition-all text-left cursor-pointer group outline-none focus:border-accent/60"
+                            className="w-full flex items-center gap-3.5 p-3 rounded-2xl bg-surface border border-line hover:border-accent/50 hover:bg-raised/40 transition-all text-left cursor-pointer group outline-none focus:border-accent/60"
                           >
-                            {/* Portada del tomo (fallback: portada de la serie) */}
-                            <div className="w-12 h-18 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line shrink-0">
+                            {/* Portada del tomo con número de tomo superpuesto */}
+                            <div className="relative w-14 aspect-[2/3] rounded-xl overflow-hidden bg-bg border border-line shrink-0">
                               <img
                                 src={chapter?.cover_url || comic?.cover_url || ''}
                                 alt={comic?.title ?? 'Cómic'}
                                 loading="lazy"
                                 className="w-full h-full object-cover"
                               />
+                              {chapter && (
+                                <span className="absolute bottom-1 right-1 px-1 rounded-md bg-zinc-950/85 text-[9px] font-black text-ink leading-4">
+                                  #{row.chapter_number}
+                                </span>
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-bold text-ink truncate group-hover:text-accent transition-colors">
                                 {comic?.title ?? 'Cómic eliminado'}
                               </h4>
-                              <p className="text-[11px] text-mute mt-0.5">
-                                Tomo {row.chapter_number}
-                                {!sameTitleAsComic && chapter ? ` · ${chapter.title}` : ''}
-                                {' · '}
-                                {row.completed ? 'Completado' : 'En progreso'}
-                                {row.hidden_at && ' · oculto de Continuar'}
-                              </p>
-                              {/* v0.6: estado que el lector asignó al tomo. Solo se
-                                  muestra si fue asignado explícitamente: las filas
-                                  antiguas (antes de la migración) no tienen estado. */}
-                              {row.reading_status && (
-                                <span
-                                  className={`mt-1.5 inline-flex items-center px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${readingStatusChipClass(row.reading_status)}`}
-                                >
-                                  {readingStatusLabel(row.reading_status)}
-                                </span>
-                              )}
-                              {/* Sprint 3.5: marcador de página manual (0 = sin marcador) */}
-                              {(row.page_number ?? 0) > 0 && (
-                                <p className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-semibold mt-1">
-                                  <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
-                                  Te quedaste en la página {row.page_number}
+                              {!sameTitleAsComic && chapter ? (
+                                <p className="text-[11px] text-mute truncate mt-0.5">
+                                  {chapter.title}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-mute truncate mt-0.5">
+                                  Tomo {row.chapter_number}
                                 </p>
                               )}
+                              {/* Chips de estado: asignado por el lector + progreso */}
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                {row.completed ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                    <CheckCircle className="w-2.5 h-2.5" />
+                                    Completado
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-accent/10 text-accent border border-accent/30">
+                                    En progreso
+                                  </span>
+                                )}
+                                {row.reading_status && (
+                                  <span
+                                    className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md border ${readingStatusChipClass(row.reading_status)}`}
+                                  >
+                                    {readingStatusLabel(row.reading_status)}
+                                  </span>
+                                )}
+                                {(row.page_number ?? 0) > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-amber-400/10 text-amber-400 border border-amber-400/30">
+                                    <Bookmark className="w-2.5 h-2.5 fill-amber-400/40" />
+                                    pág. {row.page_number}
+                                  </span>
+                                )}
+                                {row.hidden_at && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md bg-raised text-faint border border-line">
+                                    oculto
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            {/* Fecha de la última lectura */}
+                            {/* Fecha de la última lectura (chip) */}
                             {dateLabel && (
-                              <span className="hidden sm:block shrink-0 text-[10px] font-semibold text-faint">
+                              <span className="hidden sm:inline-flex shrink-0 items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-line text-[10px] font-semibold text-mute whitespace-nowrap">
+                                <Clock className="w-3 h-3 text-faint" />
                                 {dateLabel}
                               </span>
                             )}
