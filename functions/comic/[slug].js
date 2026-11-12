@@ -43,7 +43,7 @@ export async function onRequestGet(context) {
     return htmlResponse(
       embedPage({
         title: 'Crow Comics',
-        description: `Error: ${err instanceof Error ? err.message : String(err)} (v3)`,
+        description: 'Catálogo de cómics para leer online.',
         image: `${origin}/crow-512.png`,
         redirect: `${origin}/#/inicio`,
       }),
