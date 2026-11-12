@@ -35,7 +35,8 @@ import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter,
 import type { ReadingStatus } from '../lib/readingStatus';
 import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
-import { chapterShareUrl, shareLink } from '../lib/share';
+import { chapterShareUrl } from '../lib/share';
+import { ShareModal } from './ShareModal';
 import { ChapterStatusModal } from './ChapterStatusModal';
 import { fetchChapterCast } from '../lib/chapterCharacters';
 import type { ChapterCastEntry } from '../lib/chapterCharacters';
@@ -416,6 +417,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   // v0.9.9.2: modal "Añadir variante" (elegir versión a mostrar en el reparto)
   const [isVariantPickerOpen, setIsVariantPickerOpen] = useState(false);
+  // v0.9.9.5: modal de compartir (link + copiar)
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const loadChapterCharacters = useCallback(async () => {
     setLoadingCharacters(true);
@@ -710,12 +713,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               {parentComic && (
                 <button
                   type="button"
-                  onClick={() => {
-                    void shareLink(
-                      chapterShareUrl(chapter, parentComic, comics),
-                      `${chapter.comic_title} — Tomo #${chapter.chapter_number}`,
-                    );
-                  }}
+                  onClick={() => setIsShareOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-raised hover:bg-raised text-ink border border-line hover:border-accent/60 transition-all shadow-md active:scale-95"
                   title="Compartir (copia un link con vista previa en Discord)"
                 >
@@ -1012,6 +1010,16 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
           void loadChapterCharacters();
         }}
       />
+
+      {/* v0.9.9.5: compartir el tomo con embed de Discord */}
+      {parentComic && (
+        <ShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          url={chapterShareUrl(chapter, parentComic, comics)}
+          title={`${chapter.comic_title} — Tomo #${chapter.chapter_number}`}
+        />
+      )}
 
       {/* ================================================================ */}
       {/* MINI-MODAL: GUARDAR PÁGINA ACTUAL (Sprint 3.5)                    */}

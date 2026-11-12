@@ -27,7 +27,8 @@ import { AddToListModal } from './AddToListModal';
 import { getReadingProgressForComic } from '../lib/profile';
 import { ListPlus, Bookmark, Share2 } from 'lucide-react';
 import { ChaptersModal } from './ChaptersModal';
-import { comicShareUrl, shareLink } from '../lib/share';
+import { comicShareUrl } from '../lib/share';
+import { ShareModal } from './ShareModal';
 
 interface ComicDetailPageProps {
   comic: Comic;
@@ -56,6 +57,8 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
 
   // Modal de capítulos
   const [isChaptersModalOpen, setIsChaptersModalOpen] = useState(false);
+  // v0.9.9.5: modal de compartir (link + copiar)
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Fila horizontal de capítulos (igual que el reparto de personajes):
   // flechas ← → que se muestran solo si hay capítulos fuera de la vista.
@@ -192,9 +195,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
             <FollowButton comicId={comic.id} size="lg" />
             <button
               type="button"
-              onClick={() => {
-                void shareLink(comicShareUrl(comic, comics), comic.title);
-              }}
+              onClick={() => setIsShareOpen(true)}
               aria-label="Compartir"
               className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-bg/70 backdrop-blur-md border border-line hover:border-accent/50 active:scale-90 transition-all"
               title="Compartir (copia un link con vista previa en Discord)"
@@ -461,6 +462,14 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
         isOpen={isAddListOpen}
         onClose={() => setAddListOpen(false)}
         comic={comic}
+      />
+
+      {/* v0.9.9.5: compartir con embed de Discord */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        url={comicShareUrl(comic, comics)}
+        title={comic.title}
       />
 
       {/* Modal de Capítulos */}

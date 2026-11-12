@@ -2,7 +2,7 @@
 // Preview de Discord/WhatsApp para links de cómics compartidos:
 //   GET /comic/<slug>  →  HTML con OG tags + salto a #/comic/<slug>
 // ============================================================================
-import { comicSlugOf, loadComics, embedPage, htmlResponse } from './_shared.js';
+import { comicSlugOf, loadComics, loadChapters, embedPage, htmlResponse } from './_shared.js';
 
 export async function onRequestGet(context) {
   const slug = context.params.slug;
