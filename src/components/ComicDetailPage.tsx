@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useComics } from '../context/ComicsContext';
 import { CommentsSection } from './CommentsSection';
 import { StarRating } from './ui/StarRating';
 import { FavoriteButton, OPEN_AUTH_EVENT } from './FavoriteButton';
@@ -24,8 +25,9 @@ import { useFollows } from '../context/FollowsContext';
 import { newChaptersOf } from '../lib/follows';
 import { AddToListModal } from './AddToListModal';
 import { getReadingProgressForComic } from '../lib/profile';
-import { ListPlus, Bookmark } from 'lucide-react';
+import { ListPlus, Bookmark, Share2 } from 'lucide-react';
 import { ChaptersModal } from './ChaptersModal';
+import { comicShareUrl, shareLink } from '../lib/share';
 
 interface ComicDetailPageProps {
   comic: Comic;
@@ -44,6 +46,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
 }) => {
   const { canManageContent, user } = useAuth();
   const { follows, markSeen } = useFollows();
+  const { comics } = useComics();
 
   // Estado para la calificación del usuario
   const [userRating, setUserRating] = useState(0);
@@ -187,6 +190,17 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-start gap-2">
             <FavoriteButton comicId={comic.id} size="lg" />
             <FollowButton comicId={comic.id} size="lg" />
+            <button
+              type="button"
+              onClick={() => {
+                void shareLink(comicShareUrl(comic, comics), comic.title);
+              }}
+              aria-label="Compartir"
+              className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-bg/70 backdrop-blur-md border border-line hover:border-accent/50 active:scale-90 transition-all"
+              title="Compartir (copia un link con vista previa en Discord)"
+            >
+              <Share2 className="w-5 h-5 text-mute hover:text-accent transition-colors" />
+            </button>
             <button
               type="button"
               onClick={() => {

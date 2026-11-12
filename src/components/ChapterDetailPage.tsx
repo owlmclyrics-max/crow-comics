@@ -27,6 +27,7 @@ import {
   Maximize2,
   Minimize2,
   Library,
+  Share2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -34,6 +35,7 @@ import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter,
 import type { ReadingStatus } from '../lib/readingStatus';
 import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
+import { chapterShareUrl, shareLink } from '../lib/share';
 import { ChapterStatusModal } from './ChapterStatusModal';
 import { fetchChapterCast } from '../lib/chapterCharacters';
 import type { ChapterCastEntry } from '../lib/chapterCharacters';
@@ -702,6 +704,23 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                 >
                   <Layers className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Ver Capítulos</span>
+                </button>
+              )}
+              {/* v0.9.9.5: compartir el tomo con embed de Discord/WhatsApp */}
+              {parentComic && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void shareLink(
+                      chapterShareUrl(chapter, parentComic, comics),
+                      `${chapter.comic_title} — Tomo #${chapter.chapter_number}`,
+                    );
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-raised hover:bg-raised text-ink border border-line hover:border-accent/60 transition-all shadow-md active:scale-95"
+                  title="Compartir (copia un link con vista previa en Discord)"
+                >
+                  <Share2 className="w-4 h-4 text-accent" />
+                  <span>Compartir</span>
                 </button>
               )}
               {/* Botones de descarga + reporte */}
