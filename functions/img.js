@@ -34,7 +34,36 @@ const jsonResponse = (status, message) =>
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
   });
 
-export const onRequestGet = async ({ request }) => {
+/**
+ * Trae la imagen del origen con reintentos: Fandom (Fastly) limita las
+ * ráfagas — si el home pide 8 portadas a la vez, alguna responde 403/429.
+ * Reintenta 2 veces con espera creciente en esos casos.
+ */
+const fetchUpstream = async (target) => {
+  const headers = {
+    'user-agent': BROWSER_UA,
+    referer: 'https://crow-comics.pages.dev/',
+    accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+  };
+  let lastStatus = 502;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+    }
+    try {
+      const res = await fetch(target, { headers });
+      if (res.ok) return res;
+      lastStatus = res.status;
+      // 4xx definitivos (400/404/etc.) no mejoran con reintento
+      if (res.status !== 403 && res.status !== 429 && res.status < 500) return res;
+    } catch {
+      lastStatus = 502;
+    }
+  }
+  return new Response(null, { status: lastStatus });
+};
+
+export const onRequestGet = async ({ request, waitUntil }) => {
   const url = new URL(request.url);
   const target = (url.searchParams.get('u') || '').trim();
 
@@ -49,29 +78,36 @@ export const onRequestGet = async ({ request }) => {
     return jsonResponse(400, 'Host no permitido');
   }
 
+  // Caché en el edge de Cloudflare: cada URL se trae del origen UNA vez y
+  // después se sirve directo del edge (y el navegador la guarda un mes).
+  const cache = caches.default;
   try {
-    const upstream = await fetch(parsed.toString(), {
-      headers: {
-        'user-agent': BROWSER_UA,
-        referer: `${parsed.protocol}//${parsed.hostname}/`,
-        accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-      },
-    });
-    if (!upstream.ok) {
-      return jsonResponse(upstream.status, `El origen respondio ${upstream.status}`);
-    }
-    // Pasamos el body directo y dejamos que el edge cachee un mes.
-    return new Response(upstream.body, {
-      status: upstream.status,
-      headers: {
-        'content-type': upstream.headers.get('content-type') || 'image/jpeg',
-        'cache-control': 'public, max-age=2592000, s-maxage=2592000',
-      },
-    });
-  } catch (err) {
-    return jsonResponse(
-      502,
-      `No se pudo traer la imagen: ${err && err.message ? err.message : 'error desconocido'}`,
-    );
+    const cached = await cache.match(request);
+    if (cached) return cached;
+  } catch {
+    // sin caché disponible, seguimos directo
   }
+
+  const upstream = await fetchUpstream(parsed.toString());
+  if (!upstream.ok) {
+    return jsonResponse(upstream.status, `El origen respondio ${upstream.status}`);
+  }
+
+  const response = new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'content-type': upstream.headers.get('content-type') || 'image/jpeg',
+      'cache-control': 'public, max-age=2592000, s-maxage=2592000',
+    },
+  });
+  try {
+    if (typeof waitUntil === 'function') {
+      waitUntil(cache.put(request, response.clone()));
+    } else {
+      await cache.put(request, response.clone());
+    }
+  } catch {
+    // si no se pudo cachear, la imagen igual sale
+  }
+  return response;
 };
