@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, BellRing, BookOpen, X } from 'lucide-react';
 import type { Chapter, Comic } from '../types/comic';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { useComics } from '../context/ComicsContext';
 import { useFollows } from '../context/FollowsContext';
 
@@ -242,7 +243,7 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
                   className="w-full text-left p-3 hover:bg-raised/80 cursor-pointer transition-colors flex items-center gap-3 group"
                 >
                   <img
-                    src={chapter.cover_url || comic.cover_url}
+                    src={proxyImageUrl(chapter.cover_url || comic.cover_url)}
                     alt={comic.title}
                     className="w-9 h-13 object-cover rounded-md border border-line shrink-0"
                     onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}

@@ -4,6 +4,7 @@ import { Search, X, CornerDownLeft, BookOpen, User } from 'lucide-react';
 import type { Comic, Profile } from '../types/comic';
 import { filterComicsByQuery, matchesCharacterSearch } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { useAuth } from '../context/AuthContext';
 
 interface SearchOverlayProps {
@@ -343,7 +344,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                       }`}
                     >
                       <img
-                        src={comic.cover_url}
+                        src={proxyImageUrl(comic.cover_url)}
                         alt={comic.title}
                         className="h-12 w-9 shrink-0 rounded-md border border-line object-cover"
                         onError={(e) => {

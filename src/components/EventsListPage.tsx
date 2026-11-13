@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ListOrdered, Layers, Calendar, Plus, Pencil } from 'lucide-react';
 import type { Comic, ReadingEvent } from '../types/comic';
 import { getEventItems, getEvents } from '../lib/events';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { useAuth } from '../context/AuthContext';
 import { EventsAdminModal } from './EventsAdminModal';
 
@@ -114,7 +115,7 @@ export const EventsListPage: React.FC<EventsListPageProps> = ({
             <div className="relative aspect-video w-full overflow-hidden bg-bg">
               {event.cover_url ? (
                 <img
-                  src={event.cover_url}
+                  src={proxyImageUrl(event.cover_url)}
                   alt={event.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"

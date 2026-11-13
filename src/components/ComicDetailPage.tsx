@@ -25,6 +25,7 @@ import { useFollows } from '../context/FollowsContext';
 import { newChaptersOf } from '../lib/follows';
 import { AddToListModal } from './AddToListModal';
 import { getReadingProgressForComic } from '../lib/profile';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { ListPlus, Bookmark, Share2 } from 'lucide-react';
 import { ChaptersModal } from './ChaptersModal';
 import { comicShareUrl } from '../lib/share';
@@ -179,7 +180,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
         {/* Fondo con desenfoque de la misma portada con parallax */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none parallax-container">
           <img
-            src={comic.cover_url}
+            src={proxyImageUrl(comic.cover_url)}
             alt=""
             aria-hidden="true"
             className="w-full h-full object-cover blur-3xl scale-125 opacity-30 parallax-layer animate-parallax-float"
@@ -222,7 +223,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
           {/* Portada Principal Flotante 2:3 */}
           <div className="relative aspect-[2/3] w-48 sm:w-60 md:w-64 rounded-2xl overflow-hidden border-2 border-line shadow-2xl bg-bg shrink-0 transform -rotate-1 hover:rotate-0 smooth-transition">
             <img
-              src={comic.cover_url}
+              src={proxyImageUrl(comic.cover_url)}
               alt={comic.title}
               className="w-full h-full object-cover"
             />
@@ -393,7 +394,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                   {/* Portada del Tomo Vertical 2:3 */}
                   <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
                     <img
-                      src={chapter.cover_url || comic.cover_url}
+                      src={proxyImageUrl(chapter.cover_url || comic.cover_url)}
                       alt={chapter.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />

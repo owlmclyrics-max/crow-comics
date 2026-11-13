@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useUserAvatar } from './ui/UserAvatar';
 import { AccentPicker } from './ui/AccentPicker';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 // ==============================================================================
 // PANTALLA DE BIENVENIDA (LANDING)
@@ -90,7 +91,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const columns = useMemo(() => {
     const seen = new Set<string>();
     const pool: string[] = [];
-    for (const cover of [...LOCAL_COVERS, ...comics.map((comic) => comic.cover_url)]) {
+    for (const cover of [...LOCAL_COVERS, ...comics.map((comic) => proxyImageUrl(comic.cover_url))]) {
       if (cover && !seen.has(cover)) {
         seen.add(cover);
         pool.push(cover);

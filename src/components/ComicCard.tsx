@@ -5,6 +5,7 @@ import { FavoriteButton } from './FavoriteButton';
 import { FollowButton } from './FollowButton';
 import { useFollows } from '../context/FollowsContext';
 import { newChaptersOf } from '../lib/follows';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 interface ComicCardProps {
   comic: Comic;
@@ -34,7 +35,7 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
       {/* Portada con proporción fija aspect-[2/3] object-cover */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
         <img
-          src={comic.cover_url}
+          src={proxyImageUrl(comic.cover_url)}
           alt={comic.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           loading="lazy"

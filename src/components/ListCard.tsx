@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Star } from 'lucide-react';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 interface ListCardProps {
   name: string;
@@ -39,7 +40,7 @@ export const ListCard: React.FC<ListCardProps> = ({
           </div>
         ) : covers.length === 1 ? (
           <img
-            src={covers[0]}
+            src={proxyImageUrl(covers[0])}
             alt=""
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -49,7 +50,7 @@ export const ListCard: React.FC<ListCardProps> = ({
             {covers.map((url, index) => (
               <img
                 key={index}
-                src={url}
+                src={proxyImageUrl(url)}
                 alt=""
                 loading="lazy"
                 className={`w-full h-full object-cover ${

@@ -26,6 +26,7 @@ import { useComics } from '../context/ComicsContext';
 import { useCharactersContext } from '../context/CharactersContext';
 import { characterNameMatches } from '../lib/comicUtils';
 import { fetchCharacterChapterIds } from '../lib/chapterCharacters';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { showToast } from './ui/Toast';
 import { CharacterVariantModal } from './CharacterVariantModal';
 import { useCharacterVariants } from '../hooks/useCharacterVariants';
@@ -607,7 +608,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                       >
                         <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/ch:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">
                           <img
-                            src={chapter.cover_url || selectedComic.cover_url}
+                            src={proxyImageUrl(chapter.cover_url || selectedComic.cover_url)}
                             alt={chapter.title}
                             loading="lazy"
                             className="w-full h-full object-cover group-hover/ch:scale-105 transition-transform duration-300"
@@ -638,7 +639,7 @@ export const CharacterDetailPage: React.FC<CharacterDetailPageProps> = ({
                       >
                         <div className="relative w-28 sm:w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-line group-hover/cast:border-accent/80 bg-bg shrink-0 shadow-lg transition-colors">
                           <img
-                            src={comic.cover_url}
+                            src={proxyImageUrl(comic.cover_url)}
                             alt={comic.title}
                             loading="lazy"
                             className="w-full h-full object-cover group-hover/cast:scale-105 transition-transform duration-300"

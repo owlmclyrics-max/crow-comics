@@ -49,6 +49,7 @@ import {
   type PrivacySettings,
 } from '../lib/profile';
 import { readingStatusChipClass, readingStatusLabel } from '../lib/readingStatus';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 export type ProfileTab = 'favoritos' | 'listas' | 'historial' | 'privacidad';
 
@@ -839,7 +840,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                               <span className="w-6 aspect-[2/3] rounded overflow-hidden bg-bg border border-line shrink-0">
                                 {comic?.cover_url && (
                                   <img
-                                    src={comic.cover_url}
+                                    src={proxyImageUrl(comic.cover_url)}
                                     alt=""
                                     loading="lazy"
                                     className="w-full h-full object-cover"
@@ -938,7 +939,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         >
                           <div className="relative aspect-[2/3] bg-bg">
                             <img
-                              src={chapter?.cover_url || comic?.cover_url || ''}
+                              src={proxyImageUrl(chapter?.cover_url || comic?.cover_url || '')}
                               alt={comic?.title ?? 'Cómic'}
                               loading="lazy"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
@@ -1033,7 +1034,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                             {/* Portada del tomo con número de tomo superpuesto */}
                             <div className="relative w-14 aspect-[2/3] rounded-xl overflow-hidden bg-bg border border-line shrink-0">
                               <img
-                                src={chapter?.cover_url || comic?.cover_url || ''}
+                                src={proxyImageUrl(chapter?.cover_url || comic?.cover_url || '')}
                                 alt={comic?.title ?? 'Cómic'}
                                 loading="lazy"
                                 className="w-full h-full object-cover"

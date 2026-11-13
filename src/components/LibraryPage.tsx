@@ -3,6 +3,7 @@ import { ArrowLeft, Library, Search, BookOpen, Feather } from 'lucide-react';
 import type { Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { getReadingProgress, type ReadingProgressRow } from '../lib/profile';
+import { proxyImageUrl } from '../lib/imageUrl';
 import type { ReadingStatus } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
 
@@ -220,7 +221,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                         >
                           {comic?.cover_url ? (
                             <img
-                              src={comic.cover_url}
+                              src={proxyImageUrl(comic.cover_url)}
                               alt=""
                               className="h-24 w-16 rounded-lg border border-line object-cover transition-transform group-hover:scale-[1.03]"
                               onError={(e) => {

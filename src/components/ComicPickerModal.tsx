@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search, BookOpen, Lock, ImageOff } from 'lucide-react';
 import type { Comic } from '../types/comic';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 interface ComicPickerModalProps {
   isOpen: boolean;
@@ -107,7 +108,7 @@ export const ComicPickerModal: React.FC<ComicPickerModalProps> = ({
                   className="group relative aspect-[2/3] rounded-xl overflow-hidden border border-line hover:border-accent/60 cursor-pointer transition-all hover:scale-105 smooth-transition bg-bg text-left"
                 >
                   <img
-                    src={comic.cover_url}
+                    src={proxyImageUrl(comic.cover_url)}
                     alt={comic.title}
                     loading="lazy"
                     className="w-full h-full object-cover"

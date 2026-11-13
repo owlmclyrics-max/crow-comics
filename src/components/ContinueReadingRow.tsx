@@ -4,6 +4,7 @@ import type { Chapter, Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { getReadingProgress, hideReadingProgressRow, type ReadingProgressRow } from '../lib/profile';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { showToast } from './ui/Toast';
 
 interface ContinueReadingRowProps {
@@ -107,7 +108,7 @@ export const ContinueReadingRow: React.FC<ContinueReadingRowProps> = ({ onSelect
                 {/* Portada del capítulo (no la de la serie); fallback a la del cómic */}
                 <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
                   <img
-                    src={chapter?.cover_url || comic.cover_url}
+                    src={proxyImageUrl(chapter?.cover_url || comic.cover_url)}
                     alt={chapter ? chapter.title : comic.title}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Chapter } from '../types/comic';
 import { X, Layers, Grid, List, Search } from 'lucide-react';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 interface ChaptersModalProps {
   isOpen: boolean;
@@ -118,7 +119,7 @@ export const ChaptersModal: React.FC<ChaptersModalProps> = ({
                 >
                   {chapter.cover_url ? (
                     <img
-                      src={chapter.cover_url}
+                      src={proxyImageUrl(chapter.cover_url)}
                       alt={chapter.title}
                       className="w-full h-full object-contain bg-bg"
                     />
@@ -149,7 +150,7 @@ export const ChaptersModal: React.FC<ChaptersModalProps> = ({
                   <div className="relative w-16 h-24 rounded-lg overflow-hidden shrink-0 bg-bg border border-line">
                     {chapter.cover_url ? (
                       <img
-                        src={chapter.cover_url}
+                        src={proxyImageUrl(chapter.cover_url)}
                         alt={chapter.title}
                         className="w-full h-full object-contain"
                       />

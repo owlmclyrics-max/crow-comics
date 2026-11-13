@@ -32,6 +32,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { saveReadingProgress, hideReadingProgress, getReadingProgressForChapter, setReadingStatus } from '../lib/profile';
+import { proxyImageUrl } from '../lib/imageUrl';
 import type { ReadingStatus } from '../lib/readingStatus';
 import { READING_STATUSES } from '../lib/readingStatus';
 import { showToast } from './ui/Toast';
@@ -555,7 +556,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
         {/* Fondo desenfocado */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img
-            src={chapter.cover_url || chapter.comic_cover_url}
+            src={proxyImageUrl(chapter.cover_url || chapter.comic_cover_url)}
             alt=""
             aria-hidden="true"
             className="w-full h-full object-cover blur-3xl scale-125 opacity-30 animate-parallax-float"
@@ -570,7 +571,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             {/* Portada */}
             <div className="relative aspect-[2/3] w-48 sm:w-56 md:w-60 rounded-2xl overflow-hidden border-2 border-line shadow-2xl bg-bg shrink-0 transform -rotate-1 hover:rotate-0 transition-transform duration-300">
               <img
-                src={chapter.cover_url || chapter.comic_cover_url}
+                src={proxyImageUrl(chapter.cover_url || chapter.comic_cover_url)}
                 alt={chapter.title}
                 className="w-full h-full object-cover"
               />

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { ReadingEvent, ReadingEventItem } from '../types/comic';
 import { PUBLISHERS } from '../lib/constants';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { useComics } from '../context/ComicsContext';
 import { showToast } from './ui/Toast';
 import { Modal } from './ui/Modal';
@@ -370,7 +371,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
               {/* Preview de portada */}
               <div className="w-28 aspect-video rounded-xl overflow-hidden border border-line bg-bg shrink-0 flex items-center justify-center">
                 {form.cover_url ? (
-                  <img src={form.cover_url} alt="" className="w-full h-full object-cover" />
+                  <img src={proxyImageUrl(form.cover_url)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon className="w-6 h-6 text-faint" />
                 )}
@@ -481,7 +482,7 @@ export const EventsAdminModal: React.FC<EventsAdminModalProps> = ({
                         {item.comic_id && comicById.get(item.comic_id) ? (
                           <>
                             <img
-                              src={comicById.get(item.comic_id)!.cover_url}
+                              src={proxyImageUrl(comicById.get(item.comic_id)!.cover_url)}
                               alt=""
                               className="w-8 h-11 object-cover rounded-md border border-line shrink-0"
                             />

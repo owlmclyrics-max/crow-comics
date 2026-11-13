@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { Comic, ReadingEvent, ReadingEventItem } from '../types/comic';
 import { getEventItemLabel, getEventItems } from '../lib/events';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { CrowAmbience } from './ui/CrowAmbience';
 
 interface EventDetailPageProps {
@@ -81,7 +82,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {event.cover_url ? (
             <img
-              src={event.cover_url}
+              src={proxyImageUrl(event.cover_url)}
               alt={event.title}
               className="w-full h-full object-cover blur-3xl scale-125 opacity-30"
             />
@@ -93,7 +94,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
           {/* Portada panoramica del evento */}
           <div className="relative w-full max-w-md md:w-96 aspect-video rounded-2xl overflow-hidden border-2 border-line/80 shadow-2xl bg-bg shrink-0">
             {event.cover_url ? (
-              <img src={event.cover_url} alt={event.title} className="w-full h-full object-cover" />
+              <img src={proxyImageUrl(event.cover_url)} alt={event.title} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg via-surface to-accent/30">
                 <ListOrdered className="w-14 h-14 text-faint" />
@@ -228,7 +229,7 @@ export const EventDetailPage: React.FC<EventDetailPageProps> = ({
                   <div className="relative w-14 h-20 rounded-lg overflow-hidden border border-line bg-bg shrink-0">
                     {comic ? (
                       <img
-                        src={comic.cover_url}
+                        src={proxyImageUrl(comic.cover_url)}
                         alt={comic.title}
                         className="w-full h-full object-cover"
                         loading="lazy"

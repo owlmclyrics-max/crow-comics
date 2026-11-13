@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Comic, Chapter, ChapterWithComic } from '../types/comic';
 import { toChapterWithComic } from '../lib/comicUtils';
+import { proxyImageUrl } from '../lib/imageUrl';
 import {
   Sparkles,
   ChevronLeft,
@@ -99,7 +100,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
       >
         {fallbackComic.banner_url?.trim() ? (
           <img
-            src={fallbackComic.banner_url}
+            src={proxyImageUrl(fallbackComic.banner_url)}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 w-full h-full object-cover opacity-80"
@@ -107,14 +108,14 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
         ) : (
           <>
             <img
-              src={fallbackComic.cover_url}
+              src={proxyImageUrl(fallbackComic.cover_url)}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-75"
             />
             <div className="absolute inset-y-0 right-0 h-full w-[68%] sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
               <img
-                src={fallbackComic.cover_url}
+                src={proxyImageUrl(fallbackComic.cover_url)}
                 alt=""
                 aria-hidden="true"
                 className="w-full h-full object-cover object-top"
@@ -193,7 +194,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
         {recentChapters.map((chapter, idx) => {
           const parent = comics.find((c) => c.id === chapter.comic_id);
           const banner = parent?.banner_url?.trim();
-          const cover = chapter.cover_url || chapter.comic_cover_url;
+          const cover = proxyImageUrl(chapter.cover_url || chapter.comic_cover_url);
           return (
             <div
               key={chapter.id}
@@ -204,7 +205,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
             >
               {banner ? (
                 <img
-                  src={banner}
+                  src={proxyImageUrl(banner)}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -363,7 +364,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           {recentChapters.map((chapter, idx) => {
             const isActive = idx === activeIndex;
             const parent = comics.find((c) => c.id === chapter.comic_id);
-            const thumb = parent?.banner_url?.trim() || chapter.cover_url || chapter.comic_cover_url;
+            const thumb = proxyImageUrl(parent?.banner_url?.trim() || chapter.cover_url || chapter.comic_cover_url);
             return (
               <button
                 key={chapter.id}
