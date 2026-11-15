@@ -267,14 +267,14 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   const [isLandscapeMode, setIsLandscapeMode] = useState(false);
   // v0.9.9.8.2: ocultar los botones flotantes del visor (lectura limpia).
   const [areControlsHidden, setAreControlsHidden] = useState(false);
+  // v0.9.9.8.3: fullscreen sobre el PROPIO visor (estilo YouTube) — el
+  // navegador estira el elemento fullscreen a TODA la pantalla, así que no
+  // quedan franjas (antes, con fullscreen del documento, en horizontal
+  // asomaba un hueco transparente abajo).
+  const viewerRef = useRef<HTMLDivElement>(null);
 
   /** Bloquea el giro en horizontal (Android: requiere fullscreen activo). */
   const lockLandscape = async (): Promise<boolean> => {
-    try {
-      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    } catch {
-      // Fullscreen rechazado: sin él no hay lock de orientación
-    }
     try {
       const orientation = screen.orientation as unknown as
         | { lock?: (o: string) => Promise<void>; unlock?: () => void }
@@ -303,11 +303,37 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     }
   };
 
-  const enterLandscapeMode = () => {
-    void lockLandscape().then((locked) => {
-      if (locked) showToast('Modo horizontal activado', 'success');
-      else showToast('Girá el celu de lado para leer en horizontal', 'info');
-    });
+  const enterLandscapeMode = async () => {
+    // 1) Fullscreen sobre el PROPIO visor: Chromium garantiza que el elemento
+    //    fullscreen cubre TODA la pantalla (sin huecos ni franjas).
+    let fullscreenOk = false;
+    try {
+      if (viewerRef.current) {
+        await viewerRef.current.requestFullscreen();
+        fullscreenOk = true;
+      }
+    } catch {
+      // algunos navegadores lo rechazan; probamos con el documento
+    }
+    // 2) Fallback: fullscreen del documento (comportamiento anterior).
+    if (!fullscreenOk) {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          fullscreenOk = true;
+        }
+      } catch {
+        // sin fullscreen (p. ej. iOS) — igual entra el visor inmersivo
+      }
+    }
+    // 3) Bloquear el giro en horizontal (Android).
+    const locked = await lockLandscape();
+    if (locked) showToast('Modo horizontal activado', 'success');
+    else if (fullscreenOk) {
+      showToast('Pantalla completa lista — girá el celu de lado para leer en horizontal', 'info');
+    } else {
+      showToast('Girá el celu de lado para leer en horizontal', 'info');
+    }
     setIsLandscapeMode(true);
     enterImmersive();
   };
@@ -584,7 +610,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
           Hermano del div raíz (no hijo) para que `fixed` sea siempre respecto
           al viewport y no lo rompa la animación fade-in del contenedor. */}
       {isImmersive && chapter.pdf_url && (
-        <div className="fixed -inset-1.5 z-[70] bg-zinc-950">
+        <div ref={viewerRef} className="fixed -inset-1.5 z-[70] bg-zinc-950">
           <iframe
             src={chapter.pdf_url}
             title={`Leer ${chapter.title} a pantalla completa`}
