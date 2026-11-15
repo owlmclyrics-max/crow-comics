@@ -167,9 +167,11 @@ export const NewChaptersBell: React.FC<NewChaptersBellProps> = ({ comics, onSele
       {isOpen && (
         /* v0.9.7: la campana vive al FONDO del sidebar — en desktop el panel
            se abre hacia ARRIBA y hacia la DERECHA (left-full) para no salirse
-           del viewport en ninguno de los dos ejes. En móvil (campana en la
-           barra superior) se abre hacia abajo como siempre. */
-        <div className="absolute z-50 w-80 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-lg:right-0 max-lg:top-full max-lg:mt-2 lg:bottom-full lg:left-full lg:ml-2">
+           del viewport en ninguno de los dos ejes.
+           v0.9.9.8.1: en móvil el panel es FIXED contra el viewport (ancho
+           completo menos márgenes, pegado bajo el header): anclado al botón
+           se recortaba por el overflow-x: clip de #root. */
+        <div className="absolute z-50 w-80 bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-lg:fixed max-lg:top-[4.5rem] max-lg:right-3 max-lg:left-3 max-lg:w-auto lg:bottom-full lg:left-full lg:ml-2">
           <div className="px-4 py-3 border-b border-line flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5 text-accent" />
