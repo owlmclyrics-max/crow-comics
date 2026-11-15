@@ -113,7 +113,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-75"
             />
-            <div className="absolute inset-y-0 right-0 h-full w-[68%] sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
+            <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden sm:[mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]">
               <img
                 src={proxyImageUrl(fallbackComic.cover_url)}
                 alt=""
@@ -123,8 +123,9 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
             </div>
           </>
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10" />
-        <div className="relative h-full flex flex-col justify-end p-6 sm:p-12 lg:px-16 space-y-3 sm:space-y-4 max-w-2xl">
+        {/* v0.9.9.8: en móvil sin velo — solo la imagen */}
+        <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10" />
+        <div className="relative h-full flex flex-col justify-end p-6 sm:p-12 lg:px-16 space-y-3 sm:space-y-4 max-w-2xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] sm:drop-shadow-none">
           <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-bg/70 backdrop-blur-md border border-line text-ink">
             <Sparkles className="w-3 h-3 text-accent" />
             Del catálogo Crow Comics
@@ -219,8 +220,11 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                   />
                   {/* Portada nítida: panel pegado al borde DERECHO, altura
                       completa (sin cortes abajo) y fundido SOLO en su borde
-                      izquierdo para que se disuelva con el relleno. */}
-                  <div className="absolute inset-y-0 right-0 h-full w-[68%] sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
+                      izquierdo para que se disuelva con el relleno.
+                      v0.9.9.8: en móvil la portada llena TODO el banner y sin
+                      fundido ni velos (queda solo la imagen, como pidió el
+                      usuario); el fundido arranca en sm+ igual que siempre. */}
+                  <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden sm:[mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]">
                     <img
                       src={cover}
                       alt=""
@@ -232,9 +236,10 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
             </div>
           );
         })}
-        {/* Velo legibilidad: gradiente lateral + base hacia el fondo del sitio */}
-        <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10 sm:from-bg/90 sm:via-bg/45 sm:to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-bg via-bg/55 to-transparent" />
+        {/* Velo legibilidad: gradiente lateral + base hacia el fondo del sitio.
+            v0.9.9.8: en móvil NO hay velos — solo la imagen de la portada. */}
+        <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/60 to-bg/10 sm:from-bg/90 sm:via-bg/45 sm:to-transparent" />
+        <div className="hidden sm:block absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-bg via-bg/55 to-transparent" />
       </div>
 
       {/* Contador + pausa del autoplay (WCAG 2.2.2) arriba a la derecha */}
@@ -283,7 +288,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           Re-anima suavemente al cambiar de slide (key = slide activo). ── */}
       <div
         key={current.id}
-        className="absolute left-0 bottom-28 sm:bottom-36 px-5 sm:px-10 lg:px-16 max-w-xl sm:max-w-2xl space-y-2.5 sm:space-y-4 text-left animate-fade-in"
+        className="absolute left-0 bottom-28 sm:bottom-36 px-5 sm:px-10 lg:px-16 max-w-xl sm:max-w-2xl space-y-2.5 sm:space-y-4 text-left animate-fade-in drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] sm:drop-shadow-none"
       >
         {/* Ranking factual (posición en novedades) + género del tomo */}
         <div className="flex flex-wrap items-center gap-2">

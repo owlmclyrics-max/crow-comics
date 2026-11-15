@@ -26,6 +26,7 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  RotateCw,
   Library,
   Share2,
 } from 'lucide-react';
@@ -260,6 +261,52 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   // ── Modo lectura inmersivo (v0.6): visor a pantalla completa sin navbars ──
   // App.tsx oculta Navbar y la barra móvil mientras dure la lectura.
   const [isImmersive, setIsImmersive] = useState(false);
+  // v0.9.9.8: modo horizontal — pantalla completa + giro bloqueado del celu.
+  const [isLandscapeMode, setIsLandscapeMode] = useState(false);
+
+  /** Bloquea el giro en horizontal (Android: requiere fullscreen activo). */
+  const lockLandscape = async (): Promise<boolean> => {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    } catch {
+      // Fullscreen rechazado: sin él no hay lock de orientación
+    }
+    try {
+      const orientation = screen.orientation as unknown as
+        | { lock?: (o: string) => Promise<void>; unlock?: () => void }
+        | undefined;
+      if (orientation?.lock) {
+        await orientation.lock('landscape');
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  /** Deshace fullscreen + giro bloqueado (al salir del modo horizontal). */
+  const releaseOrientation = () => {
+    try {
+      (screen.orientation as unknown as { unlock?: () => void } | undefined)?.unlock?.();
+    } catch {
+      // no-op
+    }
+    try {
+      if (document.fullscreenElement) void document.exitFullscreen();
+    } catch {
+      // no-op
+    }
+  };
+
+  const enterLandscapeMode = () => {
+    void lockLandscape().then((locked) => {
+      if (locked) showToast('Modo horizontal activado', 'success');
+      else showToast('Girá el celu de lado para leer en horizontal', 'info');
+    });
+    setIsLandscapeMode(true);
+    enterImmersive();
+  };
 
   const enterImmersive = () => {
     setIsImmersive(true);
@@ -267,9 +314,27 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   };
 
   const exitImmersive = () => {
+    // Si el usuario salió estando en horizontal, deshacer el giro también.
+    if (isLandscapeMode) {
+      releaseOrientation();
+      setIsLandscapeMode(false);
+    }
     setIsImmersive(false);
     onImmersiveChange?.(false);
   };
+
+  // Si el navegador cierra el fullscreen por su cuenta (botón atrás del celu,
+  // Esc en desktop), soltar el bloqueo de giro y apagar el modo horizontal.
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement && isLandscapeMode) {
+        releaseOrientation();
+        setIsLandscapeMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, [isLandscapeMode]);
 
   // Al desmontar (cambiar de tomo o salir de la vista), restaurar las barras.
   useEffect(() => () => onImmersiveChange?.(false), []);
@@ -532,6 +597,18 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             >
               <Minimize2 className="w-5 h-5" />
             </button>
+            {/* v0.9.9.8: salir del modo horizontal con un toque */}
+            {isLandscapeMode && (
+              <button
+                type="button"
+                onClick={exitImmersive}
+                aria-label="Volver a vertical"
+                className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
+                title="Volver a vertical"
+              >
+                <RotateCw className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -815,6 +892,15 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               >
                 <Maximize2 className="w-4 h-4" />
                 <span>Pantalla completa</span>
+              </button>
+              {/* v0.9.9.8: modo horizontal — fullscreen + giro bloqueado */}
+              <button
+                onClick={enterLandscapeMode}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/40 transition-all shadow-md active:scale-95"
+                title="Leer con el celu en horizontal (pantalla completa)"
+              >
+                <RotateCw className="w-4 h-4" />
+                <span>Modo horizontal</span>
               </button>
             </div>
           </div>

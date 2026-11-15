@@ -215,7 +215,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* v0.9: herramientas en UNA sola fila — campana + tema + paleta.
               Colapsado: centradas. Expandido: alineadas a la izquierda con
               el mismo padding que los ítems del menú. */}
-          <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 lg:flex-col lg:w-full lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
+          {/* v0.9.9.8: en móvil la fila va horizontal (en el top bar) y la
+              paleta NO se muestra (está duplicada con "Color del sitio" del
+              menú hamburguesa). En PC (lg+) queda idéntica a siempre. */}
+          <div className="flex flex-row items-center justify-center gap-1.5 shrink-0 lg:flex-col lg:w-full lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
             {/* Campana: capítulos subidos desde tu última visita (todos) */}
             <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
             <button
@@ -232,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setIsAccentOpen(true)}
               aria-label="Cambiar color de acento"
               title="Color de acento"
-              className="p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all active:scale-90"
+              className="hidden lg:block p-2 rounded-xl bg-surface hover:bg-raised text-mute hover:text-ink border border-line transition-all active:scale-90"
             >
               <Palette className="w-4 h-4" style={{ color: 'oklch(0.63 0.21 var(--crow-hue))' }} />
             </button>
