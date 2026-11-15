@@ -27,6 +27,8 @@ import {
   Maximize2,
   Minimize2,
   RotateCw,
+  Eye,
+  EyeOff,
   Library,
   Share2,
 } from 'lucide-react';
@@ -263,6 +265,8 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   const [isImmersive, setIsImmersive] = useState(false);
   // v0.9.9.8: modo horizontal — pantalla completa + giro bloqueado del celu.
   const [isLandscapeMode, setIsLandscapeMode] = useState(false);
+  // v0.9.9.8.2: ocultar los botones flotantes del visor (lectura limpia).
+  const [areControlsHidden, setAreControlsHidden] = useState(false);
 
   /** Bloquea el giro en horizontal (Android: requiere fullscreen activo). */
   const lockLandscape = async (): Promise<boolean> => {
@@ -319,6 +323,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       releaseOrientation();
       setIsLandscapeMode(false);
     }
+    setAreControlsHidden(false);
     setIsImmersive(false);
     onImmersiveChange?.(false);
   };
@@ -340,12 +345,21 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   useEffect(() => () => onImmersiveChange?.(false), []);
 
   // Bloquear el scroll del fondo mientras el visor cubre todo.
+  // v0.9.9.8.2: además pintamos html/body de negro real mientras se lee —
+  // en fullscreen horizontal el navegador a veces deja una franja clara
+  // asomando por abajo (viewport tras el giro); con esto se ve negra.
   useEffect(() => {
     if (!isImmersive) return;
     const prev = document.body.style.overflow;
+    const prevBodyBg = document.body.style.backgroundColor;
+    const prevHtmlBg = document.documentElement.style.backgroundColor;
     document.body.style.overflow = 'hidden';
+    document.body.style.backgroundColor = '#09090b';
+    document.documentElement.style.backgroundColor = '#09090b';
     return () => {
       document.body.style.overflow = prev;
+      document.body.style.backgroundColor = prevBodyBg;
+      document.documentElement.style.backgroundColor = prevHtmlBg;
     };
   }, [isImmersive]);
 
@@ -570,45 +584,64 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
           Hermano del div raíz (no hijo) para que `fixed` sea siempre respecto
           al viewport y no lo rompa la animación fade-in del contenedor. */}
       {isImmersive && chapter.pdf_url && (
-        <div className="fixed inset-0 z-[70] bg-zinc-950">
+        <div className="fixed -inset-1.5 z-[70] bg-zinc-950">
           <iframe
             src={chapter.pdf_url}
             title={`Leer ${chapter.title} a pantalla completa`}
             className="absolute inset-0 w-full h-full"
             allow="autoplay"
           />
-          {/* Botones flotantes sobre el visor: marcador y salir */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openPageModal}
-              aria-label="Guardar marcador de página"
-              className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
-              title="Guardar marcador de página"
-            >
-              <Bookmark className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={exitImmersive}
-              aria-label="Salir de pantalla completa"
-              className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
-              title="Salir de pantalla completa (Esc)"
-            >
-              <Minimize2 className="w-5 h-5" />
-            </button>
-            {/* v0.9.9.8: salir del modo horizontal con un toque */}
-            {isLandscapeMode && (
-              <button
-                type="button"
-                onClick={exitImmersive}
-                aria-label="Volver a vertical"
-                className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
-                title="Volver a vertical"
-              >
-                <RotateCw className="w-5 h-5" />
-              </button>
+          {/* Botones flotantes sobre el visor: marcador, salir y giro.
+              v0.9.9.8.2: el ojita SIEMPRE visible — los demás botones se
+              pueden ocultar para leer sin nada encima. */}
+          <div
+            className={`absolute top-3 right-3 flex items-center gap-2 transition-opacity ${
+              areControlsHidden ? 'opacity-40 hover:opacity-100' : ''
+            }`}
+          >
+            {!areControlsHidden && (
+              <>
+                <button
+                  type="button"
+                  onClick={openPageModal}
+                  aria-label="Guardar marcador de página"
+                  className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
+                  title="Guardar marcador de página"
+                >
+                  <Bookmark className="w-5 h-5" />
+                </button>
+                {/* v0.9.9.8: salir del modo horizontal con un toque */}
+                {isLandscapeMode && (
+                  <button
+                    type="button"
+                    onClick={exitImmersive}
+                    aria-label="Volver a vertical"
+                    className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-amber-300 hover:text-amber-200 backdrop-blur transition-colors shadow-lg"
+                    title="Volver a vertical"
+                  >
+                    <RotateCw className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={exitImmersive}
+                  aria-label="Salir de pantalla completa"
+                  className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
+                  title="Salir de pantalla completa (Esc)"
+                >
+                  <Minimize2 className="w-5 h-5" />
+                </button>
+              </>
             )}
+            <button
+              type="button"
+              onClick={() => setAreControlsHidden((v) => !v)}
+              aria-label={areControlsHidden ? 'Mostrar controles' : 'Ocultar controles'}
+              className="p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
+              title={areControlsHidden ? 'Mostrar controles' : 'Ocultar controles'}
+            >
+              {areControlsHidden ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       )}
