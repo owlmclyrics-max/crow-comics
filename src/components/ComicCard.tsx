@@ -4,6 +4,7 @@ import { BookOpen, User, Feather } from 'lucide-react';
 import { FavoriteButton } from './FavoriteButton';
 import { FollowButton } from './FollowButton';
 import { useFollows } from '../context/FollowsContext';
+import { useComics } from '../context/ComicsContext';
 import { newChaptersOf } from '../lib/follows';
 import { proxyImageUrl } from '../lib/imageUrl';
 
@@ -15,6 +16,9 @@ interface ComicCardProps {
 export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
   const chapterCount = comic.chapters?.length || 0;
   const { follows } = useFollows();
+  // v0.9.9.9: etiqueta automática (Novedad/Popular/Trending/Éxitos según
+  // lecturas reales; cae al tag estático del admin si no hay datos).
+  const { getComicTag } = useComics();
   // Pendiente: capítulos subidos después de la última visita (solo seguidos).
   const pending = newChaptersOf(comic, follows.get(comic.id)).length;
 
@@ -49,13 +53,17 @@ export const ComicCard: React.FC<ComicCardProps> = ({ comic, onClick }) => {
             ensuciar el arte de la portada (antes la cubría entera). */}
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
 
-        {/* Badge de Editorial (única insignia arriba a la izquierda) */}
-        <div className="absolute top-2.5 left-2.5">
+        {/* Badges (arriba a la izquierda): Editorial + etiqueta automática
+            v0.9.9.9 (Novedad/Popular/Trending/Éxitos según lecturas reales). */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
           {comic.publisher && (
             <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-bg/90 backdrop-blur-md text-amber-400 border border-amber-500/30">
               {comic.publisher}
             </span>
           )}
+          <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded bg-accent text-onaccent shadow-md shadow-accent/25">
+            {getComicTag(comic)}
+          </span>
         </div>
 
         {/* Pendientes + Campanita + Corazón (esquina sup. derecha) */}

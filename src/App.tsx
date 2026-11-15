@@ -198,7 +198,7 @@ const viewToHash = (state: CrowViewState, comics: Comic[] = []): string => {
 };
 
 export const App: React.FC = () => {
-  const { comics, loading, error, saveComic, deleteComic } = useComics();
+  const { comics, loading, error, saveComic, deleteComic, readCounts } = useComics();
   const { user, profile, refreshProfile } = useAuth();
   const { characters, loading: charactersLoading } = useCharactersContext();
 
@@ -392,13 +392,14 @@ export const App: React.FC = () => {
   }, [selectedComic, selectedChapterId]);
 
   // Filtrado para la cuadrícula del feed de Inicio.
-  // Las categorías "Novedad", "Éxitos" y "Más Descargados" son COMPORTAMIENTO
-  // (fechas / rating / contador), no etiquetas estáticas:
+  // v0.9.9.9: las categorías son COMPORTAMIENTO (datos reales de lectura vía
+  // RPC get_public_read_counts), no etiquetas estáticas:
   //  - Novedad → cómics recién creados (created_at), sin tocar el tag a mano.
-  //  - Éxitos → mejor calificados.
+  //  - Popular → más lecturas de los últimos 7 días.
+  //  - Trending → más lecturas de los últimos 30 días.
+  //  - Éxitos → más lecturas de siempre (fallback: mejor calificados).
   //  - Más Descargados → mayor contador de descargas.
-  //  - Popular / Trending → siguen la etiqueta del cómic.
-  // Si una categoría comportamental queda vacía (sin datos), cae al tag.
+  // Si una categoría queda vacía (sin datos suficientes), cae al tag estático.
   const filteredHomeComics = useMemo(() => {
     if (selectedCategory === 'All') return comics;
 
@@ -411,11 +412,30 @@ export const App: React.FC = () => {
       return recent.length > 0 ? recent : byTag;
     }
 
+    if (selectedCategory === 'Popular') {
+      const top = comics
+        .filter((c) => (readCounts[c.id]?.weekly_reads ?? 0) > 0)
+        .sort((a, b) => (readCounts[b.id]?.weekly_reads ?? 0) - (readCounts[a.id]?.weekly_reads ?? 0));
+      return top.length > 0 ? top : byTag;
+    }
+
+    if (selectedCategory === 'Trending') {
+      const top = comics
+        .filter((c) => (readCounts[c.id]?.monthly_reads ?? 0) > 0)
+        .sort((a, b) => (readCounts[b.id]?.monthly_reads ?? 0) - (readCounts[a.id]?.monthly_reads ?? 0));
+      return top.length > 0 ? top : byTag;
+    }
+
     if (selectedCategory === 'Éxitos') {
-      const top = [...comics]
+      const top = comics
+        .filter((c) => (readCounts[c.id]?.total_reads ?? 0) > 0)
+        .sort((a, b) => (readCounts[b.id]?.total_reads ?? 0) - (readCounts[a.id]?.total_reads ?? 0));
+      if (top.length > 0) return top;
+      // Sin lecturas registradas: mejor calificados (comportamiento previo).
+      const rated = [...comics]
         .filter((c) => (c.average_rating ?? 0) > 0)
         .sort((a, b) => (b.average_rating ?? 0) - (a.average_rating ?? 0));
-      return top.length > 0 ? top : byTag;
+      return rated.length > 0 ? rated : byTag;
     }
 
     if (selectedCategory === 'Más Descargados') {
@@ -426,7 +446,7 @@ export const App: React.FC = () => {
     }
 
     return byTag;
-  }, [comics, selectedCategory]);
+  }, [comics, selectedCategory, readCounts]);
 
   const handleOpenComicDetail = (comic: Comic) => {
     setSelectedComicId(comic.id);

@@ -135,7 +135,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   onImmersiveChange
 }) => {
   const { canManageContent, user } = useAuth();
-  const { comics, reportBrokenLink } = useComics();
+  const { comics, reportBrokenLink, getComicTag } = useComics();
 
   // ── SPRINT 2: guardado automático de progreso de lectura ──
   // Al abrir un tomo, se registra (upsert) en reading_progress para
@@ -721,7 +721,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                   {chapter.comic_publisher}
                 </span>
                 <span className="px-3 py-1 text-xs font-semibold uppercase rounded-lg bg-surface/90 text-accent border border-accent/30">
-                  {chapter.comic_tag}
+                  {getComicTag({ id: chapter.comic_id, tag: chapter.comic_tag })}
                 </span>
                 <span className={`px-3 py-1 text-xs font-medium rounded-lg border ${
                   chapter.comic_status === 'En curso'

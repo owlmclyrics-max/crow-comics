@@ -6,6 +6,7 @@ import { filterComicsByQuery, matchesCharacterSearch } from '../lib/comicUtils';
 import { searchProfiles } from '../lib/profiles';
 import { proxyImageUrl } from '../lib/imageUrl';
 import { useAuth } from '../context/AuthContext';
+import { useComics } from '../context/ComicsContext';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -47,6 +48,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const { canManageContent } = useAuth();
+  // v0.9.9.9: etiqueta automática (calculada con lecturas reales).
+  const { getComicTag } = useComics();
 
   // v0.9: al público solo aparecen personajes con foto y rol elegido
   const visibleCharacters = useMemo(
@@ -357,7 +360,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                         <p className="truncate text-[11px] text-mute">
                           <span className="font-semibold text-amber-400">{comic.publisher}</span>
                           {' · '}
-                          {comic.tag}
+                          {getComicTag(comic)}
                         </p>
                       </div>
                       <BookOpen className="h-4 w-4 shrink-0 text-faint" />

@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Chapter, Comic, Comment, LinkReport } from '../types/comic';
+import type { Chapter, Comic, ComicTag, Comment, LinkReport } from '../types/comic';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { INITIAL_MOCK_COMICS } from '../data/mockComics';
 import { LOCAL_KEYS, readLocalJSON, writeLocalJSON } from '../lib/localStore';
+import {
+  computeAutoTags,
+  fetchReadCounts,
+  type AutoTagByComic,
+  type ReadCountsByComic,
+  type TagSource,
+} from '../lib/comicTags';
 
 export interface SaveResult {
   success: boolean;
@@ -55,6 +62,11 @@ export const useComicsData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const comicsRef = useRef<Comic[]>([]);
+  // v0.9.9.9: etiquetas automáticas calculadas con lecturas reales.
+  // Si la RPC no está disponible (SQL sin ejecutar), queda vacío y TODO
+  // cae al tag estático del admin — nunca rompe ni inventa datos.
+  const [autoTags, setAutoTags] = useState<AutoTagByComic>({});
+  const [readCounts, setReadCounts] = useState<ReadCountsByComic>({});
 
   const loadFallback = useCallback(() => {
     const cached = readLocalJSON<Comic[] | null>(LOCAL_KEYS.comics, null);
@@ -79,9 +91,12 @@ export const useComicsData = () => {
     }
 
     try {
-      const [comicsResult, chaptersResult] = await Promise.all([
+      const [comicsResult, chaptersResult, readCounts] = await Promise.all([
         supabase.from('comics').select('*').order('created_at', { ascending: false }),
         supabase.from('chapters').select('*').order('chapter_number', { ascending: true }),
+        // Conteos agregados de lectura (RPC SECURITY DEFINER). Tolerante a
+        // fallos: devuelve {} si la función aún no existe en la base.
+        fetchReadCounts(),
       ]);
 
       if (comicsResult.error) throw comicsResult.error;
@@ -96,6 +111,8 @@ export const useComicsData = () => {
 
       comicsRef.current = combined;
       setComics(combined);
+      setReadCounts(readCounts);
+      setAutoTags(computeAutoTags(combined, readCounts));
     } catch (err: unknown) {
       setError(getErrorMessage(err));
       loadFallback();
@@ -530,6 +547,14 @@ export const useComicsData = () => {
     [],
   );
 
+  // v0.9.9.9: helper único para TODAS las pantallas. Devuelve la etiqueta
+  // automática si hay ganador calculado; si no, el tag estático del admin.
+  // Acepta un Comic completo o un tomo (comic_id + comic_tag).
+  const getComicTag = useCallback(
+    (source: TagSource): ComicTag => autoTags[source.id] ?? source.tag,
+    [autoTags],
+  );
+
   return {
     comics,
     loading,
@@ -543,5 +568,7 @@ export const useComicsData = () => {
     getLinkReports,
     updateLinkReportStatus,
     refreshComics: fetchComics,
+    getComicTag,
+    readCounts,
   };
 };

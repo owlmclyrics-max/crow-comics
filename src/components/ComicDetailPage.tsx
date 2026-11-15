@@ -48,7 +48,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
 }) => {
   const { canManageContent, user } = useAuth();
   const { follows, markSeen } = useFollows();
-  const { comics } = useComics();
+  const { comics, getComicTag } = useComics();
 
   // Estado para la calificación del usuario
   const [userRating, setUserRating] = useState(0);
@@ -238,7 +238,7 @@ export const ComicDetailPage: React.FC<ComicDetailPageProps> = ({
                 </span>
               )}
               <span className="px-3 py-1 text-xs font-semibold uppercase rounded-lg bg-surface/90 text-accent border border-accent/30">
-                {comic.tag}
+                {getComicTag(comic)}
               </span>
               <span
                 className={`px-3 py-1 text-xs font-medium rounded-lg border ${

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Comic, Chapter, ChapterWithComic } from '../types/comic';
 import { toChapterWithComic } from '../lib/comicUtils';
 import { proxyImageUrl } from '../lib/imageUrl';
+import { useComics } from '../context/ComicsContext';
 import {
   Sparkles,
   ChevronLeft,
@@ -27,6 +28,8 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
   onSelectComic,
   onExplorePublishers
 }) => {
+  // v0.9.9.9: etiqueta automática (calculada con lecturas reales).
+  const { getComicTag } = useComics();
   // Crear lista plana de capítulos con información del cómic.
   // REGLAS:
   //  - Recencia = fecha más confiable disponible (release_date > created_at).
@@ -298,7 +301,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
           </span>
           {current.comic_tag && (
             <span className="px-2.5 py-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
-              {current.comic_tag}
+              {getComicTag({ id: current.comic_id, tag: current.comic_tag })}
             </span>
           )}
         </div>
