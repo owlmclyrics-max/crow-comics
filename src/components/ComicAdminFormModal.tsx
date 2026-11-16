@@ -19,6 +19,7 @@ import {
   Eye,
   Sparkles,
   HelpCircle,
+  Globe,
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
 import { AdminHelpModal } from './AdminHelpModal';
@@ -26,9 +27,12 @@ import { showToast } from './ui/Toast';
 import {
   buildDriveDownloadUrl,
   buildDrivePreviewUrl,
+  detectServer,
+  GENERIC_SERVER_NAMES,
   isDriveLink,
   parseDriveId,
 } from '../lib/driveLinks';
+import { fetchFandomInfo, isFandomWikiUrl } from '../lib/fandomImport';
 import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 
@@ -202,7 +206,7 @@ const ChapterEditor: React.FC<{
   onDrivePdf: (fileId: string) => void;
   /** v0.9.9.9.3: pegar un link de Drive en una fila de descarga lo
       convierte solo a descarga directa. */
-  onLinkUrl: (li: number, raw: string, currentName: string) => void;
+  onLinkUrl: (li: number, raw: string, link: ChapterLink) => void;
   onRemoveLink: (li: number) => void;
 }> = ({ chapter, onUpdate, onAddLink, onUpdateLink, onDrivePdf, onLinkUrl, onRemoveLink }) => (
   <div className="space-y-5">
@@ -307,7 +311,7 @@ const ChapterEditor: React.FC<{
               <input
                 type="text"
                 value={link.url}
-                onChange={e => onLinkUrl(li, e.target.value, link.name)}
+                onChange={e => onLinkUrl(li, e.target.value, link)}
                 placeholder="https://mega.nz/... o link de Drive"
                 className="col-span-6 px-2.5 py-1.5 rounded-lg bg-surface border border-line focus:border-accent text-xs text-ink outline-none"
               />
@@ -377,6 +381,10 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   // v0.9.9.9.1: ayuda para admins al alcance de un click dentro del form.
   const [isAdminHelpOpen, setIsAdminHelpOpen] = useState(false);
+  // v0.9.9.9.4: importar datos desde Fandom (pegar link → título/portada/
+  // sinopsis solos, sin pisar lo que ya está escrito).
+  const [fandomUrl, setFandomUrl] = useState('');
+  const [importingFandom, setImportingFandom] = useState(false);
 
   const steps = [
     { id: 'info',     label: 'Editar Cómic',    icon: BookOpen, desc: 'Info + pack completo' },
@@ -468,20 +476,134 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
 
   /** En una fila de descarga, un link de compartir de Drive se convierte
       solo en descarga directa (y de 'Mega' default pasa a llamarse 'Drive'). */
-  const handleChapterLinkUrl = (ci: number, li: number, raw: string, currentName: string) => {
+  const handleChapterLinkUrl = (ci: number, li: number, raw: string, current: ChapterLink) => {
     const fileId = parseDriveId(raw);
     if (fileId && isDriveLink(raw) && !raw.includes('export=download')) {
       updateChapterLink(ci, li, 'url', buildDriveDownloadUrl(fileId));
-      if (currentName === 'Mega') updateChapterLink(ci, li, 'name', 'Drive');
+      if (GENERIC_SERVER_NAMES.includes(current.name.toLowerCase())) {
+        updateChapterLink(ci, li, 'name', 'Drive');
+        updateChapterLink(ci, li, 'type', 'cloud');
+      }
       showToast('Convertido a descarga directa de Drive ✅', 'success');
+      return;
+    }
+    // v0.9.9.9.4: auto-detección del servidor (Mega/Mediafire/1Fichier/Drive):
+    // pone el nombre y el tipo solos, salvo que el nombre sea uno a mano.
+    const server = detectServer(raw);
+    if (server) {
+      updateChapterLink(ci, li, 'url', raw);
+      if (GENERIC_SERVER_NAMES.includes(current.name.toLowerCase())) {
+        updateChapterLink(ci, li, 'name', server.name);
+      }
+      updateChapterLink(ci, li, 'type', server.type as ChapterLink['type']);
       return;
     }
     updateChapterLink(ci, li, 'url', raw);
   };
 
+  /** Misma detección para los links del Pack Completo. */
+  const handlePackLinkUrl = (i: number, raw: string, currentName: string) => {
+    const fileId = parseDriveId(raw);
+    if (fileId && isDriveLink(raw) && !raw.includes('export=download')) {
+      updatePackLink(i, 'url', buildDriveDownloadUrl(fileId));
+      if (GENERIC_SERVER_NAMES.includes(currentName.toLowerCase())) {
+        updatePackLink(i, 'name', 'Drive');
+        updatePackLink(i, 'type', 'cloud');
+      }
+      showToast('Convertido a descarga directa de Drive ✅', 'success');
+      return;
+    }
+    const server = detectServer(raw);
+    if (server) {
+      updatePackLink(i, 'url', raw);
+      if (GENERIC_SERVER_NAMES.includes(currentName.toLowerCase())) {
+        updatePackLink(i, 'name', server.name);
+      }
+      updatePackLink(i, 'type', server.type as ChapterLink['type']);
+      return;
+    }
+    updatePackLink(i, 'url', raw);
+  };
+
   /* ══════ RENDER PASO 1: INFO ══════ */
+
+  /** v0.9.9.9.4: importa título/portada/sinopsis desde una página de Fandom.
+      SOLO rellena los campos vacíos — jamás pisa lo que el admin ya escribió. */
+  const handleFandomImport = async () => {
+    const url = fandomUrl.trim();
+    if (!isFandomWikiUrl(url)) {
+      showToast('Pegá un link de wiki de Fandom (…fandom.com/wiki/…)', 'info');
+      return;
+    }
+    setImportingFandom(true);
+    try {
+      const info = await fetchFandomInfo(url);
+      if (!info) {
+        showToast('No se pudo leer la página de Fandom', 'error');
+        return;
+      }
+      const filled: string[] = [];
+      if (info.title && !title.trim()) {
+        setTitle(info.title);
+        filled.push('título');
+      }
+      if (info.image && !coverUrl.trim()) {
+        setCoverUrl(info.image);
+        filled.push('portada');
+      }
+      if (info.description && !synopsis.trim()) {
+        setSynopsis(info.description);
+        filled.push('sinopsis');
+      }
+      showToast(
+        filled.length > 0
+          ? `Importado de Fandom: ${filled.join(', ')} ✅`
+          : 'Los datos ya estaban completos — no pisé nada',
+        filled.length > 0 ? 'success' : 'info',
+      );
+    } finally {
+      setImportingFandom(false);
+    }
+  };
+
+  const renderFandomImport = () => (
+    <div className="rounded-xl border border-accent/30 bg-accent/5 p-3.5 space-y-2">
+      <div className="flex items-center gap-2">
+        <Globe className="w-3.5 h-3.5 text-accent" />
+        <span className="text-[11px] font-bold text-accent uppercase tracking-wide">
+          Importar desde Fandom
+        </span>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={fandomUrl}
+          onChange={e => setFandomUrl(e.target.value)}
+          placeholder="https://dc.fandom.com/wiki/Red_Lanterns_Vol_1_1"
+          className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint"
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          onClick={() => void handleFandomImport()}
+          disabled={importingFandom || !isFandomWikiUrl(fandomUrl)}
+          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent font-bold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {importingFandom ? 'Importando…' : 'Importar'}
+        </button>
+      </div>
+      <p className="text-[10px] text-faint">
+        Pegá el link de la página del cómic en Fandom: rellena título, portada y sinopsis solos.
+        Solo completa los campos vacíos — lo que ya escribiste no se toca.
+      </p>
+    </div>
+  );
+
   const renderInfo = () => (
     <div className="space-y-7">
+      {renderFandomImport()}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Título *">
           <input type="text" value={title} onChange={e => setTitle(e.target.value)}
@@ -594,7 +716,7 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
             <div key={link.id} className="flex gap-2 items-center">
               <input type="text" value={link.name} onChange={e => updatePackLink(i, 'name', e.target.value)}
                 placeholder="Servidor" className="flex-1 px-3 py-1.5 rounded-xl bg-bg border border-line focus:border-amber-500 text-sm text-ink outline-none" />
-              <input type="text" value={link.url} onChange={e => updatePackLink(i, 'url', e.target.value)}
+              <input type="text" value={link.url} onChange={e => handlePackLinkUrl(i, e.target.value, link.name)}
                 placeholder="URL del pack" className="flex-[2] px-3 py-1.5 rounded-xl bg-bg border border-line focus:border-amber-500 text-sm text-ink outline-none" />
               <button type="button" onClick={() => removePackLink(i)}
                 className="p-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent2 border border-accent/30 transition-colors">
@@ -714,8 +836,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
             chapter={selectedChapter}
             onUpdate={(f, v) => updateChapter(selectedChapterIdx, f, v)}
             onDrivePdf={fileId => handleDrivePdfLink(selectedChapterIdx, fileId)}
-            onLinkUrl={(li, raw, currentName) =>
-              handleChapterLinkUrl(selectedChapterIdx, li, raw, currentName)
+            onLinkUrl={(li, raw, link) =>
+              handleChapterLinkUrl(selectedChapterIdx, li, raw, link)
             }
             onAddLink={() => addChapterLink(selectedChapterIdx)}
             onUpdateLink={(li, f, v) => updateChapterLink(selectedChapterIdx, li, f, v)}
