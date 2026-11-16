@@ -1,16 +1,20 @@
 // ============================================================================
-// v0.9.9.9.4: Importador de datos desde Fandom.
+// v0.9.9.9.5: Importador de datos desde Fandom (vía API oficial).
 //
 // El formulario de cómics pega un link de una página de cómic de Fandom
 // (p. ej. https://dc.fandom.com/wiki/Red_Lanterns_Vol_1_1) y esta function
-// le lee las meta-tags Open Graph (título, portada, sinopsis) para que el
-// admin no tenga que copiar campo por campo.
+// devuelve { title, image, description, writer, artist }.
+//
+// v0.9.9.9.5: el scraping del HTML recibía 403 (Fandom bloquea IPs de
+// datacenter). Ahora usamos api.php, la API MediaWiki oficial de Fandom:
+//   1) action=query&prop=pageimages  → título + portada original
+//   2) action=parse&prop=wikitext&section=0 → la plantilla de cómic trae
+//      Writer1_1, Penciler1_1 y Synopsis1 estructurados → writer/artist/desc
 //
 // Solo se permiten páginas de *.fandom.com/wiki/ para que nadie use /fandom
-// como proxy abierto. Devuelve JSON con { title, image, description }.
+// como proxy abierto.
 // ============================================================================
 
-// UA de navegador: Fandom rechaza clientes "raros" (curl, bots).
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -25,31 +29,58 @@ const isAllowedFandomUrl = (parsed) =>
   (parsed.hostname === 'fandom.com' || parsed.hostname.endsWith('.fandom.com')) &&
   parsed.pathname.startsWith('/wiki/');
 
-/** Extrae el content de una meta property/content (en cualquiera de los dos
-    órdenes de atributos) de un HTML. */
-const pickMeta = (html, prop) => {
-  const patterns = [
-    new RegExp(`<meta[^>]+property=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${prop}["']`, 'i'),
-    new RegExp(`<meta[^>]+name=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'),
-  ];
-  for (const re of patterns) {
-    const m = html.match(re);
-    if (m && m[1]) return m[1];
+/** GET con UA de navegador + reintentos cortos (Fandom a veces tira 429). */
+const fetchApi = async (url) => {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 350 * attempt));
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'user-agent': BROWSER_UA,
+          accept: 'application/json',
+          referer: 'https://crow-comics.pages.dev/',
+        },
+      });
+      if (res.ok) return res;
+      if (res.status !== 429 && res.status < 500) return res; // 4xx definitivo
+    } catch {
+      // reintenta
+    }
   }
   return undefined;
 };
 
-// Las meta-tags vienen con entidades HTML básicas (&amp; &#39; etc.).
-const decodeEntities = (text) =>
-  text
-    .replace(/&amp;/g, '&')
+/** Quita la sintaxis wiki de un valor de plantilla: [[enlaces]], {{plantillas}},
+    comentarios y referencias dejan solo el texto legible. */
+const cleanWikitext = (raw) =>
+  raw
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<nowiki>[\s\S]*?<\/nowiki>/gi, '')
+    .replace(/<ref[^>]*\/>/gi, '')
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '')
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/g, '$1') // [[a|b]] → b
+    .replace(/\[\[([^\]]+)\]\]/g, '$1')               // [[a]] → a
+    .replace(/\{\{[^{}]*\}\}/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;|&#x0?27;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ');
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Primer valor de una lista de campos de plantilla tipo "| Writer1_1 = X".
+    Acepta variantes de número (Writer1_1, Writer2_1, Penciler1_1…). */
+const firstTemplateValue = (wikitext, fieldRegexes) => {
+  for (const re of fieldRegexes) {
+    const m = wikitext.match(re);
+    if (m && m[1]) {
+      const cleaned = cleanWikitext(m[1]);
+      if (cleaned) return cleaned;
+    }
+  }
+  return undefined;
+};
 
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
@@ -66,31 +97,73 @@ export const onRequestGet = async ({ request }) => {
     return jsonResponse(400, 'Solo se permiten paginas de wiki de Fandom');
   }
 
-  let html;
+  const title = decodeURIComponent(parsed.pathname.replace(/^\/wiki\//, '')).replace(/_/g, ' ');
+  const apiBase = `${parsed.protocol}//${parsed.hostname}/api.php`;
+
+  // 1) Título + portada original (pageimages)
+  let image;
+  const metaUrl =
+    `${apiBase}?action=query&format=json&prop=pageimages` +
+    `&piprop=original&titles=${encodeURIComponent(parsed.pathname.replace(/^\/wiki\//, ''))}`;
+  const metaRes = await fetchApi(metaUrl);
+  if (!metaRes || !metaRes.ok) {
+    return jsonResponse(metaRes?.status ?? 502, 'Fandom no respondio a la API');
+  }
   try {
-    const res = await fetch(parsed.toString(), {
-      headers: {
-        'user-agent': BROWSER_UA,
-        referer: 'https://crow-comics.pages.dev/',
-        accept: 'text/html,application/xhtml+xml',
-      },
-      redirect: 'follow',
-    });
-    if (!res.ok) return jsonResponse(res.status, `Fandom respondio ${res.status}`);
-    html = await res.text();
+    const metaJson = await metaRes.json();
+    const pages = metaJson?.query?.pages ?? {};
+    for (const page of Object.values(pages)) {
+      const original = page?.original?.source || page?.thumbnail?.source;
+      if (original) {
+        image = original;
+        break;
+      }
+    }
   } catch {
-    return jsonResponse(502, 'No se pudo traer la pagina de Fandom');
+    // seguimos sin imagen — el admin la puede pegar a mano
   }
 
-  const image = pickMeta(html, 'og:image') || pickMeta(html, 'twitter:image');
-  // og:image suele traer una versión reducida (scale-to-width-down); si hay
-  // variantes, preferimos la original quitando ese sufijo cuando existe.
-  const cleanedImage = image ? image.replace(/\/scale-to-width-down\/\d+/, '') : undefined;
+  // 2) Plantilla del tomo (wikitexto de la sección 0): writer, artist, synopsis
+  let description;
+  let writer;
+  let artist;
+  const parseUrl =
+    `${apiBase}?action=parse&format=json&prop=wikitext&section=0&page=` +
+    encodeURIComponent(parsed.pathname.replace(/^\/wiki\//, ''));
+  const parseRes = await fetchApi(parseUrl);
+  if (parseRes && parseRes.ok) {
+    try {
+      const parseJson = await parseRes.json();
+      const wikitext = parseJson?.parse?.wikitext?.['*'] || '';
+      if (wikitext) {
+        description = firstTemplateValue(wikitext, [
+          /\|\s*Synopsis1\s*=\s*([^\n]+)/i,
+          /\|\s*StorySynopsis\s*=\s*([^\n]+)/i,
+          /\|\s*Synopsis\s*=\s*([^\n]+)/i,
+        ]);
+        writer = firstTemplateValue(wikitext, [
+          /\|\s*Writer1_1\s*=\s*([^\n]+)/i,
+          /\|\s*Writer\d+_\d+\s*=\s*([^\n]+)/i,
+          /\|\s*Writer\s*=\s*([^\n]+)/i,
+        ]);
+        artist = firstTemplateValue(wikitext, [
+          /\|\s*Penciler1_1\s*=\s*([^\n]+)/i,
+          /\|\s*Artist1_1\s*=\s*([^\n]+)/i,
+          /\|\s*Penciler\d+_\d+\s*=\s*([^\n]+)/i,
+          /\|\s*Artist\d+_\d+\s*=\s*([^\n]+)/i,
+        ]);
+      }
+    } catch {
+      // sin plantilla parseable — campos vacíos, el admin los completa
+    }
+  }
 
   const data = {
-    title: decodeEntities(pickMeta(html, 'og:title') || ''),
-    image: cleanedImage,
-    description: decodeEntities(pickMeta(html, 'og:description') || ''),
+    title,
+    image,
+    description,
+    writer,
+    artist,
   };
 
   return new Response(JSON.stringify(data), {

@@ -7,6 +7,8 @@ export interface FandomInfo {
   title?: string;
   image?: string;
   description?: string;
+  writer?: string;
+  artist?: string;
 }
 
 export const isFandomWikiUrl = (url: string): boolean =>

@@ -555,6 +555,14 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         setSynopsis(info.description);
         filled.push('sinopsis');
       }
+      if (info.writer && !writer.trim()) {
+        setWriter(info.writer);
+        filled.push('guionista');
+      }
+      if (info.artist && !artist.trim()) {
+        setArtist(info.artist);
+        filled.push('artista');
+      }
       showToast(
         filled.length > 0
           ? `Importado de Fandom: ${filled.join(', ')} ✅`
