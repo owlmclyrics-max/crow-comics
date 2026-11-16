@@ -14,6 +14,8 @@ export interface PageObject {
   size: number; // bytes
   chapterId: string;
   uploadId: string;
+  /** true si el tomo usa ESE upload (las que ve el visor). */
+  active: boolean;
 }
 
 export interface ChapterUsage {
@@ -77,6 +79,7 @@ export const listPageObjects = async (): Promise<PageObject[]> => {
             size: entry.metadata.size,
             chapterId: match[1],
             uploadId: match[2],
+            active: false, // buildUsage lo marca según lo que usa cada tomo
           });
         }
       }
@@ -141,6 +144,7 @@ export const buildUsage = (
   for (const obj of objects) {
     const usage = ensureChapter(obj.chapterId);
     const isActive = uploadActive.has(`${obj.chapterId}/${obj.uploadId}`);
+    obj.active = isActive;
     if (isActive) {
       usage.numPages += 1;
       usage.bytes += obj.size;
@@ -253,4 +257,29 @@ export const deleteChapterPages = async (chapterId: string): Promise<void> => {
     .update({ pages: null })
     .eq('id', chapterId);
   if (dbError) throw new Error(`No se pudo actualizar el tomo: ${dbError.message}`);
+};
+
+/**
+ * Limpia del bucket SOLO las páginas sin usar (huérfanas) — opcionalmente
+ * de un solo tomo. Las páginas activas (las que muestra el visor) quedan
+ * intactas. Devuelve cuántos objetos borró.
+ */
+export const deleteOrphanPages = async (
+  usage: StorageUsage,
+  chapterId?: string,
+): Promise<number> => {
+  if (!supabase) throw new Error('Supabase no está configurado');
+  const paths = usage.objects
+    .filter((o) => !o.active && (!chapterId || o.chapterId === chapterId))
+    .map((o) => o.path);
+  if (paths.length === 0) return 0;
+
+  const storage = supabase.storage.from('pages');
+  // Borrado por tandas de 100 (límite sano de la API).
+  for (let i = 0; i < paths.length; i += 100) {
+    const chunk = paths.slice(i, i + 100);
+    const { error } = await storage.remove(chunk);
+    if (error) throw new Error(`No se pudo borrar del bucket: ${error.message}`);
+  }
+  return paths.length;
 };
