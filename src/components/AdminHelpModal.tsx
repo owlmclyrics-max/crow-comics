@@ -27,22 +27,13 @@ import {
 } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { showToast } from './ui/Toast';
+import {
+  buildDriveDownloadUrl,
+  buildDrivePreviewUrl,
+  parseDriveId,
+} from '../lib/driveLinks';
 
 type HelpTab = 'drive' | 'guia';
-
-/** Extrae el FILE_ID de cualquier variante de link de Google Drive:
-    /file/d/ID/view, open?id=ID, uc?export=download&id=ID, /d/ID. */
-const parseDriveId = (input: string): string | null => {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  let m = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
-  if (m) return m[1];
-  m = trimmed.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-  if (m) return m[1];
-  m = trimmed.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-  if (m) return m[1];
-  return null;
-};
 
 const copyToClipboard = async (text: string, label: string) => {
   try {
@@ -110,8 +101,8 @@ export const AdminHelpModal: React.FC<AdminHelpModalProps> = ({ isOpen, onClose 
   const [rawLink, setRawLink] = useState('');
 
   const fileId = useMemo(() => parseDriveId(rawLink), [rawLink]);
-  const previewUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : '';
-  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : '';
+  const previewUrl = fileId ? buildDrivePreviewUrl(fileId) : '';
+  const downloadUrl = fileId ? buildDriveDownloadUrl(fileId) : '';
 
   const tabButton = (value: HelpTab, label: string, icon: React.ReactNode) => (
     <button
@@ -241,10 +232,11 @@ export const AdminHelpModal: React.FC<AdminHelpModalProps> = ({ isOpen, onClose 
               <GuideStep step="2" title="Subí el PDF del tomo a Drive">
                 <p>
                   Un PDF por tomo. Compartilo como{" "}
-                  <strong className="text-ink">"Cualquiera con el link"</strong> (Lector) y pasá el
-                  link por la pestaña <strong className="text-ink">"Links de Drive"</strong> de
-                  arriba: te da el link para leer online y el de descarga directa, listos para
-                  copiar.
+                  <strong className="text-ink">"Cualquiera con el link"</strong> (Lector) y listo —{" "}
+                  <strong className="text-accent">el formulario hace el resto solo</strong>: cuando
+                  pegues el link en "Leer Online", se convierte automáticamente y agrega el link de
+                  descarga directa. Si preferís, también podés usar la pestaña{" "}
+                  <strong className="text-ink">"Links de Drive"</strong> de arriba.
                 </p>
               </GuideStep>
 
@@ -253,12 +245,13 @@ export const AdminHelpModal: React.FC<AdminHelpModalProps> = ({ isOpen, onClose 
                   Tocá <strong className="text-ink">"+ Agregar tomo"</strong>: número y título,
                   portada propia si querés (si la dejás vacía usa la de la serie), cantidad de
                   páginas, y en{" "}
-                  <strong className="text-ink">"Leer Online — PDF"</strong> pegá el link /preview
-                  del conversor.
+                  <strong className="text-ink">"Leer Online — PDF"</strong> pegá el link de
+                  compartir de Drive tal cual — se convierte solo.
                 </p>
                 <p className="text-faint">
-                  En "Links de descarga" agregá uno por fila (Mega, Mediafire, 1Fichier…) con su
-                  tipo. Los links vacíos se ignoran al guardar.
+                  En "Links de descarga" agregá uno por fila (Mega, Mediafire, 1Fichier…). Si pegás
+                  un link de Drive ahí también se convierte en descarga directa solo. Los links
+                  vacíos se ignoran al guardar.
                 </p>
               </GuideStep>
 

@@ -22,6 +22,13 @@ import {
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
 import { AdminHelpModal } from './AdminHelpModal';
+import { showToast } from './ui/Toast';
+import {
+  buildDriveDownloadUrl,
+  buildDrivePreviewUrl,
+  isDriveLink,
+  parseDriveId,
+} from '../lib/driveLinks';
 import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 
@@ -191,8 +198,13 @@ const ChapterEditor: React.FC<{
   onUpdate: <K extends keyof Chapter>(field: K, value: Chapter[K]) => void;
   onAddLink: () => void;
   onUpdateLink: <K extends keyof ChapterLink>(li: number, field: K, value: ChapterLink[K]) => void;
+  /** v0.9.9.9.3: pegar un link de Drive en "Leer Online" convierte solo. */
+  onDrivePdf: (fileId: string) => void;
+  /** v0.9.9.9.3: pegar un link de Drive en una fila de descarga lo
+      convierte solo a descarga directa. */
+  onLinkUrl: (li: number, raw: string, currentName: string) => void;
   onRemoveLink: (li: number) => void;
-}> = ({ chapter, onUpdate, onAddLink, onUpdateLink, onRemoveLink }) => (
+}> = ({ chapter, onUpdate, onAddLink, onUpdateLink, onDrivePdf, onLinkUrl, onRemoveLink }) => (
   <div className="space-y-5">
     {/* Datos básicos */}
     <div className="grid grid-cols-2 gap-3">
@@ -239,12 +251,19 @@ const ChapterEditor: React.FC<{
       <input
         type="text"
         value={chapter.pdf_url ?? ''}
-        onChange={e => onUpdate('pdf_url', e.target.value)}
-        placeholder="https://drive.google.com/file/d/FILE_ID/preview"
+        onChange={e => {
+          // v0.9.9.9.3: si es un link de Drive (compartir, /view o /preview)
+          // se convierte solo: lectura online + descarga directa de una vez.
+          const fileId = parseDriveId(e.target.value);
+          if (fileId) onDrivePdf(fileId);
+          else onUpdate('pdf_url', e.target.value);
+        }}
+        placeholder="Pegá el link de compartir de Drive (se convierte solo)"
         className="w-full px-3 py-2 rounded-xl bg-bg border border-sky-800/50 focus:border-sky-400 text-sm text-ink outline-none transition-colors placeholder:text-faint"
       />
       <p className="text-[10px] text-faint">
-        Google Drive: archivo → Compartir → cambia <code className="text-sky-500">/view</code> por <code className="text-sky-500">/preview</code>
+        Pegá el link de compartir de Drive tal cual ✨ — se convierte solo a lectura online y
+        agrega el link de descarga directa abajo.
       </p>
     </div>
 
@@ -288,8 +307,8 @@ const ChapterEditor: React.FC<{
               <input
                 type="text"
                 value={link.url}
-                onChange={e => onUpdateLink(li, 'url', e.target.value)}
-                placeholder="https://mega.nz/..."
+                onChange={e => onLinkUrl(li, e.target.value, link.name)}
+                placeholder="https://mega.nz/... o link de Drive"
                 className="col-span-6 px-2.5 py-1.5 rounded-lg bg-surface border border-line focus:border-accent text-xs text-ink outline-none"
               />
               <select
@@ -424,6 +443,41 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
     setChapters(c => c.map((ch, i) =>
       i === ci ? { ...ch, links: (ch.links ?? []).map((lk, j) => j === li ? { ...lk, [f]: v } : lk) } : ch,
     ));
+
+  /** v0.9.9.9.3: pegar un link de compartir de Drive en "Leer Online" hace
+      TODO solo — convierte a /preview para el visor Y agrega el link de
+      descarga directa (uc?export=download) a la lista, sin duplicarlo. */
+  const handleDrivePdfLink = (ci: number, fileId: string) => {
+    const preview = buildDrivePreviewUrl(fileId);
+    const download = buildDriveDownloadUrl(fileId);
+    setChapters(c => c.map((ch, i) => {
+      if (i !== ci) return ch;
+      const already = (ch.links ?? []).some(lk => lk.url === download);
+      const links = already
+        ? ch.links
+        : [...(ch.links ?? []), {
+            id: `l_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: 'Drive',
+            url: download,
+            type: 'cloud' as const,
+          }];
+      return { ...ch, pdf_url: preview, links };
+    }));
+    showToast('Drive detectado: lectura online + descarga directa listos ✅', 'success');
+  };
+
+  /** En una fila de descarga, un link de compartir de Drive se convierte
+      solo en descarga directa (y de 'Mega' default pasa a llamarse 'Drive'). */
+  const handleChapterLinkUrl = (ci: number, li: number, raw: string, currentName: string) => {
+    const fileId = parseDriveId(raw);
+    if (fileId && isDriveLink(raw) && !raw.includes('export=download')) {
+      updateChapterLink(ci, li, 'url', buildDriveDownloadUrl(fileId));
+      if (currentName === 'Mega') updateChapterLink(ci, li, 'name', 'Drive');
+      showToast('Convertido a descarga directa de Drive ✅', 'success');
+      return;
+    }
+    updateChapterLink(ci, li, 'url', raw);
+  };
 
   /* ══════ RENDER PASO 1: INFO ══════ */
   const renderInfo = () => (
@@ -659,6 +713,10 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           <ChapterEditor
             chapter={selectedChapter}
             onUpdate={(f, v) => updateChapter(selectedChapterIdx, f, v)}
+            onDrivePdf={fileId => handleDrivePdfLink(selectedChapterIdx, fileId)}
+            onLinkUrl={(li, raw, currentName) =>
+              handleChapterLinkUrl(selectedChapterIdx, li, raw, currentName)
+            }
             onAddLink={() => addChapterLink(selectedChapterIdx)}
             onUpdateLink={(li, f, v) => updateChapterLink(selectedChapterIdx, li, f, v)}
             onRemoveLink={li => removeChapterLink(selectedChapterIdx, li)}
