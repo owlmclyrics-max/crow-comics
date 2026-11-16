@@ -18,8 +18,10 @@ import {
   Check,
   Eye,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
+import { AdminHelpModal } from './AdminHelpModal';
 import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 
@@ -354,6 +356,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // v0.6: vista previa del hero (banner) y de la ficha antes de guardar.
   const [showPreview, setShowPreview] = useState(false);
+  // v0.9.9.9.1: ayuda para admins al alcance de un click dentro del form.
+  const [isAdminHelpOpen, setIsAdminHelpOpen] = useState(false);
 
   const steps = [
     { id: 'info',     label: 'Editar Cómic',    icon: BookOpen, desc: 'Info + pack completo' },
@@ -677,10 +681,22 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
             Paso {stepIndex + 1} de {steps.length} — {steps[stepIndex].desc}
           </p>
         </div>
-        <button onClick={onClose}
-          className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors">
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Ayuda de admins: guía + conversor de links de Drive (v0.9.9.9.1) */}
+          <button
+            type="button"
+            onClick={() => setIsAdminHelpOpen(true)}
+            className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-accent transition-colors"
+            title="Ayuda para subir cómics y convertir links de Drive"
+            aria-label="Ayuda para admins"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
+          <button onClick={onClose}
+            className="p-2 rounded-xl bg-raised hover:bg-line text-mute hover:text-ink transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Wizard tabs */}
@@ -755,6 +771,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           </button>
         )}
       </div>
+      {/* Ayuda para admins (guía + conversor de Drive) — sobre el modal del form. */}
+      <AdminHelpModal isOpen={isAdminHelpOpen} onClose={() => setIsAdminHelpOpen(false)} />
     </Modal>
   );
 };

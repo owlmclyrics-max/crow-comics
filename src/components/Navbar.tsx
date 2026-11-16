@@ -21,12 +21,14 @@ import {
   Send,
   Map as MapIcon,
   Palette,
+  HelpCircle,
 } from 'lucide-react';
 import type { Comic, LinkReport } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
 import { useTheme } from '../context/ThemeContext';
 import { AccentDialog } from './ui/AccentPicker';
+import { AdminHelpModal } from './AdminHelpModal';
 import { NewChaptersBell } from './NewChaptersBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
@@ -131,6 +133,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const pendingCount = reports.filter(r => r.status === 'pending').length;
 
   const [isAccentOpen, setIsAccentOpen] = useState(false);
+  // v0.9.9.9.1: panel de ayuda para admins (guía de subida + conversor Drive).
+  const [isAdminHelpOpen, setIsAdminHelpOpen] = useState(false);
 
   return (
     <header className={`group/sidebar crow-sidebar-vt sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
@@ -339,6 +343,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                           )}
                         </button>
                       )}
+                      {canManageContent && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsAdminHelpOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent transition-colors"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          Ayuda de admins
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
@@ -508,6 +524,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <AccentDialog isOpen={isAccentOpen} onClose={() => setIsAccentOpen(false)} />
+      <AdminHelpModal isOpen={isAdminHelpOpen} onClose={() => setIsAdminHelpOpen(false)} />
     </header>
   );
 };
