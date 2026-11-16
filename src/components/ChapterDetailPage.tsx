@@ -280,6 +280,10 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   const hasPages = pagesList.length > 0;
   const [immersivePage, setImmersivePage] = useState(1);
   const pagesScrollRef = useRef<HTMLDivElement>(null);
+  // v0.9.9.9.9: el visor inline queda con altura fija (como el PDF de Drive)
+  // y scrollea por dentro — así los comentarios no quedan a 43 pantallas.
+  const [inlinePage, setInlinePage] = useState(1);
+  const inlinePagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isImmersive && hasPages) setImmersivePage(1);
@@ -293,6 +297,15 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
     const pageHeight = el.scrollHeight / pagesList.length;
     const idx = Math.round(el.scrollTop / pageHeight) + 1;
     setImmersivePage(Math.min(pagesList.length, Math.max(1, idx)));
+  };
+
+  /** v0.9.9.9.9: mismo contador para el visor inline de altura fija. */
+  const handleInlinePagesScroll = () => {
+    const el = inlinePagesRef.current;
+    if (!el || !hasPages) return;
+    const pageHeight = el.scrollHeight / pagesList.length;
+    const idx = Math.round(el.scrollTop / pageHeight) + 1;
+    setInlinePage(Math.min(pagesList.length, Math.max(1, idx)));
   };
 
   /** Bloquea el giro en horizontal (Android: requiere fullscreen activo). */
@@ -1016,20 +1029,31 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             </div>
           </div>
 
-          {/* v0.9.9.9.6: con páginas WebP, galería propia en scroll continuo;
-              sin páginas, el visor embebido del PDF de Drive como siempre. */}
+          {/* v0.9.9.9.6: con páginas WebP, galería propia — v0.9.9.9.9 con
+              ALTURA FIJA como el visor del PDF: scrollea por dentro y los
+              comentarios quedan a un pantallazo, no a 43 páginas. */}
           {hasPages ? (
-            <div className="rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
-              {pagesList.map((url, i) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt={`Página ${i + 1} de ${chapter.title}`}
-                  loading="lazy"
-                  draggable={false}
-                  className="block w-full mx-auto select-none"
-                />
-              ))}
+            <div className="relative w-full h-[72svh] min-h-[420px] sm:h-[80vh] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
+              <div
+                ref={inlinePagesRef}
+                onScroll={handleInlinePagesScroll}
+                className="absolute inset-0 overflow-y-auto overscroll-contain"
+              >
+                {pagesList.map((url, i) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt={`Página ${i + 1} de ${chapter.title}`}
+                    loading="lazy"
+                    draggable={false}
+                    className="block w-full mx-auto select-none"
+                  />
+                ))}
+              </div>
+              {/* Contador de página flotante */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-xs font-black text-ink backdrop-blur shadow-lg pointer-events-none">
+                Pág {inlinePage} / {pagesList.length}
+              </div>
             </div>
           ) : (
             <div className="relative w-full h-[72svh] min-h-[420px] max-h-[900px] sm:h-auto sm:min-h-0 sm:max-h-none sm:pb-[133%] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
