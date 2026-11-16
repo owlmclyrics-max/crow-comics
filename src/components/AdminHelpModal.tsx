@@ -11,6 +11,7 @@
  *     cómo agregar tomos y links).
  */
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BookOpen,
   Copy,
@@ -127,7 +128,11 @@ export const AdminHelpModal: React.FC<AdminHelpModalProps> = ({ isOpen, onClose 
     </button>
   );
 
-  return (
+  return createPortal(
+    /* Portal a document.body: el Modal es `fixed`, pero si se renderiza
+       dentro del Navbar (backdrop-blur) o del sheet móvil, esos ancestros
+       crean un contenedor propio y el panel se achica/pegan a la izquierda.
+       En el body puro siempre cubre el viewport entero. */
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg">
       {/* Cabecera */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line">
@@ -290,6 +295,7 @@ export const AdminHelpModal: React.FC<AdminHelpModalProps> = ({ isOpen, onClose 
           </>
         )}
       </div>
-    </Modal>
+    </Modal>,
+    document.body,
   );
 };
