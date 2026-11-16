@@ -1033,7 +1033,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               ALTURA FIJA como el visor del PDF: scrollea por dentro y los
               comentarios quedan a un pantallazo, no a 43 páginas. */}
           {hasPages ? (
-            <div className="relative w-full h-[72svh] min-h-[420px] sm:h-[80vh] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
+            <div className="relative w-full h-[72svh] min-h-[420px] sm:h-[86vh] sm:min-h-[600px] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
               <div
                 ref={inlinePagesRef}
                 onScroll={handleInlinePagesScroll}
@@ -1050,6 +1050,16 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                   />
                 ))}
               </div>
+              {/* Pantalla completa desde el propio visor (v0.9.9.9.9.2) */}
+              <button
+                type="button"
+                onClick={enterImmersive}
+                aria-label="Ver a pantalla completa"
+                title="Pantalla completa"
+                className="absolute top-3 right-3 p-2.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink backdrop-blur transition-colors shadow-lg"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </button>
               {/* Contador de página flotante */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-xs font-black text-ink backdrop-blur shadow-lg pointer-events-none">
                 Pág {inlinePage} / {pagesList.length}
