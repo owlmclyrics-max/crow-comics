@@ -27,6 +27,9 @@ export interface Chapter {
   release_date?: string;
   links: ChapterLink[];
   pdf_url?: string; // URL del PDF para leer online (Google Drive preview, etc.)
+  /** v0.9.9.9.6: páginas WebP en Cloudflare R2 (visor propio). Si existe,
+      el visor usa estas imágenes y el PDF queda como respaldo. */
+  pages?: string[];
   created_at?: string;
 }
 

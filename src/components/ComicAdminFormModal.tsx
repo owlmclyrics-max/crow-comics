@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { Comic, ComicTag, ComicPublisher, ComicStatus, Chapter, ChapterLink } from '../types/comic';
 import {
   X,
@@ -20,6 +20,9 @@ import {
   Sparkles,
   HelpCircle,
   Globe,
+  Images,
+  Upload,
+  RefreshCw,
 } from 'lucide-react';
 import { PUBLISHERS, TAGS, STATUSES } from '../lib/constants';
 import { AdminHelpModal } from './AdminHelpModal';
@@ -33,6 +36,11 @@ import {
   parseDriveId,
 } from '../lib/driveLinks';
 import { fetchFandomInfo, isFandomWikiUrl } from '../lib/fandomImport';
+import {
+  openComicArchive,
+  toWebpPages,
+  uploadChapterPages,
+} from '../lib/comicArchive';
 import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 
@@ -271,6 +279,9 @@ const ChapterEditor: React.FC<{
       </p>
     </div>
 
+    {/* Visor propio: páginas WebP desde CBZ/CBR (v0.9.9.9.6) */}
+    <PagesImportCard chapter={chapter} onUpdate={onUpdate} />
+
     {/* Links de descarga */}
     <div className="rounded-xl border border-accent/30 bg-accent/10 p-3.5 space-y-3">
       <div className="flex items-center justify-between">
@@ -336,6 +347,133 @@ const ChapterEditor: React.FC<{
     </div>
   </div>
 );
+
+/* ══════════════════════════════════════════════════
+   CARD: IMPORTAR CBZ/CBR → PÁGINAS WEBP (visor propio)
+   v0.9.9.9.6: todo en el navegador del admin — abre el archivo, convierte
+   las imágenes a WebP (calidad fiel, poco peso) y las sube a R2 una por una.
+   Si el tomo además tiene PDF de Drive, ese queda como respaldo.
+══════════════════════════════════════════════════ */
+const PagesImportCard: React.FC<{
+  chapter: Chapter;
+  onUpdate: <K extends keyof Chapter>(field: K, value: Chapter[K]) => void;
+}> = ({ chapter, onUpdate }) => {
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
+  const [progress, setProgress] = useState(0); // 0..1 (50% convirtiendo, 100% subido)
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const pageCount = chapter.pages?.length ?? 0;
+
+  const handleFile = async (file: File) => {
+    setBusy(true);
+    try {
+      setStatus('Abriendo archivo…');
+      const pages = await openComicArchive(file);
+      const blobs = await toWebpPages(pages, (done, total) => {
+        setStatus(`Convirtiendo a WebP… (${done}/${total})`);
+        setProgress((done / total) * 0.5);
+      });
+      setStatus(`Subiendo… (0/${blobs.length})`);
+      const urls = await uploadChapterPages(chapter.id, blobs, (done, total) => {
+        setStatus(`Subiendo… (${done}/${total})`);
+        setProgress(0.5 + (done / total) * 0.5);
+      });
+      onUpdate('pages', urls);
+      onUpdate('pages_count', blobs.length);
+      showToast(`${blobs.length} páginas listas para el visor propio ✅`, 'success');
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : 'No se pudo procesar el archivo',
+        'error',
+      );
+    } finally {
+      setBusy(false);
+      setStatus('');
+      setProgress(0);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const pickFile = () => inputRef.current?.click();
+
+  return (
+    <div className="rounded-xl border border-accent2/40 bg-accent2/5 p-3.5 space-y-2.5">
+      <div className="flex items-center gap-2">
+        <Images className="w-3.5 h-3.5 text-accent2" />
+        <span className="text-[11px] font-bold text-accent2 uppercase tracking-wide">
+          Visor propio — páginas WebP
+        </span>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".cbz,.zip,.cbr,.rar"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
+      />
+
+      {pageCount > 0 && !busy ? (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-ink">
+            <strong className="font-bold text-accent2">{pageCount} páginas</strong> subidas ✅
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={pickFile}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent2/15 hover:bg-accent2/25 text-accent2 text-[11px] font-semibold border border-accent2/30 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" /> Reemplazar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onUpdate('pages', undefined as Chapter['pages']);
+                showToast('Páginas quitadas — el tomo vuelve a leerse por PDF', 'info');
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-raised hover:bg-line text-mute hover:text-ink text-[11px] font-semibold transition-colors"
+            >
+              <X className="w-3 h-3" /> Quitar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={pickFile}
+          disabled={busy}
+          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-accent2/15 hover:bg-accent2/25 text-accent2 text-xs font-bold border border-accent2/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <Upload className="w-4 h-4" />
+          {busy ? status || 'Procesando…' : 'Subir CBZ / CBR del tomo'}
+        </button>
+      )}
+
+      {busy && (
+        <div className="space-y-1">
+          <div className="h-1.5 rounded-full bg-bg overflow-hidden">
+            <div
+              className="h-full rounded-full bg-accent2 transition-[width] duration-200"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-faint text-center">{status}</p>
+        </div>
+      )}
+
+      <p className="text-[10px] text-faint leading-relaxed">
+        La web convierte las imágenes a WebP (calidad fiel, poco peso) y las sube sola.
+        CBR con soporte mejor esfuerzo — si uno falla, pasalo a CBZ con WinRAR.
+        El PDF de Drive (arriba) queda como respaldo.
+      </p>
+    </div>
+  );
+};
 
 /* ══════════════════════════════════════════════════
    MODAL PRINCIPAL

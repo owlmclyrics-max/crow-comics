@@ -273,6 +273,28 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
   // asomaba un hueco transparente abajo).
   const viewerRef = useRef<HTMLDivElement>(null);
 
+  // ── v0.9.9.9.6: visor propio con páginas WebP (CBZ/CBR → R2) ──
+  // Si el tomo tiene páginas, el visor inmersivo muestra la galería
+  // propia en vez del iframe de Drive; el PDF queda como respaldo.
+  const pagesList = (chapter.pages ?? []).filter(Boolean);
+  const hasPages = pagesList.length > 0;
+  const [immersivePage, setImmersivePage] = useState(1);
+  const pagesScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isImmersive && hasPages) setImmersivePage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImmersive]);
+
+  /** Página actual según el scroll (para el contador "Pág X / Y"). */
+  const handlePagesScroll = () => {
+    const el = pagesScrollRef.current;
+    if (!el || !hasPages) return;
+    const pageHeight = el.scrollHeight / pagesList.length;
+    const idx = Math.round(el.scrollTop / pageHeight) + 1;
+    setImmersivePage(Math.min(pagesList.length, Math.max(1, idx)));
+  };
+
   /** Bloquea el giro en horizontal (Android: requiere fullscreen activo). */
   const lockLandscape = async (): Promise<boolean> => {
     try {
@@ -609,14 +631,35 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* ── VISOR INMERSIVO (v0.6): pantalla completa, sin navbar ni barra móvil ──
           Hermano del div raíz (no hijo) para que `fixed` sea siempre respecto
           al viewport y no lo rompa la animación fade-in del contenedor. */}
-      {isImmersive && chapter.pdf_url && (
+      {isImmersive && (chapter.pdf_url || hasPages) && (
         <div ref={viewerRef} className="fixed -inset-1.5 z-[70] bg-zinc-950">
-          <iframe
-            src={chapter.pdf_url}
-            title={`Leer ${chapter.title} a pantalla completa`}
-            className="absolute inset-0 w-full h-full"
-            allow="autoplay"
-          />
+          {/* v0.9.9.9.6: con páginas WebP el visor es la galería propia
+              (scroll continuo página por página); sin páginas, PDF de Drive. */}
+          {hasPages ? (
+            <div
+              ref={pagesScrollRef}
+              onScroll={handlePagesScroll}
+              className="absolute inset-0 overflow-y-auto overscroll-contain"
+            >
+              {pagesList.map((url, i) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`Página ${i + 1} de ${chapter.title}`}
+                  loading="lazy"
+                  draggable={false}
+                  className="block w-full mx-auto select-none"
+                />
+              ))}
+            </div>
+          ) : (
+            <iframe
+              src={chapter.pdf_url}
+              title={`Leer ${chapter.title} a pantalla completa`}
+              className="absolute inset-0 w-full h-full"
+              allow="autoplay"
+            />
+          )}
           {/* Botones flotantes sobre el visor: marcador, salir y giro.
               v0.9.9.8.2: el ojita SIEMPRE visible — los demás botones se
               pueden ocultar para leer sin nada encima. */}
@@ -669,6 +712,13 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
               {areControlsHidden ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
+
+          {/* v0.9.9.9.6: contador de página en el visor propio */}
+          {hasPages && !areControlsHidden && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-xs font-black text-ink backdrop-blur shadow-lg">
+              Pág {immersivePage} / {pagesList.length}
+            </div>
+          )}
         </div>
       )}
 
@@ -912,7 +962,7 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
       {/* ================================================================ */}
       {/* SECCIÓN: VISOR PDF EMBEBIDO                                       */}
       {/* ================================================================ */}
-      {chapter.pdf_url && !isImmersive && (
+      {(chapter.pdf_url || hasPages) && !isImmersive && (
         <div ref={pdfViewerRef} className="space-y-4 scroll-mt-6">
           <div className="border-b border-line pb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -921,7 +971,9 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
                 <span>Leer Online — Tomo #{chapter.chapter_number}</span>
               </h3>
               <p className="text-xs sm:text-sm text-mute mt-1">
-                Visor embebido. Para mejor experiencia, usa pantalla completa (ícono ⤢ en el visor).
+                {hasPages
+                  ? 'Visor propio de Crow Comics. Para mejor experiencia, usa pantalla completa.'
+                  : 'Visor embebido. Para mejor experiencia, usa pantalla completa (ícono ⤢ en el visor).'}
               </p>
             </div>
 
@@ -964,15 +1016,32 @@ export const ChapterDetailPage: React.FC<ChapterDetailPageProps> = ({
             </div>
           </div>
 
-          <div className="relative w-full h-[72svh] min-h-[420px] max-h-[900px] sm:h-auto sm:min-h-0 sm:max-h-none sm:pb-[133%] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
-            <iframe
-              src={chapter.pdf_url}
-              title={`Leer ${chapter.title} online`}
-              className="absolute inset-0 w-full h-full"
-              allow="autoplay"
-              loading="lazy"
-            />
-          </div>
+          {/* v0.9.9.9.6: con páginas WebP, galería propia en scroll continuo;
+              sin páginas, el visor embebido del PDF de Drive como siempre. */}
+          {hasPages ? (
+            <div className="rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
+              {pagesList.map((url, i) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`Página ${i + 1} de ${chapter.title}`}
+                  loading="lazy"
+                  draggable={false}
+                  className="block w-full mx-auto select-none"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="relative w-full h-[72svh] min-h-[420px] max-h-[900px] sm:h-auto sm:min-h-0 sm:max-h-none sm:pb-[133%] rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl">
+              <iframe
+                src={chapter.pdf_url}
+                title={`Leer ${chapter.title} online`}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay"
+                loading="lazy"
+              />
+            </div>
+          )}
 
           {/* SPRINT 2.5: navegación anterior / siguiente (debajo del PDF) */}
           <ChapterNavCards
