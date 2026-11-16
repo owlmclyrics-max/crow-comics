@@ -222,26 +222,51 @@ export const useComicsData = () => {
               release_date: chapter.release_date || TODAY,
               links: (chapter.links ?? []).filter((link) => link.url.trim()),
               pdf_url: chapter.pdf_url || null,
+              // v0.9.9.9.6: páginas del visor propio (WebP en Supabase Storage).
+              pages: chapter.pages?.length ? chapter.pages : null,
             });
+            // Si la columna pages todavía no existe en la base, guardamos sin
+            // ellas (mismo patrón que banner_url; corre add-chapter-pages.sql).
+            const chapterPayloadWithoutPages = (chapter: Chapter) => {
+              const { pages: _pages, ...rest } = chapterPayload(chapter);
+              void _pages;
+              return rest;
+            };
 
             for (const chapter of existing) {
-              const { error: updateError } = await supabase
+              let updateResult = await supabase
                 .from('chapters')
                 .update(chapterPayload(chapter))
                 .eq('id', chapter.id)
                 .eq('comic_id', resolvedComicId);
 
-              if (updateError) throw updateError;
+              if (updateResult.error && /pages/i.test(updateResult.error.message)) {
+                console.warn('chapters.pages no existe; guardando sin páginas. Corre add-chapter-pages.sql.');
+                updateResult = await supabase
+                  .from('chapters')
+                  .update(chapterPayloadWithoutPages(chapter))
+                  .eq('id', chapter.id)
+                  .eq('comic_id', resolvedComicId);
+              }
+              if (updateResult.error) throw updateResult.error;
             }
 
             if (toCreate.length > 0) {
-              const { data: inserted, error: insertError } = await supabase
+              let insertResult = await supabase
                 .from('chapters')
                 .insert(toCreate.map(chapterPayload))
                 .select('id');
 
-              if (insertError) throw insertError;
-              insertedIds = ((inserted ?? []) as { id: string }[]).map((row) => row.id);
+              if (insertResult.error && /pages/i.test(insertResult.error.message)) {
+                console.warn('chapters.pages no existe; insertando sin páginas. Corre add-chapter-pages.sql.');
+                insertResult = await supabase
+                  .from('chapters')
+                  .insert(toCreate.map(chapterPayloadWithoutPages))
+                  .select('id');
+              }
+
+              if (insertResult.error) throw insertResult.error;
+              insertedIds = ((insertResult.data ?? []) as { id: string }[]).map((row) => row.id);
             }
 
             // Copia del editor que se conserva: los capítulos ya existentes
