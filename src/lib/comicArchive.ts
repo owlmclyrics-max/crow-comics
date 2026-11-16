@@ -7,8 +7,8 @@
  *
  *   1. Abre el archivo y extrae las imágenes (en orden natural: 1,2,…,10).
  *   2. Las re-encodea a WebP (ancho máx. 1600px, calidad 0.8).
- *   3. Las sube una por una a /media (function edge → bucket R2) con el
- *      token de sesión del admin.
+ *   3. Las sube al bucket público "pages" de Supabase Storage con la sesión
+ *      del admin (política SQL: solo los emails del equipo).
  *   4. Devuelve la lista de URLs para guardarla en chapters.pages.
  */
 import { unzip } from 'fflate';
@@ -135,35 +135,36 @@ export const toWebpPages = async (
   return out;
 };
 
-/** Sube las páginas al bucket R2 vía /media y devuelve las URLs en orden. */
+/** Sube las páginas al bucket público "pages" de Supabase Storage y devuelve
+    las URLs públicas en orden. La subida viaja con la sesión del admin y la
+    política SQL solo deja subir a los emails del equipo. */
 export const uploadChapterPages = async (
   chapterId: string,
   blobs: Blob[],
   onProgress?: (done: number, total: number) => void,
 ): Promise<string[]> => {
   if (!supabase) throw new Error('Supabase no está configurado');
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('Necesitás sesión de admin para subir páginas');
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error('Necesitás sesión de admin para subir páginas');
+  }
 
+  const bucket = supabase.storage.from('pages');
   const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   const urls: string[] = [];
 
   for (const [i, blob] of blobs.entries()) {
     const name = `p${String(i + 1).padStart(3, '0')}.webp`;
     const path = `chapters/${chapterId}/${uploadId}/${name}`;
-    const res = await fetch(`/media?path=${encodeURIComponent(path)}`, {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'image/webp',
-      },
-      body: blob,
+    const { error } = await bucket.upload(path, blob, {
+      contentType: 'image/webp',
+      upsert: false,
     });
-    if (!res.ok) {
-      throw new Error(`Falló la subida de la página ${i + 1} (HTTP ${res.status})`);
+    if (error) {
+      throw new Error(`Falló la subida de la página ${i + 1}: ${error.message}`);
     }
-    urls.push(`${window.location.origin}/media/${path}`);
+    const { data: pub } = bucket.getPublicUrl(path);
+    urls.push(pub.publicUrl);
     onProgress?.(i + 1, blobs.length);
   }
   return urls;
