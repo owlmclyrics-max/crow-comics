@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { avatarOrFallback } from '../lib/avatarFallback';
 import {
   addPostComment,
   createFeedPost,
@@ -45,14 +46,17 @@ const relativeTime = (iso: string): string => {
   return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 };
 
-const Avatar: React.FC<{ url: string | null; name: string; size?: string }> = ({
+const Avatar: React.FC<{ url: string | null; name: string; id?: string; size?: string }> = ({
   url,
   name,
+  id,
   size = 'w-9 h-9 rounded-xl',
-}) =>
-  url ? (
+}) => {
+  // Con id: fallback determinista (mismo avatar siempre para la misma persona).
+  const src = id ? avatarOrFallback(url, id) : url;
+  return src ? (
     <img
-      src={url}
+      src={src}
       alt={name}
       className={`${size} object-cover border border-line shrink-0`}
       referrerPolicy="no-referrer"
@@ -64,6 +68,7 @@ const Avatar: React.FC<{ url: string | null; name: string; size?: string }> = ({
       {name.slice(0, 2).toUpperCase()}
     </div>
   );
+};
 
 export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) => {
   const { user, profile } = useAuth();
@@ -228,7 +233,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
       {/* ── Compositor ── */}
       <div className="rounded-2xl border border-line bg-surface p-4 space-y-3">
         <div className="flex items-start gap-3">
-          <Avatar url={profile?.avatar_url ?? null} name={myUsername} />
+          <Avatar url={profile?.avatar_url ?? null} name={myUsername} id={meId ?? undefined} />
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -279,7 +284,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
             {/* Header */}
             <div className="px-4 py-3 flex items-center gap-2.5">
               <button type="button" onClick={() => onSelectProfile(post.user_id)} className="shrink-0">
-                <Avatar url={post.avatar_url} name={post.username} />
+                <Avatar url={post.avatar_url} name={post.username} id={post.user_id} />
               </button>
               <button
                 type="button"
@@ -336,7 +341,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
                   <div className="space-y-2 pt-1">
                     {comments[post.id].map((comment) => (
                       <div key={comment.id} className="flex items-start gap-2">
-                        <Avatar url={comment.avatar_url} name={comment.username} size="w-6 h-6 rounded-lg" />
+                        <Avatar url={comment.avatar_url} name={comment.username} id={comment.user_id} size="w-6 h-6 rounded-lg" />
                         <div className="min-w-0">
                           <p className="text-[11px] leading-relaxed">
                             <button

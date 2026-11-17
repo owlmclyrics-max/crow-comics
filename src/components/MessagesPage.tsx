@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { avatarOrFallback } from '../lib/avatarFallback';
 import type { Profile } from '../types/comic';
 import {
   fetchConversations,
@@ -57,6 +58,67 @@ const relativeTime = (iso: string): string => {
   if (days < 7) return `${days} d`;
   return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 };
+
+// ── v0.10.3: card de perfil sugerido (reutilizada en la bandeja y en el
+//    panel "Tus mensajes" cuando no hay chats) ──
+const SuggestedCard: React.FC<{
+  p: SuggestedProfile;
+  onSelect: () => void;
+  onMessage: () => void;
+  onFollow: () => void;
+}> = ({ p, onSelect, onMessage, onFollow }) => (
+  <div className="shrink-0 w-32 rounded-2xl border border-line bg-bg p-3 flex flex-col items-center gap-2">
+    <button
+      type="button"
+      onClick={onSelect}
+      className="relative shrink-0"
+      title={`Ver perfil de @${p.username}`}
+    >
+      <img
+        src={avatarOrFallback(p.avatar_url, p.id)}
+        alt={p.username}
+        className="w-16 h-16 rounded-2xl object-cover border border-line"
+        referrerPolicy="no-referrer"
+      />
+      {p.online && (
+        <span
+          className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-bg"
+          title="En línea"
+        />
+      )}
+    </button>
+    <button
+      type="button"
+      onClick={onSelect}
+      className="max-w-full text-xs font-bold text-ink truncate hover:underline"
+      title={`@${p.username}`}
+    >
+      @{p.username}
+    </button>
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onFollow}
+        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-colors ${
+          p.isFollowing
+            ? 'bg-raised text-mute hover:text-ink border border-line'
+            : 'bg-accent hover:bg-accent2 text-onaccent'
+        }`}
+      >
+        <UserPlus className="w-3.5 h-3.5" />
+        {p.isFollowing ? 'Siguiendo' : 'Seguir'}
+      </button>
+      <button
+        type="button"
+        onClick={onMessage}
+        className="p-1.5 rounded-xl text-mute hover:text-accent hover:bg-raised transition-colors"
+        title={`Chatear con @${p.username}`}
+      >
+        <MessageCircle className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+);
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({
   initialPartner,
@@ -303,67 +365,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 <Users className="w-3.5 h-3.5 text-accent2" />
                 Hacé amigos
               </h3>
-              <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
+              <div className="flex gap-3 overflow-x-auto pb-1.5 -mx-1 px-1">
                 {suggested.map((p) => (
-                  <div
+                  <SuggestedCard
                     key={p.id}
-                    className="shrink-0 w-[96px] rounded-2xl border border-line bg-bg p-2.5 flex flex-col items-center gap-1.5"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => onSelectProfile(p.id)}
-                      className="relative shrink-0"
-                      title={`Ver perfil de @${p.username}`}
-                    >
-                      {p.avatar_url ? (
-                        <img
-                          src={p.avatar_url}
-                          alt={p.username}
-                          className="w-11 h-11 rounded-xl object-cover border border-line"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-[11px] font-black text-onaccent">
-                          {p.username.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      {p.online && (
-                        <span
-                          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-bg"
-                          title="En línea"
-                        />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onSelectProfile(p.id)}
-                      className="max-w-full text-[10px] font-bold text-ink truncate hover:underline"
-                    >
-                      @{p.username}
-                    </button>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => void handleSuggestFollow(p)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black transition-colors ${
-                          p.isFollowing
-                            ? 'bg-raised text-mute hover:text-ink border border-line'
-                            : 'bg-accent hover:bg-accent2 text-onaccent'
-                        }`}
-                      >
-                        <UserPlus className="w-3 h-3" />
-                        {p.isFollowing ? 'Siguiendo' : 'Seguir'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPartnerId(p.id)}
-                        className="p-1 rounded-lg text-mute hover:text-accent hover:bg-raised transition-colors"
-                        title={`Chatear con @${p.username}`}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                    p={p}
+                    onSelect={() => onSelectProfile(p.id)}
+                    onMessage={() => setPartnerId(p.id)}
+                    onFollow={() => void handleSuggestFollow(p)}
+                  />
                 ))}
               </div>
             </div>
@@ -379,8 +389,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               <UserCircle className="w-8 h-8 text-faint mx-auto" />
               <p className="text-xs font-bold text-ink">Todavía no hay chats</p>
               <p className="text-[11px] text-mute leading-relaxed">
-                Entrá al perfil de alguien (buscador de personas) y tocá <strong>Mensaje</strong>{' '}
-                para empezar a chatear.
+                Elegí a alguien de "Hacé amigos" (arriba) o buscá un perfil y tocá{' '}
+                <strong>Mensaje</strong> para empezar a chatear.
               </p>
             </div>
           ) : (
@@ -394,18 +404,17 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     conv.partner_id === partnerId ? 'bg-raised' : 'hover:bg-raised/60'
                   }`}
                 >
-                  {conv.avatar_url ? (
-                    <img
-                      src={conv.avatar_url}
-                      alt={conv.username}
-                      className="w-10 h-10 rounded-xl object-cover border border-line shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-xs font-black text-onaccent shrink-0">
-                      {conv.username.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  {(() => {
+                    const src = avatarOrFallback(conv.avatar_url, conv.partner_id);
+                    return (
+                      <img
+                        src={src}
+                        alt={conv.username}
+                        className="w-10 h-10 rounded-xl object-cover border border-line shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                    );
+                  })()}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-bold text-ink truncate">@{conv.username}</p>
@@ -450,18 +459,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                   onClick={() => onSelectProfile(partnerId)}
                   className="flex items-center gap-2.5 min-w-0 group"
                 >
-                  {partner.avatar_url ? (
-                    <img
-                      src={partner.avatar_url}
-                      alt={partner.username}
-                      className="w-8 h-8 rounded-lg object-cover border border-line"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-[10px] font-black text-onaccent">
-                      {partner.username.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  <img
+                    src={avatarOrFallback(partner.avatar_url, partner.partner_id)}
+                    alt={partner.username}
+                    className="w-8 h-8 rounded-lg object-cover border border-line"
+                    referrerPolicy="no-referrer"
+                  />
                   <div className="min-w-0 text-left">
                     <p className="text-xs font-bold text-ink truncate group-hover:underline">
                       @{partner.username}
@@ -551,6 +554,30 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 </button>
               </div>
             </>
+          ) : conversations?.length === 0 && suggested && suggested.length > 0 ? (
+            /* ── v0.10.3: estilo IG — "Tus mensajes" con sugerencias para
+               empezar el primer chat directamente desde acá ── */
+            <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 py-10 overflow-y-auto">
+              <div className="w-24 h-24 rounded-full border-2 border-faint/50 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-10 h-10 text-faint" />
+              </div>
+              <h3 className="mt-5 text-lg font-black text-ink">Tus mensajes</h3>
+              <p className="mt-1 text-xs text-mute max-w-sm leading-relaxed">
+                Chateá en privado con la comunidad Crow. Elegí a alguien de abajo y arrancá la
+                conversación 👋
+              </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3 max-w-2xl">
+                {suggested.map((p) => (
+                  <SuggestedCard
+                    key={p.id}
+                    p={p}
+                    onSelect={() => onSelectProfile(p.id)}
+                    onMessage={() => setPartnerId(p.id)}
+                    onFollow={() => void handleSuggestFollow(p)}
+                  />
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 space-y-3">
               <MessageCircle className="w-10 h-10 text-faint" />
