@@ -1,15 +1,14 @@
 -- ==============================================================================
--- CROW COMICS: FEED DE MOMENTOS (estilo Instagram)
+-- CROW COMICS: FEED DE MOMENTOS (estilo Instagram, SOLO TEXTO)
 -- ==============================================================================
 -- Ejecutar TODO en el SQL Editor de Supabase.
 --
---  1. community_posts: los momentos (texto y/o foto).
+--  1. community_posts: los momentos/reseñas (solo texto, sin fotos —
+--     el storage queda para los tomos).
 --  2. community_likes: ❤️ sin duplicados (una por usuario y post).
 --  3. community_comments: comentarios de cada momento.
 --  4. RPC get_feed_posts: el feed armado en el server (contadores de
 --     likes/comentarios + si ya lo LIKE-eas), filtrado por auth.uid().
---  5. Storage: bucket "community" para las fotos (crear en el dashboard,
---     instrucciones al final) — cada usuario sube solo a su carpeta.
 -- ==============================================================================
 
 -- ── 1. POSTS ─────────────────────────────────────────────────────────────────
@@ -17,7 +16,6 @@ create table if not exists public.community_posts (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
   body       text not null check (char_length(body) between 1 and 1000),
-  image_url  text,
   created_at timestamptz not null default now()
 );
 
@@ -107,7 +105,6 @@ returns table (
   username    text,
   avatar_url  text,
   body        text,
-  image_url   text,
   created_at  timestamptz,
   likes       integer,
   comments    integer,
@@ -120,7 +117,6 @@ language sql stable security definer set search_path = public as $$
     pr.username,
     pr.avatar_url,
     p.body,
-    p.image_url,
     p.created_at,
     (select count(*) from community_likes l where l.post_id = p.id)::int as likes,
     (select count(*) from community_comments c where c.post_id = p.id)::int as comments,
@@ -136,32 +132,3 @@ $$;
 
 revoke all on function public.get_feed_posts(int) from anon;
 grant execute on function public.get_feed_posts(int) to authenticated;
-
--- ── 5. STORAGE: bucket "community" ───────────────────────────────────────────
--- PASO 1 (dashboard, NO SQL):
---   Supabase → Storage → "New bucket" → nombre EXACTO: community
---   → marcar "Public bucket" → Create.
--- PASO 2: estas políticas (cada uno sube solo a SU carpeta posts/<uid>/...).
-
-drop policy if exists "community lectura publica" on storage.objects;
-create policy "community lectura publica"
-on storage.objects for select
-using (bucket_id = 'community');
-
-drop policy if exists "community sube el dueño de la carpeta" on storage.objects;
-create policy "community sube el dueño de la carpeta"
-on storage.objects for insert
-to authenticated
-with check (
-  bucket_id = 'community'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "community borra el dueño de la carpeta" on storage.objects;
-create policy "community borra el dueño de la carpeta"
-on storage.objects for delete
-to authenticated
-using (
-  bucket_id = 'community'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);

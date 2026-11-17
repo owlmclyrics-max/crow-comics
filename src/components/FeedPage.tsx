@@ -7,15 +7,13 @@
  *   (optimista, sin duplicados por PK) y comentarios expandibles.
  * - Cada uno puede borrar SU momento (tacho junto al suyo).
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Heart,
-  Image as ImageIcon,
   MessageCircle,
   Send,
   Sparkles,
   Trash2,
-  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -72,14 +70,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
   const [posts, setPosts] = useState<FeedPost[] | null>(null);
   const [error, setError] = useState('');
   const [draft, setDraft] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [comments, setComments] = useState<Record<string, FeedComment[]>>({});
   const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const meId = user?.id ?? null;
   const myUsername = profile?.username ?? 'vos';
@@ -101,31 +96,12 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
     return () => window.clearInterval(poll);
   }, [meId, load]);
 
-  const pickImage = () => fileInputRef.current?.click();
-
-  const onFilePicked = (file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('Eso no es una imagen', 'error');
-      return;
-    }
-    setImage(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
-
-  const clearImage = () => {
-    setImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   const handlePublish = async () => {
     if (!meId || !draft.trim() || publishing) return;
     setPublishing(true);
     try {
-      await createFeedPost(meId, draft, image);
+      await createFeedPost(meId, draft);
       setDraft('');
-      clearImage();
       showToast('Momento publicado 🦅', 'success');
       await load();
     } catch (err) {
@@ -256,47 +232,17 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="¿Qué estás leyendo, bro? Compartí un momento…"
-            rows={2}
+            placeholder="Reseñá el tomo que terminaste, recomendá algo, contá tu momento cómic…"
+            rows={3}
             maxLength={1000}
             className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors resize-none placeholder:text-faint"
           />
         </div>
 
-        {imagePreview && (
-          <div className="relative ml-12">
-            <img
-              src={imagePreview}
-              alt="Vista previa"
-              className="max-h-56 rounded-xl object-cover border border-line"
-            />
-            <button
-              type="button"
-              onClick={clearImage}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-900/85 border border-zinc-700 text-mute hover:text-ink transition-colors"
-              aria-label="Quitar foto"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         <div className="ml-12 flex items-center justify-between gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onFilePicked(e.target.files?.[0] ?? null)}
-          />
-          <button
-            type="button"
-            onClick={pickImage}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold bg-bg border border-line text-mute hover:text-accent2 transition-colors"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            {image ? 'Cambiar foto' : 'Agregar foto'}
-          </button>
+          <span className="text-[10px] text-faint">
+            {draft.length}/1000
+          </span>
           <button
             type="button"
             onClick={() => void handlePublish()}
@@ -358,15 +304,6 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
 
             {/* Contenido */}
             <p className="px-4 pb-3 text-sm text-ink whitespace-pre-wrap break-words">{post.body}</p>
-            {post.image_url && (
-              <img
-                src={post.image_url}
-                alt={`Momento de ${post.username}`}
-                className="w-full max-h-[70svh] object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            )}
 
             {/* Acciones */}
             <div className="px-4 py-2.5 flex items-center gap-4 border-t border-line/60 mt-2">

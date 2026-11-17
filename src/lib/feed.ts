@@ -1,9 +1,10 @@
 /**
- * Feed de Momentos (v0.10.1) — estilo Instagram.
+ * Feed de Momentos (v0.10.1) — estilo Instagram pero solo texto.
  *
- * Posts con texto y/o foto (la foto se comprime a WebP 1280px en el
- * navegador antes de subir al bucket "community"), likes sin duplicados
- * y comentarios. Todo va a tablas con RLS: cada uno escribe solo lo suyo.
+ * Posts de texto (reseñas, recomendaciones, lo que se te ocurra del mundo
+ * cómic). Likes sin duplicados y comentarios. Todo va a tablas con RLS:
+ * cada uno escribe solo lo suyo. Sin fotos — el storage queda para los
+ * tomos (1 GB no da para memes 😄).
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
@@ -13,7 +14,6 @@ export interface FeedPost {
   username: string;
   avatar_url: string | null;
   body: string;
-  image_url: string | null;
   created_at: string;
   likes: number;
   comments: number;
@@ -30,9 +30,6 @@ export interface FeedComment {
   created_at: string;
 }
 
-const MAX_IMAGE_DIM = 1280;
-const WEBP_QUALITY = 0.82;
-
 /** El feed armado (RPC: contadores + liked_by_me correctos). */
 export const fetchFeed = async (limit = 30): Promise<FeedPost[]> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
@@ -42,53 +39,15 @@ export const fetchFeed = async (limit = 30): Promise<FeedPost[]> => {
   return (data ?? []) as FeedPost[];
 };
 
-/** Comprime una imagen a WebP (máx 1280px) en el navegador. */
-export const compressFeedImage = async (file: File): Promise<Blob> => {
-  const bitmap = await createImageBitmap(file);
-  try {
-    const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas no disponible');
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const webp = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY),
-    );
-    if (!webp) throw new Error('No se pudo comprimir la imagen');
-    return webp;
-  } finally {
-    bitmap.close();
-  }
-};
-
-/** Publica un momento: texto obligatorio, foto opcional. */
-export const createFeedPost = async (
-  meId: string,
-  body: string,
-  imageFile?: File | null,
-): Promise<void> => {
+/** Publica un momento/reseña (solo texto). */
+export const createFeedPost = async (meId: string, body: string): Promise<void> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
   const db = supabase;
   const clean = body.trim().slice(0, 1000);
   if (!clean) throw new Error('Escribí algo antes de publicar');
-
-  let imageUrl: string | null = null;
-  if (imageFile) {
-    const webp = await compressFeedImage(imageFile);
-    const name = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.webp`;
-    const path = `posts/${meId}/${name}`;
-    const { error: upErr } = await db.storage
-      .from('community')
-      .upload(path, webp, { contentType: 'image/webp', upsert: false });
-    if (upErr) throw new Error(`No se pudo subir la foto: ${upErr.message}`);
-    imageUrl = db.storage.from('community').getPublicUrl(path).data.publicUrl;
-  }
-
   const { error } = await db
     .from('community_posts')
-    .insert({ user_id: meId, body: clean, image_url: imageUrl });
+    .insert({ user_id: meId, body: clean });
   if (error) {
     throw new Error(`No se pudo publicar: ${error.message}`);
   }
@@ -162,22 +121,10 @@ export const addPostComment = async (postId: string, meId: string, body: string)
   if (error) throw new Error(`No se pudo comentar: ${error.message}`);
 };
 
-/** Borra tu momento (la foto del bucket, best-effort). */
+/** Borra tu momento. */
 export const deleteFeedPost = async (postId: string, meId: string): Promise<void> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
   const db = supabase;
-  const { data: post } = await db
-    .from('community_posts')
-    .select('image_url')
-    .eq('id', postId)
-    .eq('user_id', meId)
-    .maybeSingle();
-  if (post?.image_url) {
-    const match = /\/object\/public\/community\/(.+)$/.exec(post.image_url);
-    if (match) {
-      void db.storage.from('community').remove([match[1]]);
-    }
-  }
   const { error } = await db.from('community_posts').delete().eq('id', postId).eq('user_id', meId);
   if (error) throw new Error('No se pudo borrar el momento');
 };
