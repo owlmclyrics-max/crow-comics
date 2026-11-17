@@ -153,7 +153,35 @@ export const fetchSuggestedProfiles = async (
     }
   }
 
-  // 2) Relleno: perfiles activos recientes que no sean yo ni mis amigos.
+  // 2) A quiénes seguís pero no son amigos mutuos (después de los amigos).
+  let followingIds = [...followingSet].filter((id) => !followersSet.has(id));
+  if (out.length < limit && followingIds.length > 0) {
+    followingIds = followingIds.slice(0, limit - out.length + 10);
+    const { data } = await db
+      .from('profiles')
+      .select('id,username,avatar_url,last_seen_at')
+      .in('id', followingIds);
+    const rows = ((data ?? []) as Array<{
+      id: string;
+      username: string;
+      avatar_url: string | null;
+      last_seen_at: string | null;
+    }>)
+      .slice()
+      .sort((a, b) => {
+        const ta = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+        const tb = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+        return tb - ta;
+      });
+    for (const r of rows) {
+      if (out.length >= limit) break;
+      if (used.has(r.id)) continue;
+      out.push(toSuggested(r));
+      used.add(r.id);
+    }
+  }
+
+  // 3) Relleno final: perfiles activos recientes (con "+" para agregar).
   const remaining = limit - out.length;
   if (remaining > 0) {
     const { data } = await db
@@ -174,7 +202,6 @@ export const fetchSuggestedProfiles = async (
       used.add(r.id);
     }
   }
-
   return out;
 };
 

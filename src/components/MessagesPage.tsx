@@ -85,11 +85,11 @@ const SuggestedBubble: React.FC<{
           referrerPolicy="no-referrer"
         />
       </button>
-      {p.isFriend ? (
+      {p.isFriend || p.isFollowing ? (
         p.online && (
           <span
             className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-surface pointer-events-none"
-            title="En línea"
+            title={p.isFriend ? 'En línea' : 'En línea (lo seguís)'}
           />
         )
       ) : (
