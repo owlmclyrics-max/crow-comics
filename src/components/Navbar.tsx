@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Crown,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import type { Comic, LinkReport } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -149,6 +150,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   // v0.10: globo de mensajes sin leer para el item "Mensajes".
   const { unread: dmUnread } = useDmUnread(user?.id ?? null);
 
+  // v0.10.2: el social también en el sidebar de PC — Momentos y Mensajes
+  // a un click, sin tener que pasar por el menú del avatar.
+  const sidebarItems: Array<{ view: CurrentView; label: string; icon: LucideIcon; badge?: number }> = [
+    ...NAV_ITEMS,
+    ...(user
+      ? [
+          { view: 'feed' as const, label: 'Momentos', icon: Sparkles },
+          { view: 'mensajes' as const, label: 'Mensajes', icon: MessageCircle, badge: dmUnread },
+        ]
+      : []),
+  ];
+
   return (
     <header className={`group/sidebar crow-sidebar-vt sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
       isUserMenuOpen || showReports ? 'lg:w-60!' : ''
@@ -199,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               Las herramientas de admin viven en el menú del avatar para que la
               barra nunca se desborde encima del menú */}
           <nav className="hidden lg:flex flex-col items-stretch gap-1 w-full">
-            {NAV_ITEMS.map((item) => {
+            {sidebarItems.map((item) => {
               const Icon = item.icon;
               const isActive =
                 item.view === 'personajes'
@@ -218,6 +231,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span className="lg:hidden lg:group-hover/sidebar:inline">{item.label}</span>
+                  {typeof item.badge === 'number' && item.badge > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-accent2 text-onaccent text-[10px] font-black">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
