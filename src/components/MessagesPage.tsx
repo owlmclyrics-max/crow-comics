@@ -285,7 +285,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const partnerPresence = presenceOf(partner?.last_seen_at ?? null);
 
   return (
-    <div className="animate-fade-in pb-4 lg:pb-10">
+    <div className="animate-fade-in pb-4 lg:pb-0 lg:-mx-8 lg:-my-8">
       {error && (
         <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/40 px-3.5 py-2.5 flex items-start gap-2">
           <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -293,12 +293,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
         </div>
       )}
 
-      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:h-[calc(100svh-7rem)] lg:grid lg:grid-cols-[320px,1fr]">
-        {/* ── Lista de conversaciones ── */}
+      {/* v0.10.4: layout IG — columna izquierda fija con header + amigos +
+          chats, y el chat a la derecha ocupando todo el alto en PC */}
+      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:rounded-none lg:border-0 lg:h-[100svh] lg:grid lg:grid-cols-[340px,1fr]">
+        {/* ── Lista de conversaciones (columna izquierda) ── */}
         <div
-          className={`border-line lg:border-r ${partnerId ? 'hidden lg:block' : 'block'} lg:h-full lg:overflow-y-auto`}
+          className={`flex flex-col border-line lg:border-r bg-surface lg:h-full lg:min-h-0 ${
+            partnerId ? 'hidden lg:flex' : 'flex'
+          }`}
         >
-          <div className="px-4 py-3.5 border-b border-line flex items-center justify-between">
+          <div className="px-4 py-3.5 border-b border-line flex items-center justify-between shrink-0">
             <h2 className="text-sm font-black text-ink flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-accent2" />
               Mensajes
@@ -315,7 +319,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
           {/* ── v0.10.3: Amigos — burbujas estilo IG arriba de la lista ── */}
           {suggested && suggested.length > 0 && (
-            <div className="border-b border-line py-3">
+            <div className="border-b border-line py-3 shrink-0">
               <h3 className="px-4 pb-2.5 text-[11px] font-black uppercase tracking-wider text-mute flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-accent2" />
                 Amigos
@@ -328,21 +332,23 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </div>
           )}
 
-          {conversations === null ? (
-            <div className="py-16 text-center">
-              <RefreshCw className="w-5 h-5 text-accent2 animate-spin mx-auto" />
-              <p className="text-[11px] text-mute mt-2">Cargando conversaciones…</p>
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="py-16 px-6 text-center space-y-2">
-              <UserCircle className="w-8 h-8 text-faint mx-auto" />
-              <p className="text-xs font-bold text-ink">Todavía no hay chats</p>
-              <p className="text-[11px] text-mute leading-relaxed">
-                Elegí a alguien de la fila de amigos (arriba) o buscá un perfil y tocá{' '}
-                <strong>Mensaje</strong> para empezar a chatear.
-              </p>
-            </div>
-          ) : (
+          {/* Lista de chats con scroll propio (header y amigos quedan fijos) */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {conversations === null ? (
+              <div className="py-16 text-center">
+                <RefreshCw className="w-5 h-5 text-accent2 animate-spin mx-auto" />
+                <p className="text-[11px] text-mute mt-2">Cargando conversaciones…</p>
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="py-16 px-6 text-center space-y-2">
+                <UserCircle className="w-8 h-8 text-faint mx-auto" />
+                <p className="text-xs font-bold text-ink">Todavía no hay chats</p>
+                <p className="text-[11px] text-mute leading-relaxed">
+                  Elegí a alguien de la fila de amigos (arriba) o buscá un perfil y tocá{' '}
+                  <strong>Mensaje</strong> para empezar a chatear.
+                </p>
+              </div>
+            ) : (
             <div className="divide-y divide-line/60">
               {conversations.map((conv) => (
                 <button
@@ -386,11 +392,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 </button>
               ))}
             </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* ── Chat ── */}
-        <div className={`${partnerId ? 'flex flex-col' : 'hidden lg:flex'} flex-col lg:h-full`}>
+        <div className={`${partnerId ? 'flex flex-col' : 'hidden lg:flex'} flex-col lg:h-full lg:min-h-0`}>
           {partnerId && partner ? (
             <>
               {/* Header del chat */}
