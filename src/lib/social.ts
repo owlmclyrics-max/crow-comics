@@ -77,53 +77,105 @@ export interface SuggestedProfile {
   avatar_url: string | null;
   last_seen_at: string | null;
   online: boolean;
+  /** Yo lo sigo. */
   isFollowing: boolean;
+  /** Él me sigue a mí. */
+  followsMe: boolean;
+  /** Amistad mutua: los dos se siguen. */
+  isFriend: boolean;
 }
 
 /**
- * Perfiles sugeridos para el panel de Mensajes: los más activos
- * recientemente (por heartbeat), excluyéndome, con estado de follow.
+ * Perfiles para la fila de Mensajes:
+ *  1. AMIGOS (mutuos) primero — aunque no estén activos hace rato.
+ *  2. El resto: los más activos recientemente (por heartbeat), con el
+ *     icono "+" para agregarlos (seguirlos) desde la fila.
  */
 export const fetchSuggestedProfiles = async (
   meId: string,
-  limit = 8,
+  limit = 10,
 ): Promise<SuggestedProfile[]> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
   const db = supabase;
 
-  const { data, error } = await db
-    .from('profiles')
-    .select('id,username,avatar_url,last_seen_at')
-    .neq('id', meId)
-    .order('last_seen_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
-  if (error) throw new Error(`No se pudo leer los perfiles: ${error.message}`);
+  // A quiénes sigo y quién me sigue (una pasada por cada uno).
+  const [followingRes, followersRes] = await Promise.all([
+    db.from('follows').select('following_id').eq('follower_id', meId).limit(100),
+    db.from('follows').select('follower_id').eq('following_id', meId).limit(100),
+  ]);
+  if (followingRes.error || followersRes.error) {
+    throw new Error('No se pudo leer los seguimientos');
+  }
+  const followingSet = new Set(
+    ((followingRes.data ?? []) as Array<{ following_id: string }>).map((r) => r.following_id),
+  );
+  const followersSet = new Set(
+    ((followersRes.data ?? []) as Array<{ follower_id: string }>).map((r) => r.follower_id),
+  );
 
-  const rows = (data ?? []) as Array<{
+  const toSuggested = (r: {
     id: string;
     username: string;
     avatar_url: string | null;
     last_seen_at: string | null;
-  }>;
-  if (rows.length === 0) return [];
-
-  // A quiénes ya sigo (una sola consulta para todos).
-  const ids = rows.map((r) => r.id);
-  const { data: follows } = await db
-    .from('follows')
-    .select('following_id')
-    .eq('follower_id', meId)
-    .in('following_id', ids);
-  const followingSet = new Set(((follows ?? []) as Array<{ following_id: string }>).map((f) => f.following_id));
-
-  return rows.map((r) => ({
+  }): SuggestedProfile => ({
     id: r.id,
     username: r.username,
     avatar_url: r.avatar_url,
     last_seen_at: r.last_seen_at,
     online: presenceOf(r.last_seen_at).online,
     isFollowing: followingSet.has(r.id),
-  }));
+    followsMe: followersSet.has(r.id),
+    isFriend: followingSet.has(r.id) && followersSet.has(r.id),
+  });
+
+  const out: SuggestedProfile[] = [];
+  const used = new Set<string>([meId]);
+
+  // 1) Amigos mutuos (ordenados por actividad, los conectados primero).
+  const mutual = [...followingSet].filter((id) => followersSet.has(id));
+  if (mutual.length > 0) {
+    const { data } = await db
+      .from('profiles')
+      .select('id,username,avatar_url,last_seen_at')
+      .in('id', mutual);
+    const rows = (data ?? [])
+      .slice()
+      .sort((a, b) => {
+        const ta = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+        const tb = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+        return tb - ta;
+      });
+    for (const r of rows) {
+      if (out.length >= limit) break;
+      out.push(toSuggested(r));
+      used.add(r.id);
+    }
+  }
+
+  // 2) Relleno: perfiles activos recientes que no sean yo ni mis amigos.
+  const remaining = limit - out.length;
+  if (remaining > 0) {
+    const { data } = await db
+      .from('profiles')
+      .select('id,username,avatar_url,last_seen_at')
+      .neq('id', meId)
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .limit(remaining + 10);
+    for (const r of (data ?? []) as Array<{
+      id: string;
+      username: string;
+      avatar_url: string | null;
+      last_seen_at: string | null;
+    }>) {
+      if (out.length >= limit) break;
+      if (used.has(r.id)) continue;
+      out.push(toSuggested(r));
+      used.add(r.id);
+    }
+  }
+
+  return out;
 };
 
 // ── PRESENCIA ────────────────────────────────────────────────────────────────
@@ -233,18 +285,20 @@ export const markThreadRead = async (partnerId: string, meId: string): Promise<v
 };
 
 /**
- * Tiempo real del chat: notifica INSERT donde participa `meId`.
+ * Tiempo real del chat: notifica INSERT/UPDATE donde participa `meId`.
+ * `channelKey` evita que la lista y el chat abierto compartan canal.
  * Devuelve la función para desuscribirse.
  */
 export const subscribeToDm = (
   meId: string,
   onMessage: (msg: DmMessage) => void,
   onInvalidate: () => void,
+  channelKey = 'list',
 ): (() => void) => {
   if (!isSupabaseConfigured || !supabase) return () => {};
   const db = supabase;
   const channel = db
-    .channel(`dm-${meId.slice(0, 8)}`)
+    .channel(`dm-${channelKey}-${meId.slice(0, 8)}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'dm_messages', filter: `recipient_id=eq.${meId}` },

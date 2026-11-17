@@ -13,7 +13,10 @@ import {
   ArrowLeft,
   Check,
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   MessageCircle,
+  Plus,
   RefreshCw,
   Send,
   ShieldAlert,
@@ -32,6 +35,7 @@ import {
   presenceOf,
   sendDmMessage,
   subscribeToDm,
+  toggleFollow,
   type DmConversation,
   type DmMessage,
   type SuggestedProfile,
@@ -57,36 +61,58 @@ const relativeTime = (iso: string): string => {
   return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 };
 
-// ── v0.10.3: burbuja de amigo activo (estilo IG: avatar circular + nombre
-//    debajo, click = abrir el chat directo) ──
+// ── v0.10.5: burbuja de la fila Amigos (estilo IG) ──
+//   - Foto/nombre → PERFIL ("entrar a él").
+//   - Amigo mutuo: punto verde si está en línea.
+//   - No-amigo: icono "+" para agregarlo (seguirlo) al toque.
 const SuggestedBubble: React.FC<{
   p: SuggestedProfile;
-  onClick: () => void;
-}> = ({ p, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="shrink-0 w-[4.5rem] flex flex-col items-center gap-1.5 group py-1"
-    title={`Chatear con @${p.username}`}
-  >
-    <span className="relative shrink-0">
-      <img
-        src={avatarOrFallback(p.avatar_url, p.id)}
-        alt={p.username}
-        className="w-14 h-14 rounded-full object-cover border border-line group-hover:border-accent transition-colors"
-        referrerPolicy="no-referrer"
-      />
-      {p.online && (
-        <span
-          className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-surface"
-          title="En línea"
+  onSelect: () => void;
+  onFollow: () => void;
+}> = ({ p, onSelect, onFollow }) => (
+  <div className="relative shrink-0 w-[4.5rem] flex flex-col items-center gap-1.5 py-1">
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="block"
+        title={`Ver perfil de @${p.username}`}
+      >
+        <img
+          src={avatarOrFallback(p.avatar_url, p.id)}
+          alt={p.username}
+          className="w-14 h-14 rounded-full object-cover border border-line hover:border-accent transition-colors"
+          referrerPolicy="no-referrer"
         />
+      </button>
+      {p.isFriend ? (
+        p.online && (
+          <span
+            className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-surface pointer-events-none"
+            title="En línea"
+          />
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={onFollow}
+          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-accent hover:bg-accent2 text-onaccent border-2 border-surface flex items-center justify-center transition-colors"
+          title={`Agregar a @${p.username}`}
+          aria-label={`Agregar a @${p.username}`}
+        >
+          <Plus className="w-3 h-3" strokeWidth={3} />
+        </button>
       )}
-    </span>
-    <span className="max-w-full text-[10px] font-bold text-mute truncate group-hover:text-ink transition-colors">
+    </div>
+    <button
+      type="button"
+      onClick={onSelect}
+      className="max-w-full text-[10px] font-bold text-mute truncate hover:text-ink transition-colors"
+      title={`@${p.username}`}
+    >
       {p.username}
-    </span>
-  </button>
+    </button>
+  </div>
 );
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({
@@ -125,6 +151,48 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       cancelled = true;
     };
   }, [meId]);
+
+  // v0.10.5: seguir/agregar desde la fila (optimista). Si la otra persona
+  // ya me sigue, al agregarlo pasa a ser amigo mutuo al instante.
+  const handleSuggestFollow = async (p: SuggestedProfile) => {
+    if (!meId) return;
+    const nowFollowing = !p.isFollowing;
+    setSuggested((prev) =>
+      (prev ?? []).map((s) =>
+        s.id === p.id
+          ? { ...s, isFollowing: nowFollowing, isFriend: nowFollowing && s.followsMe }
+          : s,
+      ),
+    );
+    try {
+      await toggleFollow(p.id, meId, p.isFollowing);
+    } catch {
+      setSuggested((prev) =>
+        (prev ?? []).map((s) =>
+          s.id === p.id
+            ? { ...s, isFollowing: p.isFollowing, isFriend: p.isFollowing && s.followsMe }
+            : s,
+        ),
+      );
+    }
+  };
+
+  // v0.10.5: flechas para mover la fila de amigos.
+  const amigosRef = useRef<HTMLDivElement>(null);
+  const [canScrollL, setCanScrollL] = useState(false);
+  const [canScrollR, setCanScrollR] = useState(false);
+  const updateArrows = useCallback(() => {
+    const el = amigosRef.current;
+    if (!el) return;
+    setCanScrollL(el.scrollLeft > 4);
+    setCanScrollR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+  useEffect(() => {
+    updateArrows();
+  }, [suggested, updateArrows]);
+  const scrollAmigos = (dir: -1 | 1) => {
+    amigosRef.current?.scrollBy({ left: dir * 240, behavior: 'smooth' });
+  };
 
   // Chat NUEVO (sin mensajes): no está en la lista — traigo su perfil igual.
   useEffect(() => {
@@ -234,6 +302,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
         }
       },
       () => void load(),
+      `chat-${partnerId.slice(0, 8)}`,
     );
 
     return () => {
@@ -317,18 +386,47 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </button>
           </div>
 
-          {/* ── v0.10.3: Amigos — burbujas estilo IG arriba de la lista ── */}
+          {/* ── v0.10.5: Amigos — burbujas con flechas (PC) ── */}
           {suggested && suggested.length > 0 && (
-            <div className="border-b border-line py-3 shrink-0">
+            <div className="relative border-b border-line py-3 shrink-0">
               <h3 className="px-4 pb-2.5 text-[11px] font-black uppercase tracking-wider text-mute flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-accent2" />
                 Amigos
               </h3>
-              <div className="flex gap-2.5 overflow-x-auto px-4 pb-1 scrollbar-thin">
+              <div
+                ref={amigosRef}
+                onScroll={updateArrows}
+                className="flex gap-2.5 overflow-x-auto px-4 pb-1 scrollbar-thin"
+              >
                 {suggested.map((p) => (
-                  <SuggestedBubble key={p.id} p={p} onClick={() => setPartnerId(p.id)} />
+                  <SuggestedBubble
+                    key={p.id}
+                    p={p}
+                    onSelect={() => onSelectProfile(p.id)}
+                    onFollow={() => void handleSuggestFollow(p)}
+                  />
                 ))}
               </div>
+              {canScrollL && (
+                <button
+                  type="button"
+                  onClick={() => scrollAmigos(-1)}
+                  className="hidden lg:flex absolute left-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-line items-center justify-center text-mute hover:text-ink shadow-lg shadow-black/30 transition-colors"
+                  aria-label="Amigos anteriores"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              {canScrollR && (
+                <button
+                  type="button"
+                  onClick={() => scrollAmigos(1)}
+                  className="hidden lg:flex absolute right-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-line items-center justify-center text-mute hover:text-ink shadow-lg shadow-black/30 transition-colors"
+                  aria-label="Más amigos"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
 
@@ -344,7 +442,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 <UserCircle className="w-8 h-8 text-faint mx-auto" />
                 <p className="text-xs font-bold text-ink">Todavía no hay chats</p>
                 <p className="text-[11px] text-mute leading-relaxed">
-                  Elegí a alguien de la fila de amigos (arriba) o buscá un perfil y tocá{' '}
+                  Tocá la foto de un amigo (arriba) para ir a su perfil, o buscá un perfil y tocá{' '}
                   <strong>Mensaje</strong> para empezar a chatear.
                 </p>
               </div>
@@ -400,8 +498,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
         <div className={`${partnerId ? 'flex flex-col' : 'hidden lg:flex'} flex-col lg:h-full lg:min-h-0`}>
           {partnerId && partner ? (
             <>
-              {/* Header del chat */}
-              <div className="px-4 py-3 border-b border-line flex items-center gap-3 shrink-0">
+              {/* Header del chat */}              <div className="px-4 py-3 border-b border-line flex items-center gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setPartnerId(null)}
@@ -510,16 +607,22 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 </button>
               </div>
             </>
+          ) : partnerId && !partner ? (
+            /* ── v0.10.5: mientras carga el perfil del chat abierto ── */
+            <div className="hidden lg:flex flex-1 flex-col items-center justify-center space-y-2">
+              <RefreshCw className="w-5 h-5 text-accent2 animate-spin" />
+              <p className="text-[11px] text-mute">Abriendo el chat…</p>
+            </div>
           ) : conversations?.length === 0 ? (
-            /* ── v0.10.3: sin chats — estado vacío estilo IG ── */
+            /* ── sin chats — estado vacío estilo IG ── */
             <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 space-y-3">
               <div className="w-24 h-24 rounded-full border-2 border-faint/40 flex items-center justify-center shrink-0">
                 <MessageCircle className="w-10 h-10 text-faint" />
               </div>
               <h3 className="text-lg font-black text-ink">Tus mensajes</h3>
               <p className="text-xs text-mute max-w-sm leading-relaxed">
-                Chateá en privado con la comunidad Crow. Elegí a alguien de la columna de amigos
-                (a la izquierda) y arrancá la conversación 👋
+                Chateá en privado con la comunidad Crow. Tocá la foto de un amigo (columna
+                izquierda) para ir a su perfil y arrancar la conversación 👋
               </p>
             </div>
           ) : (
