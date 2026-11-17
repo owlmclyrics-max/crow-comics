@@ -295,7 +295,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
       {/* v0.10.4: layout IG — columna izquierda fija con header + amigos +
           chats, y el chat a la derecha ocupando todo el alto en PC */}
-      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:rounded-none lg:border-0 lg:h-[100svh] lg:grid lg:grid-cols-[340px,1fr]">
+      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:rounded-none lg:border-0 lg:h-[100svh] lg:grid lg:grid-cols-[340px_1fr]">
         {/* ── Lista de conversaciones (columna izquierda) ── */}
         <div
           className={`flex flex-col border-line lg:border-r bg-surface lg:h-full lg:min-h-0 ${
