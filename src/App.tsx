@@ -74,6 +74,9 @@ const ComicRequestsPage = lazy(() =>
 const MessagesPage = lazy(() =>
   import('./components/MessagesPage').then((m) => ({ default: m.MessagesPage })),
 );
+const FeedPage = lazy(() =>
+  import('./components/FeedPage').then((m) => ({ default: m.FeedPage })),
+);
 
 // Los modales de administración también: solo el admin los usa y rara vez.
 const ComicAdminFormModal = lazy(() =>
@@ -732,6 +735,17 @@ export const App: React.FC = () => {
               setCurrentView('inicio');
               setChatPartnerId(null);
             }}
+            onSelectProfile={(profileId) => {
+              setSelectedProfileId(profileId);
+              setCurrentView('public-profile');
+            }}
+          />
+        ) : currentView === 'feed' ? (
+          /* ======================================================== */
+          /* VISTA 7.7: MOMENTOS — feed de la comunidad (v0.10.1)        */
+          /* ======================================================== */
+          <FeedPage
+            onBack={() => setCurrentView('inicio')}
             onSelectProfile={(profileId) => {
               setSelectedProfileId(profileId);
               setCurrentView('public-profile');

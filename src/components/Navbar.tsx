@@ -25,6 +25,7 @@ import {
   Database,
   MessageCircle,
   Crown,
+  Sparkles,
 } from 'lucide-react';
 import type { Comic, LinkReport } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +40,7 @@ import { NewChaptersBell } from './NewChaptersBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap' | 'mensajes';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap' | 'mensajes' | 'feed';
 
 // Historial vive en el menú del avatar (y en la barra inferior móvil):
 // fuera del navbar para que la barra nunca se sature.
@@ -389,6 +390,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                         >
                           <Database className="w-4 h-4" />
                           Almacenamiento
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('feed');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Momentos
                         </button>
                       )}
                       {user && (
