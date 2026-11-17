@@ -69,6 +69,63 @@ export const toggleFollow = async (
   return true;
 };
 
+// ── SUGERENCIAS DE AMIGOS (v0.10.3) ─────────────────────────────────────────
+
+export interface SuggestedProfile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  last_seen_at: string | null;
+  online: boolean;
+  isFollowing: boolean;
+}
+
+/**
+ * Perfiles sugeridos para el panel de Mensajes: los más activos
+ * recientemente (por heartbeat), excluyéndome, con estado de follow.
+ */
+export const fetchSuggestedProfiles = async (
+  meId: string,
+  limit = 8,
+): Promise<SuggestedProfile[]> => {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
+  const db = supabase;
+
+  const { data, error } = await db
+    .from('profiles')
+    .select('id,username,avatar_url,last_seen_at')
+    .neq('id', meId)
+    .order('last_seen_at', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(`No se pudo leer los perfiles: ${error.message}`);
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    username: string;
+    avatar_url: string | null;
+    last_seen_at: string | null;
+  }>;
+  if (rows.length === 0) return [];
+
+  // A quiénes ya sigo (una sola consulta para todos).
+  const ids = rows.map((r) => r.id);
+  const { data: follows } = await db
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', meId)
+    .in('following_id', ids);
+  const followingSet = new Set(((follows ?? []) as Array<{ following_id: string }>).map((f) => f.following_id));
+
+  return rows.map((r) => ({
+    id: r.id,
+    username: r.username,
+    avatar_url: r.avatar_url,
+    last_seen_at: r.last_seen_at,
+    online: presenceOf(r.last_seen_at).online,
+    isFollowing: followingSet.has(r.id),
+  }));
+};
+
 // ── PRESENCIA ────────────────────────────────────────────────────────────────
 
 const ONLINE_WINDOW_MS = 3 * 60 * 1000; // 3 minutos = "en línea"

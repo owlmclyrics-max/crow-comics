@@ -18,19 +18,24 @@ import {
   Send,
   ShieldAlert,
   UserCircle,
+  UserPlus,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Profile } from '../types/comic';
 import {
   fetchConversations,
+  fetchSuggestedProfiles,
   fetchThread,
   markThreadRead,
   presenceOf,
   sendDmMessage,
   subscribeToDm,
+  toggleFollow,
   type DmConversation,
   type DmMessage,
+  type SuggestedProfile,
 } from '../lib/social';
 
 interface MessagesPageProps {
@@ -70,6 +75,39 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
   const meId = user?.id ?? null;
   const [standalonePartner, setStandalonePartner] = useState<Profile | null>(null);
+
+  // v0.10.3: "Hacé amigos" — perfiles activos sugeridos en la bandeja.
+  const [suggested, setSuggested] = useState<SuggestedProfile[] | null>(null);
+
+  useEffect(() => {
+    if (!meId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await fetchSuggestedProfiles(meId);
+        if (!cancelled) setSuggested(list);
+      } catch {
+        if (!cancelled) setSuggested(null); // sección silenciosa si falla
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [meId]);
+
+  const handleSuggestFollow = async (p: SuggestedProfile) => {
+    if (!meId) return;
+    setSuggested((prev) =>
+      (prev ?? []).map((s) => (s.id === p.id ? { ...s, isFollowing: !p.isFollowing } : s)),
+    );
+    try {
+      await toggleFollow(p.id, meId, p.isFollowing);
+    } catch {
+      setSuggested((prev) =>
+        (prev ?? []).map((s) => (s.id === p.id ? { ...s, isFollowing: p.isFollowing } : s)),
+      );
+    }
+  };
 
   // Chat NUEVO (sin mensajes): no está en la lista — traigo su perfil igual.
   useEffect(() => {
@@ -257,6 +295,79 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* ── v0.10.3: Hacé amigos — perfiles activos de la comunidad ── */}
+          {suggested && suggested.length > 0 && (
+            <div className="px-4 py-3 border-b border-line space-y-2.5">
+              <h3 className="text-[11px] font-black uppercase tracking-wider text-mute flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-accent2" />
+                Hacé amigos
+              </h3>
+              <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
+                {suggested.map((p) => (
+                  <div
+                    key={p.id}
+                    className="shrink-0 w-[96px] rounded-2xl border border-line bg-bg p-2.5 flex flex-col items-center gap-1.5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onSelectProfile(p.id)}
+                      className="relative shrink-0"
+                      title={`Ver perfil de @${p.username}`}
+                    >
+                      {p.avatar_url ? (
+                        <img
+                          src={p.avatar_url}
+                          alt={p.username}
+                          className="w-11 h-11 rounded-xl object-cover border border-line"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-[11px] font-black text-onaccent">
+                          {p.username.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      {p.online && (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-bg"
+                          title="En línea"
+                        />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onSelectProfile(p.id)}
+                      className="max-w-full text-[10px] font-bold text-ink truncate hover:underline"
+                    >
+                      @{p.username}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleSuggestFollow(p)}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black transition-colors ${
+                          p.isFollowing
+                            ? 'bg-raised text-mute hover:text-ink border border-line'
+                            : 'bg-accent hover:bg-accent2 text-onaccent'
+                        }`}
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        {p.isFollowing ? 'Siguiendo' : 'Seguir'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPartnerId(p.id)}
+                        className="p-1 rounded-lg text-mute hover:text-accent hover:bg-raised transition-colors"
+                        title={`Chatear con @${p.username}`}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {conversations === null ? (
             <div className="py-16 text-center">
