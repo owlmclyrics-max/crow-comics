@@ -18,7 +18,6 @@ import {
   Send,
   ShieldAlert,
   UserCircle,
-  UserPlus,
   Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +32,6 @@ import {
   presenceOf,
   sendDmMessage,
   subscribeToDm,
-  toggleFollow,
   type DmConversation,
   type DmMessage,
   type SuggestedProfile,
@@ -59,65 +57,36 @@ const relativeTime = (iso: string): string => {
   return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 };
 
-// ── v0.10.3: card de perfil sugerido (reutilizada en la bandeja y en el
-//    panel "Tus mensajes" cuando no hay chats) ──
-const SuggestedCard: React.FC<{
+// ── v0.10.3: burbuja de amigo activo (estilo IG: avatar circular + nombre
+//    debajo, click = abrir el chat directo) ──
+const SuggestedBubble: React.FC<{
   p: SuggestedProfile;
-  onSelect: () => void;
-  onMessage: () => void;
-  onFollow: () => void;
-}> = ({ p, onSelect, onMessage, onFollow }) => (
-  <div className="shrink-0 w-32 rounded-2xl border border-line bg-bg p-3 flex flex-col items-center gap-2">
-    <button
-      type="button"
-      onClick={onSelect}
-      className="relative shrink-0"
-      title={`Ver perfil de @${p.username}`}
-    >
+  onClick: () => void;
+}> = ({ p, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="shrink-0 w-[4.5rem] flex flex-col items-center gap-1.5 group py-1"
+    title={`Chatear con @${p.username}`}
+  >
+    <span className="relative shrink-0">
       <img
         src={avatarOrFallback(p.avatar_url, p.id)}
         alt={p.username}
-        className="w-16 h-16 rounded-2xl object-cover border border-line"
+        className="w-14 h-14 rounded-full object-cover border border-line group-hover:border-accent transition-colors"
         referrerPolicy="no-referrer"
       />
       {p.online && (
         <span
-          className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-bg"
+          className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-surface"
           title="En línea"
         />
       )}
-    </button>
-    <button
-      type="button"
-      onClick={onSelect}
-      className="max-w-full text-xs font-bold text-ink truncate hover:underline"
-      title={`@${p.username}`}
-    >
-      @{p.username}
-    </button>
-    <div className="flex items-center gap-1.5">
-      <button
-        type="button"
-        onClick={onFollow}
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-colors ${
-          p.isFollowing
-            ? 'bg-raised text-mute hover:text-ink border border-line'
-            : 'bg-accent hover:bg-accent2 text-onaccent'
-        }`}
-      >
-        <UserPlus className="w-3.5 h-3.5" />
-        {p.isFollowing ? 'Siguiendo' : 'Seguir'}
-      </button>
-      <button
-        type="button"
-        onClick={onMessage}
-        className="p-1.5 rounded-xl text-mute hover:text-accent hover:bg-raised transition-colors"
-        title={`Chatear con @${p.username}`}
-      >
-        <MessageCircle className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
+    </span>
+    <span className="max-w-full text-[10px] font-bold text-mute truncate group-hover:text-ink transition-colors">
+      {p.username}
+    </span>
+  </button>
 );
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({
@@ -156,20 +125,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       cancelled = true;
     };
   }, [meId]);
-
-  const handleSuggestFollow = async (p: SuggestedProfile) => {
-    if (!meId) return;
-    setSuggested((prev) =>
-      (prev ?? []).map((s) => (s.id === p.id ? { ...s, isFollowing: !p.isFollowing } : s)),
-    );
-    try {
-      await toggleFollow(p.id, meId, p.isFollowing);
-    } catch {
-      setSuggested((prev) =>
-        (prev ?? []).map((s) => (s.id === p.id ? { ...s, isFollowing: p.isFollowing } : s)),
-      );
-    }
-  };
 
   // Chat NUEVO (sin mensajes): no está en la lista — traigo su perfil igual.
   useEffect(() => {
@@ -358,22 +313,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </button>
           </div>
 
-          {/* ── v0.10.3: Hacé amigos — perfiles activos de la comunidad ── */}
+          {/* ── v0.10.3: Amigos — burbujas estilo IG arriba de la lista ── */}
           {suggested && suggested.length > 0 && (
-            <div className="px-4 py-3 border-b border-line space-y-2.5">
-              <h3 className="text-[11px] font-black uppercase tracking-wider text-mute flex items-center gap-1.5">
+            <div className="border-b border-line py-3">
+              <h3 className="px-4 pb-2.5 text-[11px] font-black uppercase tracking-wider text-mute flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-accent2" />
-                Hacé amigos
+                Amigos
               </h3>
-              <div className="flex gap-3 overflow-x-auto pb-1.5 -mx-1 px-1">
+              <div className="flex gap-2.5 overflow-x-auto px-4 pb-1 scrollbar-thin">
                 {suggested.map((p) => (
-                  <SuggestedCard
-                    key={p.id}
-                    p={p}
-                    onSelect={() => onSelectProfile(p.id)}
-                    onMessage={() => setPartnerId(p.id)}
-                    onFollow={() => void handleSuggestFollow(p)}
-                  />
+                  <SuggestedBubble key={p.id} p={p} onClick={() => setPartnerId(p.id)} />
                 ))}
               </div>
             </div>
@@ -389,7 +338,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               <UserCircle className="w-8 h-8 text-faint mx-auto" />
               <p className="text-xs font-bold text-ink">Todavía no hay chats</p>
               <p className="text-[11px] text-mute leading-relaxed">
-                Elegí a alguien de "Hacé amigos" (arriba) o buscá un perfil y tocá{' '}
+                Elegí a alguien de la fila de amigos (arriba) o buscá un perfil y tocá{' '}
                 <strong>Mensaje</strong> para empezar a chatear.
               </p>
             </div>
@@ -554,29 +503,17 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 </button>
               </div>
             </>
-          ) : conversations?.length === 0 && suggested && suggested.length > 0 ? (
-            /* ── v0.10.3: estilo IG — "Tus mensajes" con sugerencias para
-               empezar el primer chat directamente desde acá ── */
-            <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 py-10 overflow-y-auto">
-              <div className="w-24 h-24 rounded-full border-2 border-faint/50 flex items-center justify-center shrink-0">
+          ) : conversations?.length === 0 ? (
+            /* ── v0.10.3: sin chats — estado vacío estilo IG ── */
+            <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 space-y-3">
+              <div className="w-24 h-24 rounded-full border-2 border-faint/40 flex items-center justify-center shrink-0">
                 <MessageCircle className="w-10 h-10 text-faint" />
               </div>
-              <h3 className="mt-5 text-lg font-black text-ink">Tus mensajes</h3>
-              <p className="mt-1 text-xs text-mute max-w-sm leading-relaxed">
-                Chateá en privado con la comunidad Crow. Elegí a alguien de abajo y arrancá la
-                conversación 👋
+              <h3 className="text-lg font-black text-ink">Tus mensajes</h3>
+              <p className="text-xs text-mute max-w-sm leading-relaxed">
+                Chateá en privado con la comunidad Crow. Elegí a alguien de la columna de amigos
+                (a la izquierda) y arrancá la conversación 👋
               </p>
-              <div className="mt-7 flex flex-wrap justify-center gap-3 max-w-2xl">
-                {suggested.map((p) => (
-                  <SuggestedCard
-                    key={p.id}
-                    p={p}
-                    onSelect={() => onSelectProfile(p.id)}
-                    onMessage={() => setPartnerId(p.id)}
-                    onFollow={() => void handleSuggestFollow(p)}
-                  />
-                ))}
-              </div>
             </div>
           ) : (
             <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-center px-8 space-y-3">
