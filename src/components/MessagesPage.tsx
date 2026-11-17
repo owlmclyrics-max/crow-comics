@@ -494,8 +494,13 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
           </div>
         </div>
 
-        {/* ── Chat ── */}
-        <div className={`${partnerId ? 'flex flex-col' : 'hidden lg:flex'} flex-col lg:h-full lg:min-h-0`}>
+        {/* ── Chat ── (móvil: pantalla completa fija con el input siempre
+            visible abajo; PC: panel derecho del grid a todo el alto) ── */}
+        <div
+          className={`${
+            partnerId ? 'fixed inset-0 z-50 bg-bg flex flex-col' : 'hidden'
+          } lg:static lg:inset-auto lg:z-auto lg:flex lg:flex-col lg:h-full lg:min-h-0`}
+        >
           {partnerId && partner ? (
             <>
               {/* Header del chat */}              <div className="px-4 py-3 border-b border-line flex items-center gap-3 shrink-0">
@@ -608,8 +613,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               </div>
             </>
           ) : partnerId && !partner ? (
-            /* ── v0.10.5: mientras carga el perfil del chat abierto ── */
-            <div className="hidden lg:flex flex-1 flex-col items-center justify-center space-y-2">
+            /* ── mientras carga el perfil del chat abierto ── */
+            <div className="flex flex-1 flex-col items-center justify-center space-y-2">
               <RefreshCw className="w-5 h-5 text-accent2 animate-spin" />
               <p className="text-[11px] text-mute">Abriendo el chat…</p>
             </div>
