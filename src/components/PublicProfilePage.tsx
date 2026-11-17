@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Heart, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, ShieldAlert, UserCheck, UserPlus } from 'lucide-react';
 import type { Comic, Profile } from '../types/comic';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useComics } from '../context/ComicsContext';
+import { useAuth } from '../context/AuthContext';
 import { ComicCard } from './ComicCard';
 import { UserBadges } from './UserBadges';
+import { fetchFollowState, presenceOf, toggleFollow, type FollowState } from '../lib/social';
 
 interface PublicProfilePageProps {
   profileId: string;
   onBack: () => void;
   onSelectComic: (comic: Comic) => void;
+  /** v0.10: abre el chat con este perfil. */
+  onMessage?: (profileId: string) => void;
 }
 
 /**
@@ -23,18 +27,36 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   profileId,
   onBack,
   onSelectComic,
+  onMessage,
 }) => {
   const { comics } = useComics();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // v0.10: red social — seguir + presencia
+  const [followState, setFollowState] = useState<FollowState | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [presence, setPresence] = useState<{ online: boolean; label: string }>({ online: false, label: '' });
+
+  const isMe = user?.id === profileId;
+  const isLogged = Boolean(user);
+
+  // Refresco de presencia cada 45s mientras el perfil está abierto.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPresence(presenceOf(profile?.last_seen_at ?? null));
+    }, 45_000);
+    return () => window.clearInterval(timer);
+  }, [profile?.last_seen_at]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
     setFavoriteIds(null);
+    setFollowState(null);
 
     const run = async () => {
       try {
@@ -56,6 +78,15 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
         if (!cancelled) {
           // jsonb: '[]' con ids, o null si el usuario los ocultó.
           setFavoriteIds(Array.isArray(favData) ? (favData as string[]) : null);
+          setPresence(presenceOf((profileData as Profile).last_seen_at ?? null));
+        }
+
+        // v0.10: estado de seguimiento + contadores.
+        try {
+          const state = await fetchFollowState(profileId, user?.id ?? null);
+          if (!cancelled) setFollowState(state);
+        } catch {
+          // sin follows la UI queda sin contadores, no rompe el perfil
         }
       } catch {
         if (!cancelled) setNotFound(true);
@@ -129,9 +160,78 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 {profile.bio}
               </p>
             )}
-            <p className="text-[11px] text-faint font-semibold">
-              Miembro de la comunidad Crow Comics
-            </p>
+            {/* v0.10: presencia + contadores de red */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-[11px] font-semibold">
+              {presence.label ? (
+                <span className={`inline-flex items-center gap-1.5 ${presence.online ? 'text-emerald-400' : 'text-faint'}`}>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${presence.online ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}
+                  />
+                  {presence.label}
+                </span>
+              ) : (
+                <span className="text-faint">Miembro de la comunidad Crow Comics</span>
+              )}
+              {followState && (
+                <span className="text-mute">
+                  <strong className="text-ink">{followState.followers}</strong> seguidores ·{' '}
+                  <strong className="text-ink">{followState.followingCount}</strong> seguidos
+                </span>
+              )}
+            </div>
+
+            {/* v0.10: acciones sociales (solo si no es tu perfil) */}
+            {!isMe && isLogged && (
+              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!user || !followState || followBusy) return;
+                    setFollowBusy(true);
+                    try {
+                      const nowFollowing = await toggleFollow(profileId, user.id, followState.following);
+                      setFollowState({
+                        ...followState,
+                        following: nowFollowing,
+                        followers: followState.followers + (nowFollowing ? 1 : -1),
+                      });
+                    } catch (err) {
+                      console.error('Follow:', err);
+                    } finally {
+                      setFollowBusy(false);
+                    }
+                  }}
+                  disabled={followBusy || !followState}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-60 ${
+                    followState?.following
+                      ? 'bg-raised border border-line text-ink hover:text-red-400 hover:border-red-400/40'
+                      : 'bg-accent hover:bg-accent2 text-onaccent shadow-md'
+                  }`}
+                >
+                  {followState?.following ? (
+                    <>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Siguiendo
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Seguir
+                    </>
+                  )}
+                </button>
+                {onMessage && (
+                  <button
+                    type="button"
+                    onClick={() => onMessage(profileId)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-raised border border-line text-mute hover:text-ink transition-all active:scale-95"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-accent2" />
+                    Mensaje
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="border-t border-line px-5 sm:px-8 py-4 overflow-x-auto">

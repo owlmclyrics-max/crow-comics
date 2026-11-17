@@ -16,10 +16,12 @@
 const SUPABASE_URL = 'https://zllafdlsatueezldoxlh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yu_ioWEZU3TS0302OrHSfA_cu1zNVv1';
 
-// Quien puede subir páginas: mismos roles que el formulario de cómics.
+// Quien puede subir páginas: la tabla app_admins (gestionable desde la
+// web). Fallback: los emails del equipo por si la tabla aún no existe.
 const ALLOWED_EMAILS = new Set([
   'owlmclyrics@gmail.com',
   'mabner112@gmail.com',
+  'tmr296629@gmail.com',
   'crow.comics.01@gmail.com',
 ]);
 
@@ -47,7 +49,17 @@ const verifyAdmin = async (request) => {
     if (!res.ok) return null;
     const user = await res.json();
     const email = String(user?.email || '').toLowerCase();
-    return ALLOWED_EMAILS.has(email) ? email : null;
+    if (ALLOWED_EMAILS.has(email)) return email;
+    // Fallback flexible: la tabla app_admins manda.
+    const tableRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/app_admins?email=eq.${encodeURIComponent(email)}&select=role`,
+      { headers: { apikey: SUPABASE_KEY } },
+    );
+    if (tableRes.ok) {
+      const rows = await tableRes.json();
+      if (Array.isArray(rows) && rows.length > 0) return email;
+    }
+    return null;
   } catch {
     return null;
   }

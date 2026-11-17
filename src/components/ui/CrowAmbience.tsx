@@ -45,7 +45,7 @@ export const CrowAmbience: React.FC<CrowAmbienceProps> = ({
   className = '',
 }) => (
   <div
-    className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+    className={`crow-ambience pointer-events-none absolute inset-0 overflow-hidden ${className}`}
     aria-hidden="true"
   >
     {tint === 'bold' && (

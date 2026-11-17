@@ -176,6 +176,8 @@ export interface Profile {
     favorite_characters: string[];
     reading_style?: string;
   };
+  /** v0.10: última vez visto (heartbeat) — para "En línea / hace X min". */
+  last_seen_at?: string | null;
   created_at: string;
   updated_at: string;
 }

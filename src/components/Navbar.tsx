@@ -23,6 +23,8 @@ import {
   Palette,
   HelpCircle,
   Database,
+  MessageCircle,
+  Crown,
 } from 'lucide-react';
 import type { Comic, LinkReport } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -31,11 +33,13 @@ import { useTheme } from '../context/ThemeContext';
 import { AccentDialog } from './ui/AccentPicker';
 import { AdminHelpModal } from './AdminHelpModal';
 import { AdminStorageModal } from './AdminStorageModal';
+import { AdminsModal } from './AdminsModal';
+import { useDmUnread } from '../hooks/useDmUnread';
 import { NewChaptersBell } from './NewChaptersBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap' | 'mensajes';
 
 // Historial vive en el menú del avatar (y en la barra inferior móvil):
 // fuera del navbar para que la barra nunca se sature.
@@ -67,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenNewComic
 }) => {
-  const { user, profile, isAdmin, canManageContent, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, canManageContent, isOwner, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
   const { getLinkReports, updateLinkReportStatus } = useComics();
   const { theme, toggleTheme } = useTheme();
   const { src: avatarSrc, initials: avatarInitials } = useUserAvatar();
@@ -139,6 +143,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isAdminHelpOpen, setIsAdminHelpOpen] = useState(false);
   // v0.9.9.9.9.1: panel de almacenamiento del bucket "pages".
   const [isAdminStorageOpen, setIsAdminStorageOpen] = useState(false);
+  // v0.10: gestión de admins (solo el owner la ve).
+  const [isAdminsOpen, setIsAdminsOpen] = useState(false);
+  // v0.10: globo de mensajes sin leer para el item "Mensajes".
+  const { unread: dmUnread } = useDmUnread(user?.id ?? null);
 
   return (
     <header className={`group/sidebar crow-sidebar-vt sticky top-0 z-50 w-full bg-bg/90 backdrop-blur-xl border-b border-line lg:fixed lg:inset-y-0 lg:left-0 lg:w-[4.5rem] lg:hover:w-60 lg:transition-[width] lg:duration-300 lg:ease-out lg:border-b-0 lg:border-r lg:shadow-2xl lg:shadow-black/30 ${
@@ -329,6 +337,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                           Nuevo Cómic
                         </button>
                       )}
+                      {isOwner && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsAdminsOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-amber-400 transition-colors"
+                        >
+                          <Crown className="w-4 h-4" />
+                          Gestionar admins
+                        </button>
+                      )}
                       {isAdmin && (
                         <button
                           onClick={() => {
@@ -369,6 +389,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                         >
                           <Database className="w-4 h-4" />
                           Almacenamiento
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('mensajes');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-mute hover:bg-raised hover:text-accent2 transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Mensajes
+                          {dmUnread > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-accent2 text-onaccent text-[10px] font-black">
+                              {dmUnread > 9 ? '9+' : dmUnread}
+                            </span>
+                          )}
                         </button>
                       )}
                       <button
@@ -542,6 +579,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <AccentDialog isOpen={isAccentOpen} onClose={() => setIsAccentOpen(false)} />
       <AdminHelpModal isOpen={isAdminHelpOpen} onClose={() => setIsAdminHelpOpen(false)} />
       <AdminStorageModal isOpen={isAdminStorageOpen} onClose={() => setIsAdminStorageOpen(false)} />
+      <AdminsModal isOpen={isAdminsOpen} onClose={() => setIsAdminsOpen(false)} />
     </header>
   );
 };

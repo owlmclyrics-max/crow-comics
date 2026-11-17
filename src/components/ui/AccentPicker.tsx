@@ -1,15 +1,71 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Palette, X } from 'lucide-react';
-import { useTheme, ACCENT_PRESETS } from '../../context/ThemeContext';
+import { Link2, Palette, RotateCcw, X } from 'lucide-react';
+import {
+  useTheme,
+  ACCENT_PRESETS,
+  type CrowAmbienceLevel,
+  type CrowMotion,
+  type CrowRadius,
+} from '../../context/ThemeContext';
+
+/** Grupo de botones compacto (esquinas / ambiente / animaciones). */
+const OptionGroup: React.FC<{
+  label: string;
+  hint?: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}> = ({ label, hint, value, options, onChange }) => (
+  <div className="mt-4">
+    <div className="flex items-center justify-between">
+      <label className="text-[10px] font-semibold text-mute uppercase tracking-wider">
+        {label}
+      </label>
+      {hint && <span className="text-[10px] text-faint">{hint}</span>}
+    </div>
+    <div
+      className={`mt-2 gap-1.5 ${options.length >= 3 ? 'grid grid-cols-3' : 'grid grid-cols-2'}`}
+    >
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`px-2 py-2 rounded-xl text-[11px] font-bold transition-colors ${
+            value === opt.value
+              ? 'bg-accent text-onaccent'
+              : 'bg-bg border border-line text-mute hover:text-ink hover:bg-raised'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 /**
- * Controles de color de acento (presets + tono personalizado).
+ * Controles de personalización: color de acento, acento secundario
+ * bicolor, esquinas, ambiente y animaciones (v0.9.9.9.9.4).
  * Reutilizados por el popover del navbar y por el diálogo centrado.
  */
 const AccentControls: React.FC<{ onPick?: () => void }> = ({ onPick }) => {
-  const { accentHue, setAccentHue } = useTheme();
+  const {
+    accentHue,
+    setAccentHue,
+    accent2Hue,
+    setAccent2Hue,
+    radius,
+    setRadius,
+    ambience,
+    setAmbience,
+    motion,
+    setMotion,
+    resetCustomization,
+  } = useTheme();
+  const linked = accent2Hue === null;
 
   return (
     <>
@@ -66,11 +122,103 @@ const AccentControls: React.FC<{ onPick?: () => void }> = ({ onPick }) => {
         />
       </div>
 
+      {/* ── Acento secundario (v0.9.9.9.9.4): degradados bicolor ── */}
+      <div className="mt-4 pt-3 border-t border-line">
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-[10px] font-semibold text-mute uppercase tracking-wider flex items-center gap-1.5">
+            <Link2 className="w-3 h-3" />
+            Segundo color
+          </label>
+          <button
+            type="button"
+            onClick={() => setAccent2Hue(linked ? 255 : null)}
+            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${
+              linked
+                ? 'bg-bg border border-line text-mute hover:text-ink'
+                : 'bg-accent text-onaccent'
+            }`}
+          >
+            {linked ? 'Separado' : 'Mismo color'}
+          </button>
+        </div>
+        {!linked && (
+          <div className="mt-2">
+            <p className="text-[10px] text-faint leading-relaxed">
+              Los degradados (hero, botones grandes) pasan a ser de dos colores.
+            </p>
+            <input
+              type="range"
+              min={0}
+              max={359}
+              value={Math.round(accent2Hue ?? 255)}
+              onChange={(e) => setAccent2Hue(Number(e.target.value))}
+              className="mt-2 w-full h-3 rounded-full appearance-none cursor-pointer touch-none
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5
+                [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full
+                [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md
+                [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink
+                [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full
+                [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-ink"
+              style={{
+                background:
+                  'linear-gradient(to right, oklch(0.53 0.22 0), oklch(0.53 0.22 60), oklch(0.53 0.22 120), oklch(0.53 0.22 180), oklch(0.53 0.22 240), oklch(0.53 0.22 300), oklch(0.53 0.22 360))',
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Forma y ambiente ── */}
+      <OptionGroup
+        label="Esquinas"
+        value={radius}
+        onChange={(v) => setRadius(v as CrowRadius)}
+        options={[
+          { value: 'soft', label: 'Redondas' },
+          { value: 'normal', label: 'Normales' },
+          { value: 'sharp', label: 'Rectas' },
+        ]}
+      />
+      <OptionGroup
+        label="Ambiente de fondo"
+        value={ambience}
+        onChange={(v) => setAmbience(v as CrowAmbienceLevel)}
+        options={[
+          { value: 'on', label: 'Normal' },
+          { value: 'dim', label: 'Tenue' },
+          { value: 'off', label: 'Apagado' },
+        ]}
+      />
+      <OptionGroup
+        label="Animaciones"
+        value={motion}
+        onChange={(v) => setMotion(v as CrowMotion)}
+        options={[
+          { value: 'full', label: 'Completas' },
+          { value: 'calm', label: 'Serenas' },
+        ]}
+      />
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={resetCustomization}
+          title="Volver todo a los valores originales"
+          className="w-full px-2 py-2 rounded-xl text-[11px] font-bold bg-bg border border-line text-mute hover:text-red-400 hover:bg-raised transition-colors inline-flex items-center justify-center gap-1.5"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Restaurar todo
+        </button>
+      </div>
+
       {/* Vista previa */}
       <div className="mt-4 flex items-center gap-2 rounded-xl bg-raised p-2.5">
         <span
           className="w-6 h-6 rounded-lg shrink-0"
           style={{ backgroundColor: 'oklch(0.6 0.21 var(--crow-hue))' }}
+        />
+        <span
+          className="w-6 h-6 rounded-lg shrink-0"
+          style={{ backgroundColor: 'oklch(0.53 0.22 var(--crow-hue2, var(--crow-hue)))' }}
         />
         <span className="text-xs font-black text-ink uppercase">
           CROW <span className="text-accent">COMICS</span>
@@ -120,7 +268,7 @@ export const AccentPicker: React.FC<{ variant?: 'box' | 'pill' }> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(80vw,18rem)] rounded-2xl border border-line bg-surface p-4 shadow-2xl animate-fade-in sm:w-72">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[min(80vw,18rem)] rounded-2xl border border-line bg-surface p-4 shadow-2xl animate-fade-in sm:w-72 max-h-[70svh] overflow-y-auto">
           <AccentControls />
         </div>
       )}

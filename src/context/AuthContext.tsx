@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '../types/comic';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { touchPresence } from '../lib/social';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isCollaborator: boolean;
   canManageContent: boolean;
+  /** v0.10: el dueño (rol owner en app_admins) gestiona la tabla de admins. */
+  isOwner: boolean;
   loading: boolean;
   isDemoMode: boolean;
   signIn: (email: string, password?: string, asAdmin?: boolean) => Promise<{ error: Error | null }>;
@@ -29,7 +32,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ADMIN_EMAILS = [
   'owlmclyrics@gmail.com',
   'mabner112@gmail.com',
-  // agrega más correos admin aquí (en minúsculas)
+  'tmr296629@gmail.com',
+  // agrega más correos admin aquí (en minúsculas) — respaldo si la tabla
+  // app_admins aún no existe (lo normal es gestionarlos desde la web)
 ];
 
 const COLLABORATOR_EMAILS = [
@@ -75,6 +80,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  // ── v0.10: PRESENCIA — heartbeat "estoy acá" ──
+  // Marca last_seen_at al entrar y cada 60s mientras la web esté abierta
+  // (también al volver a la pestaña: los browsers pausan timers en fondo).
+  // Otros usuarios ven "En línea" o "hace X min" en perfiles y chat.
+  useEffect(() => {
+    if (!user) return;
+    void touchPresence(user.id);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void touchPresence(user.id);
+    }, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void touchPresence(user.id);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
+    };
+  }, [user]);
 
   /**
    * Garantiza que cada cuenta (Google incluida) tenga su fila en `profiles`.
@@ -217,12 +244,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDemoAdmin(true);
   };
 
-  // ── Roles ──
-  // ADMIN: la cuenta de Google está en ADMIN_EMAILS (sin segundo login).
+  // ── Roles (v0.10): de la tabla app_admins, gestionable desde la web ──
+  // El dueño agrega/saca admins sin tocar SQL. Si la tabla aún no existe
+  // o falla, caemos a la lista del código (modo rescate).
+  const [dbRole, setDbRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const email = (user?.email ?? '').toLowerCase();
+    if (!user || !email) {
+      setDbRole(null);
+      return;
+    }
+    let cancelled = false;
+    if (!isSupabaseConfigured || !supabase) {
+      setDbRole(null);
+      return;
+    }
+    const db = supabase;
+    void (async () => {
+      try {
+        const { data, error } = await db
+          .from('app_admins')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+        if (cancelled) return;
+        setDbRole(error || !data ? null : (data as { role: string }).role);
+      } catch {
+        if (!cancelled) setDbRole(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const fallbackRole = (() => {
+    const email = (user?.email ?? '').toLowerCase();
+    if (ADMIN_EMAILS.includes(email)) return 'admin';
+    if (COLLABORATOR_EMAILS.includes(email)) return 'colaborador';
+    return null;
+  })();
+
   // Demo: sin Supabase configurado, consola demo.
-  const isAdmin = isDemoAdmin || ADMIN_EMAILS.includes((user?.email ?? '').toLowerCase());
-  const isCollaborator = !isAdmin && COLLABORATOR_EMAILS.includes((user?.email ?? '').toLowerCase());
+  const isAdmin =
+    isDemoAdmin ||
+    (dbRole ?? fallbackRole) === 'owner' ||
+    (dbRole ?? fallbackRole) === 'admin';
+  const isCollaborator =
+    !isAdmin && (dbRole ?? fallbackRole) === 'colaborador';
   const canManageContent = isAdmin || isCollaborator;
+  /** v0.10: el dueño ve el panel de gestión de admins. */
+  const isOwner = (dbRole ?? fallbackRole) === 'owner';
 
   return (
     <AuthContext.Provider
@@ -233,6 +306,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isCollaborator,
         canManageContent,
+        isOwner,
         loading,
         isDemoMode: !isSupabaseConfigured,
         signIn,

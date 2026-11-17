@@ -57,7 +57,7 @@
   --c-mute: oklch(0.73 0.008 var(--crow-hue));
   --c-faint: oklch(0.56 0.008 var(--crow-hue));
   --c-accent: oklch(var(--crow-accent-l) 0.21 var(--crow-hue));
-  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue));
+  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue2, var(--crow-hue)));
   --c-onaccent: oklch(var(--crow-onaccent-l) 0 0);
   --c-overlay: oklch(0.08 0.01 var(--crow-hue) / 0.8);
 }
@@ -76,7 +76,7 @@
   --c-mute: oklch(0.42 0.015 var(--crow-hue));
   --c-faint: oklch(0.58 0.01 var(--crow-hue));
   --c-accent: oklch(var(--crow-accent-l) 0.21 var(--crow-hue));
-  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue));
+  --c-accent2: oklch(var(--crow-accent2-l) 0.22 var(--crow-hue2, var(--crow-hue)));
   --c-onaccent: oklch(var(--crow-onaccent-l) 0 0);
   --c-overlay: oklch(0.2 0.02 var(--crow-hue) / 0.5);
 }
@@ -108,6 +108,56 @@
   --color-accent2: var(--c-accent2);
   --color-onaccent: var(--c-onaccent);
   --color-overlay: var(--c-overlay);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PERSONALIZACIÓN DE FORMA (v0.9.9.9.9.4) — data-atributos en <html>
+   ══════════════════════════════════════════════════════════════ */
+
+/* Esquinas: Tailwind v4 genera rounded-* con var(--radius-*) — basta
+   con redefinir la escala según la preferencia guardada. */
+[data-radius='soft'] {
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2.25rem;
+}
+[data-radius='sharp'] {
+  --radius-xs: 0.0625rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+}
+
+/* Ambiente de fondo (resplandor, dots y emblema del CrowAmbience). */
+[data-ambience='dim'] .crow-ambience {
+  opacity: 0.4;
+}
+[data-ambience='off'] .crow-ambience {
+  display: none;
+}
+
+/* Animaciones "serenas": los loops decorativos (parallax, flotado,
+   pulso) corren una sola vez y las transiciones se acortan. Los loops
+   de funcionalidad (spin de carga) se dejan: son feedback, no adorno. */
+html[data-motion='calm'] {
+  scroll-behavior: auto;
+}
+[data-motion='calm'] .animate-parallax-float,
+[data-motion='calm'] .animate-float,
+[data-motion='calm'] .animate-pulse-slow {
+  animation: none !important;
+}
+[data-motion='calm'] * {
+  transition-duration: 120ms !important;
 }
 
 @layer base {

@@ -71,6 +71,9 @@ const LibraryPage = lazy(() =>
 const ComicRequestsPage = lazy(() =>
   import('./components/ComicRequestsPage').then((m) => ({ default: m.ComicRequestsPage })),
 );
+const MessagesPage = lazy(() =>
+  import('./components/MessagesPage').then((m) => ({ default: m.MessagesPage })),
+);
 
 // Los modales de administración también: solo el admin los usa y rara vez.
 const ComicAdminFormModal = lazy(() =>
@@ -285,6 +288,8 @@ export const App: React.FC = () => {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
     () => initialHash.profileId ?? initialSaved?.profileId ?? null,
   );
+  // v0.10: conversación de chat a abrir directa (botón "Mensaje" del perfil)
+  const [chatPartnerId, setChatPartnerId] = useState<string | null>(null);
 
   // Buscador global: paleta rápida + pantalla completa
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -712,6 +717,25 @@ export const App: React.FC = () => {
               setSelectedProfileId(null);
             }}
             onSelectComic={handleOpenComicDetail}
+            onMessage={(partnerId) => {
+              setChatPartnerId(partnerId);
+              setCurrentView('mensajes');
+            }}
+          />
+        ) : currentView === 'mensajes' ? (
+          /* ======================================================== */
+          /* VISTA 7.6: MENSAJES — chat directo de la comunidad (v0.10)  */
+          /* ======================================================== */
+          <MessagesPage
+            initialPartner={chatPartnerId}
+            onBack={() => {
+              setCurrentView('inicio');
+              setChatPartnerId(null);
+            }}
+            onSelectProfile={(profileId) => {
+              setSelectedProfileId(profileId);
+              setCurrentView('public-profile');
+            }}
           />
         ) : currentView === 'profile' || currentView === 'historial' ? (
           /* ======================================================== */
