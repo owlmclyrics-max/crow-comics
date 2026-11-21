@@ -233,13 +233,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       : 'text-mute hover:text-ink hover:bg-raised/60'
                   }`}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="relative shrink-0">
+                    <Icon className="w-4 h-4" />
+                    {/* v0.10.6.2: globo superpuesto al icono — en la barra
+                        colapsada no corre el icono del centro. */}
+                    {typeof item.badge === 'number' && item.badge > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent2 text-onaccent text-[9px] font-black leading-none shadow-sm">
+                        {item.badge > 9 ? '9+' : item.badge}
+                      </span>
+                    )}
+                  </span>
                   <span className="lg:hidden lg:group-hover/sidebar:inline">{item.label}</span>
-                  {typeof item.badge === 'number' && item.badge > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-accent2 text-onaccent text-[10px] font-black">
-                      {item.badge > 9 ? '9+' : item.badge}
-                    </span>
-                  )}
                 </button>
               );
             })}
