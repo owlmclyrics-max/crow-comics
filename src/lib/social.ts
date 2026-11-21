@@ -11,6 +11,15 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { pushNotification } from './notifications';
 
+/**
+ * Sufijo único por suscripción: dos componentes (navbar y barra móvil)
+ * pueden escuchar el mismo globo de no leídos a la vez; si comparten
+ * nombre de canal, Supabase explota con "cannot add callbacks after
+ * .subscribe()". (v0.10.6.1)
+ */
+let realtimeSeq = 0;
+const channelName = (base: string) => `${base}-${++realtimeSeq}`;
+
 // ── FOLLOWS ──────────────────────────────────────────────────────────────────
 
 export interface FollowState {
@@ -329,7 +338,7 @@ export const subscribeToDm = (
   if (!isSupabaseConfigured || !supabase) return () => {};
   const db = supabase;
   const channel = db
-    .channel(`dm-${channelKey}-${meId.slice(0, 8)}`)
+    .channel(channelName(`dm-${channelKey}-${meId.slice(0, 8)}`))
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'dm_messages', filter: `recipient_id=eq.${meId}` },
@@ -359,7 +368,7 @@ export const subscribeToUnread = (
   if (!isSupabaseConfigured || !supabase) return () => {};
   const db = supabase;
   const channel = db
-    .channel(`dm-unread-${meId.slice(0, 8)}`)
+    .channel(channelName(`dm-unread-${meId.slice(0, 8)}`))
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'dm_messages', filter: `recipient_id=eq.${meId}` },

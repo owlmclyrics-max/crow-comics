@@ -6,6 +6,9 @@
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
+// Nombre de canal único por suscripción (evita colisión al remontar).
+let notifSeq = 0;
+
 export type NotificationType = 'follow' | 'message' | 'like' | 'comment';
 
 export interface NotificationItem {
@@ -125,7 +128,7 @@ export const subscribeToNotifications = (
   if (!isSupabaseConfigured || !supabase) return () => {};
   const db = supabase;
   const channel = db
-    .channel(`notif-${meId.slice(0, 8)}`)
+    .channel(`notif-${meId.slice(0, 8)}-${++notifSeq}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${meId}` },
