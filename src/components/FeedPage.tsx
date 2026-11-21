@@ -128,7 +128,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
       ),
     );
     try {
-      await togglePostLike(post.id, meId, post.liked_by_me);
+      await togglePostLike(post.id, meId, post.liked_by_me, post.user_id);
     } catch (err) {
       setPosts((prev) =>
         (prev ?? []).map((p) =>
@@ -169,7 +169,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
     const text = (commentDraft[post.id] ?? '').trim();
     if (!meId || !text) return;
     try {
-      await addPostComment(post.id, meId, text);
+      await addPostComment(post.id, meId, text, post.user_id);
       setCommentDraft((prev) => ({ ...prev, [post.id]: '' }));
       const list = await fetchPostComments(post.id);
       setComments((prev) => ({ ...prev, [post.id]: list }));

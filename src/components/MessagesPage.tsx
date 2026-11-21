@@ -26,6 +26,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { avatarOrFallback } from '../lib/avatarFallback';
+import { markActorNotificationsRead } from '../lib/notifications';
 import type { Profile } from '../types/comic';
 import {
   fetchConversations,
@@ -68,15 +69,19 @@ const relativeTime = (iso: string): string => {
 const SuggestedBubble: React.FC<{
   p: SuggestedProfile;
   onSelect: () => void;
+  onMessage: () => void;
   onFollow: () => void;
-}> = ({ p, onSelect, onFollow }) => (
+}> = ({ p, onSelect, onMessage, onFollow }) => {
+  // Amigo mutuo: la foto abre el chat directo. No-amigo: va a su perfil.
+  const open = p.isFriend ? onMessage : onSelect;
+  return (
   <div className="relative shrink-0 w-[4.5rem] flex flex-col items-center gap-1.5 py-1">
     <div className="relative shrink-0">
       <button
         type="button"
-        onClick={onSelect}
+        onClick={open}
         className="block"
-        title={`Ver perfil de @${p.username}`}
+        title={p.isFriend ? `Chatear con @${p.username}` : `Ver perfil de @${p.username}`}
       >
         <img
           src={avatarOrFallback(p.avatar_url, p.id)}
@@ -106,14 +111,15 @@ const SuggestedBubble: React.FC<{
     </div>
     <button
       type="button"
-      onClick={onSelect}
+      onClick={open}
       className="max-w-full text-[10px] font-bold text-mute truncate hover:text-ink transition-colors"
       title={`@${p.username}`}
     >
       {p.username}
     </button>
   </div>
-);
+  );
+};
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({
   initialPartner,
@@ -281,6 +287,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
         const msgs = await fetchThread(partnerId, meId);
         if (!cancelled) setThread(msgs);
         await markThreadRead(partnerId, meId);
+        // Al abrir el hilo, sus avisos de mensaje dejan de contar.
+        void markActorNotificationsRead(partnerId, 'message');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'No se pudo cargar el chat');
       } finally {
@@ -364,7 +372,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
       {/* v0.10.4: layout IG — columna izquierda fija con header + amigos +
           chats, y el chat a la derecha ocupando todo el alto en PC */}
-      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:rounded-none lg:border-0 lg:h-[100svh] lg:grid lg:grid-cols-[340px_1fr]">
+      <div className="rounded-3xl border border-line bg-surface overflow-hidden lg:rounded-none lg:border-0 lg:h-[calc(100svh-3.5rem)] lg:grid lg:grid-cols-[340px_1fr]">
         {/* ── Lista de conversaciones (columna izquierda) ── */}
         <div
           className={`flex flex-col border-line lg:border-r bg-surface lg:h-full lg:min-h-0 ${
@@ -403,6 +411,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     key={p.id}
                     p={p}
                     onSelect={() => onSelectProfile(p.id)}
+                    onMessage={() => setPartnerId(p.id)}
                     onFollow={() => void handleSuggestFollow(p)}
                   />
                 ))}
@@ -498,7 +507,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             visible abajo; PC: panel derecho del grid a todo el alto) ── */}
         <div
           className={`${
-            partnerId ? 'fixed inset-0 z-50 bg-bg flex flex-col' : 'hidden'
+            partnerId ? 'fixed inset-0 z-[55] bg-bg flex flex-col' : 'hidden'
           } lg:static lg:inset-auto lg:z-auto lg:flex lg:flex-col lg:h-full lg:min-h-0`}
         >
           {partnerId && partner ? (

@@ -596,6 +596,7 @@ export const App: React.FC = () => {
           }}
           onOpenProfile={() => setCurrentView('profile')}
           onOpenNewComic={handleOpenNewComic}
+          onSelectProfile={openSearchProfile}
         />
       )}
 
@@ -893,17 +894,19 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-line/80 bg-bg py-8 pb-24 md:pb-8 text-center text-xs text-mute">
-        <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p className="flex items-center justify-center gap-1.5 text-mute">
-            Desarrollado para la comunidad de cómics con <Heart className="w-3.5 h-3.5 text-accent fill-accent inline" />
-          </p>
-          <p className="text-[11px] text-mute">
-            Todas las maquetaciones y traducciones pertenecen a sus respectivos fansubs y equipos de scanlation.
-          </p>
-        </div>
-      </footer>
+      {/* Footer (oculto en Mensajes: la vista es de una sola pantalla) */}
+      {currentView !== 'mensajes' && (
+        <footer className="mt-auto border-t border-line/80 bg-bg py-8 pb-24 md:pb-8 text-center text-xs text-mute">
+          <div className="max-w-7xl mx-auto px-4 space-y-2">
+            <p className="flex items-center justify-center gap-1.5 text-mute">
+              Desarrollado para la comunidad de cómics con <Heart className="w-3.5 h-3.5 text-accent fill-accent inline" />
+            </p>
+            <p className="text-[11px] text-mute">
+              Todas las maquetaciones y traducciones pertenecen a sus respectivos fansubs y equipos de scanlation.
+            </p>
+          </div>
+        </footer>
+      )}
 
       {/* ── Barra inferior móvil estilo app nativa + volver arriba ── */}
       {!isImmersiveReading && (

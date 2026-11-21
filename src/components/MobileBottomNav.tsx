@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Library, Send, Map as MapIcon, History, Plus, X, Check, Bell, BellRing, HelpCircle } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Library, Send, Map as MapIcon, History, Plus, X, Check, Bell, BellRing, HelpCircle, Sparkles, MessageCircle } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useDmUnread } from '../hooks/useDmUnread';
 import { AccentDialog } from './ui/AccentPicker';
 import { AdminHelpModal } from './AdminHelpModal';
 import { showToast } from './ui/Toast';
@@ -29,10 +30,13 @@ interface MobileBottomNavProps {
   onOpenNewComic?: () => void;
 }
 
+// v0.10.6: el social viaja en la barra — Momentos y Mensajes al pulgar.
+// "Personajes" pasa a la hoja "Más" para no saturar (también está en el buscador).
 const TABS = [
   { view: 'inicio', label: 'Inicio', icon: Home },
   { view: 'comics', label: 'Cómics', icon: BookOpen },
-  { view: 'personajes', label: 'Personajes', icon: User },
+  { view: 'feed', label: 'Momentos', icon: Sparkles },
+  { view: 'mensajes', label: 'Mensajes', icon: MessageCircle },
 ] as const;
 
 const isIosDevice = () =>
@@ -52,6 +56,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const { canManageContent, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  // Puntito de mensajes sin leer en la pestaña Mensajes.
+  const { unread: dmUnread } = useDmUnread(user?.id ?? null);
   const [isAccentOpen, setIsAccentOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // v0.9.9.9.1: panel de ayuda para admins (guía de subida + conversor Drive).
@@ -166,13 +172,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-label="Navegación móvil"
       >
-        <div className="grid grid-cols-5 items-stretch">
+        <div className="grid grid-cols-6 items-stretch">
           {TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive =
-              tab.view === 'personajes'
-                ? currentView === 'personajes' || currentView === 'character-detail'
-                : currentView === tab.view;
+            const isActive = currentView === tab.view;
             return (
               <button
                 key={tab.view}
@@ -188,6 +191,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 )}
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.6 : 2} />
                 {tab.label}
+                {tab.view === 'mensajes' && dmUnread > 0 && (
+                  <span
+                    className="absolute top-1.5 left-1/2 ml-2 w-2 h-2 rounded-full bg-accent2"
+                    aria-label={`${dmUnread} mensajes sin leer`}
+                  />
+                )}
               </button>
             );
           })}
@@ -331,6 +340,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 Color del sitio
               </button>
 
+              <button
+                type="button"
+                onClick={() => go('personajes')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Personajes
+              </button>
               <button
                 type="button"
                 onClick={() => go('biblioteca')}

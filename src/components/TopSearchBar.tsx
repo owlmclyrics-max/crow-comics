@@ -13,8 +13,8 @@ interface TopSearchBarProps {
  */
 export const TopSearchBar: React.FC<TopSearchBarProps> = ({ onOpen, hint }) => {
   return (
-    <div className="sticky top-16 lg:top-0 z-40 w-full border-b border-line/70 bg-bg/70 backdrop-blur-xl lg:ml-[4.5rem] lg:w-auto">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-3 py-2 sm:px-6 lg:max-w-none lg:px-8">
+    <div className="sticky top-16 lg:top-0 z-40 w-full border-b border-line/70 bg-bg/70 backdrop-blur-xl lg:ml-[4.5rem] lg:w-auto lg:h-14">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-3 py-2 sm:px-6 lg:max-w-none lg:px-8 lg:h-full lg:py-0">
         <button
           type="button"
           onClick={onOpen}

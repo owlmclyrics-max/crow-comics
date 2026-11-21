@@ -38,6 +38,7 @@ import { AdminStorageModal } from './AdminStorageModal';
 import { AdminsModal } from './AdminsModal';
 import { useDmUnread } from '../hooks/useDmUnread';
 import { NewChaptersBell } from './NewChaptersBell';
+import { NotificationsBell } from './NotificationsBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
@@ -62,6 +63,8 @@ interface NavbarProps {
   onOpenAuth: (tab?: 'signin' | 'signup' | 'admin') => void;
   onOpenProfile: () => void;
   onOpenNewComic: () => void;
+  /** Abre el perfil público de otra cuenta (para las notificaciones). */
+  onSelectProfile?: (profileId: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -71,7 +74,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectComic,
   onOpenAuth,
   onOpenProfile,
-  onOpenNewComic
+  onOpenNewComic,
+  onSelectProfile,
 }) => {
   const { user, profile, isAdmin, canManageContent, isOwner, signInWithGoogle, signOut, isDemoMode, loading: authLoading } = useAuth();
   const { getLinkReports, updateLinkReportStatus } = useComics();
@@ -254,6 +258,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               paleta NO se muestra (está duplicada con "Color del sitio" del
               menú hamburguesa). En PC (lg+) queda idéntica a siempre. */}
           <div className="flex flex-row items-center justify-center gap-1.5 shrink-0 lg:flex-col lg:w-full lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
+            {/* v0.10.6: campana de notificaciones sociales (follow/mensaje/like) */}
+            {user && (
+              <NotificationsBell
+                onSelectProfile={(id) => onSelectProfile?.(id)}
+                onOpenMessages={() => onNavigate('mensajes')}
+                onOpenFeed={() => onNavigate('feed')}
+              />
+            )}
             {/* Campana: capítulos subidos desde tu última visita (todos) */}
             <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
             <button

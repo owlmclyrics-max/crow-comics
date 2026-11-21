@@ -7,6 +7,7 @@
  * tomos (1 GB no da para memes 😄).
  */
 import { supabase, isSupabaseConfigured } from './supabase';
+import { pushNotification } from './notifications';
 
 export interface FeedPost {
   id: string;
@@ -54,7 +55,12 @@ export const createFeedPost = async (meId: string, body: string): Promise<void> 
 };
 
 /** Da o saca el ❤️. Devuelve el nuevo estado (true = con like). */
-export const togglePostLike = async (postId: string, meId: string, liked: boolean): Promise<boolean> => {
+export const togglePostLike = async (
+  postId: string,
+  meId: string,
+  liked: boolean,
+  ownerId?: string,
+): Promise<boolean> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
   const db = supabase;
   if (liked) {
@@ -64,6 +70,7 @@ export const togglePostLike = async (postId: string, meId: string, liked: boolea
   }
   const { error } = await db.from('community_likes').insert({ post_id: postId, user_id: meId });
   if (error) throw new Error('No se pudo dar like');
+  if (ownerId) void pushNotification(ownerId, meId, 'like', '');
   return true;
 };
 
@@ -110,7 +117,12 @@ export const fetchPostComments = async (postId: string): Promise<FeedComment[]> 
   }));
 };
 
-export const addPostComment = async (postId: string, meId: string, body: string): Promise<void> => {
+export const addPostComment = async (
+  postId: string,
+  meId: string,
+  body: string,
+  ownerId?: string,
+): Promise<void> => {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase no está configurado');
   const db = supabase;
   const clean = body.trim().slice(0, 500);
@@ -119,6 +131,7 @@ export const addPostComment = async (postId: string, meId: string, body: string)
     .from('community_comments')
     .insert({ post_id: postId, user_id: meId, body: clean });
   if (error) throw new Error(`No se pudo comentar: ${error.message}`);
+  if (ownerId) void pushNotification(ownerId, meId, 'comment', clean.slice(0, 140));
 };
 
 /** Borra tu momento. */

@@ -9,6 +9,7 @@
  *   navegador (AuthContext). En línea = visto hace < 3 minutos.
  */
 import { supabase, isSupabaseConfigured } from './supabase';
+import { pushNotification } from './notifications';
 
 // ── FOLLOWS ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,8 @@ export const toggleFollow = async (
     .from('follows')
     .insert({ follower_id: meId, following_id: profileId });
   if (error) throw new Error('No se pudo seguir');
+  // Aviso al seguido (best-effort, no rompe el follow si falla).
+  void pushNotification(profileId, meId, 'follow', '');
   return true;
 };
 
@@ -297,6 +300,7 @@ export const sendDmMessage = async (
     .from('dm_messages')
     .insert({ sender_id: meId, recipient_id: partnerId, body: clean });
   if (error) throw new Error(`No se pudo enviar: ${error.message}`);
+  void pushNotification(partnerId, meId, 'message', clean.slice(0, 140));
 };
 
 /** Marca como leídos los mensajes que me llegaron de `partnerId`. */
