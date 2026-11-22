@@ -10,9 +10,10 @@
  * No toca Storage: solo se guardan links.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Download, FileText, Link2, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileText, Image as ImageIcon, Link2, Loader2, Plus } from 'lucide-react';
 import type { Chapter } from '../types/comic';
 import { buildDriveDownloadUrl, buildDrivePreviewUrl, parseDriveId } from '../lib/driveLinks';
+import { proxyImageUrl } from '../lib/imageUrl';
 import { Modal } from './ui/Modal';
 
 interface BulkDriveImportModalProps {
@@ -44,16 +45,22 @@ const extractUsedIds = (chapters: Chapter[]): Set<string> => {
   return used;
 };
 
-const buildChapterFromId = (comicId: string, fileId: string, n: number): Chapter => {
+const buildChapterFromId = (
+  comicId: string,
+  fileId: string,
+  n: number,
+  coverUrl: string,
+  releaseDate: string,
+): Chapter => {
   const stamp = Date.now() + Math.floor(Math.random() * 1000);
   return {
     id: `new_ch_${stamp}_${Math.random().toString(36).slice(2, 6)}`,
     comic_id: comicId,
     chapter_number: n,
     title: `Capítulo #${n}`,
-    cover_url: '',
+    cover_url: coverUrl.trim(),
     pages_count: 32,
-    release_date: TODAY,
+    release_date: releaseDate || TODAY,
     pdf_url: buildDrivePreviewUrl(fileId),
     links: [
       {
@@ -78,6 +85,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const [raw, setRaw] = useState('');
   const [start, setStart] = useState(1);
   const [touched, setTouched] = useState(false);
+  // v0.11.3: portada y fecha por tomo (con valores "para todos" al principio).
+  const [bulkCover, setBulkCover] = useState('');
+  const [bulkDate, setBulkDate] = useState(TODAY);
+  const [details, setDetails] = useState<Record<string, { cover: string; date: string }>>({});
 
   const usedIds = useMemo(() => extractUsedIds(existingChapters), [existingChapters]);
 
@@ -90,7 +101,30 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
     );
     setStart(max + 1);
     setTouched(false);
+    setBulkCover('');
+    setBulkDate(TODAY);
+    setDetails({});
   }, [isOpen, existingChapters]);
+
+  const detailFor = (fileId: string) =>
+    details[fileId] ?? { cover: bulkCover, date: bulkDate };
+
+  const updateDetail = (fileId: string, field: 'cover' | 'date', value: string) => {
+    setDetails((prev) => ({
+      ...prev,
+      [fileId]: { ...detailFor(fileId), [field]: value },
+    }));
+  };
+
+  // Cambiar el valor "para todos" reinicia los ajustes individuales.
+  const handleBulkCover = (value: string) => {
+    setBulkCover(value);
+    setDetails({});
+  };
+  const handleBulkDate = (value: string) => {
+    setBulkDate(value);
+    setDetails({});
+  };
 
   const rows = useMemo<ParsedRow[]>(() => {
     const seen = new Set<string>();
@@ -120,11 +154,19 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const handleImport = () => {
     if (preview.length === 0) return;
     const comicId = existingChapters[0]?.comic_id ?? '';
-    const created = preview.map((row) =>
-      buildChapterFromId(comicId, row.fileId as string, row.number),
-    );
+    const created = preview.map((row) => {
+      const detail = detailFor(row.fileId as string);
+      return buildChapterFromId(
+        comicId,
+        row.fileId as string,
+        row.number,
+        detail.cover,
+        detail.date,
+      );
+    });
     onImport(created);
     setRaw('');
+    setDetails({});
     onClose();
   };
 
@@ -192,6 +234,34 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
           </p>
         </div>
 
+        {/* Portada y fecha para todos (cada tomo se puede ajustar abajo) */}
+        <div className="rounded-xl border border-line bg-bg/40 p-3 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-3.5 h-3.5 text-accent" />
+            <span className="text-[11px] font-bold text-ink">Portada y fecha para todos</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-2">
+            <input
+              type="url"
+              value={bulkCover}
+              onChange={(e) => handleBulkCover(e.target.value)}
+              placeholder="URL de portada (opcional)"
+              className={inputCls}
+              spellCheck={false}
+            />
+            <input
+              type="date"
+              value={bulkDate}
+              onChange={(e) => handleBulkDate(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <p className="text-[10px] text-faint">
+            Si dejás la portada vacía, cada tomo usa la portada del cómic. Abajo podés cambiar la
+            portada o la fecha de un tomo puntual.
+          </p>
+        </div>
+
         {/* Resumen / vista previa */}
         {rows.length > 0 && (
           <div className="rounded-xl border border-line bg-bg/50 overflow-hidden">
@@ -214,30 +284,70 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
               {rows.map((row, i) => {
                 const ready = Boolean(row.fileId) && !row.duplicate;
                 const number = startNumber + preview.findIndex((p) => p.line === row.line);
+                const detail = row.fileId ? detailFor(row.fileId) : null;
                 return (
-                  <div key={`${row.line}-${i}`} className="flex items-start gap-2.5 px-3 py-2">
-                    <span
-                      className={`shrink-0 mt-0.5 w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center border ${
-                        ready
-                          ? 'bg-accent/15 border-accent/30 text-accent'
-                          : 'bg-raised border-line text-faint'
-                      }`}
-                    >
-                      {ready ? number : '—'}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] text-ink font-semibold truncate">
-                        {ready ? `Capítulo #${number}` : 'No se puede importar'}
-                      </p>
-                      <p className="text-[10px] text-faint truncate font-mono">{row.line}</p>
-                      {row.duplicate && (
-                        <p className="text-[10px] text-amber-400">Ya existe un tomo con este link.</p>
-                      )}
-                      {!row.fileId && (
-                        <p className="text-[10px] text-red-400">No parece un link de Drive válido.</p>
-                      )}
+                  <div key={`${row.line}-${i}`} className="px-3 py-2.5 space-y-2">
+                    <div className="flex items-start gap-2.5">
+                      <span
+                        className={`shrink-0 mt-0.5 w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center border ${
+                          ready
+                            ? 'bg-accent/15 border-accent/30 text-accent'
+                            : 'bg-raised border-line text-faint'
+                        }`}
+                      >
+                        {ready ? number : '—'}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] text-ink font-semibold truncate">
+                          {ready ? `Capítulo #${number}` : 'No se puede importar'}
+                        </p>
+                        <p className="text-[10px] text-faint truncate font-mono">{row.line}</p>
+                        {row.duplicate && (
+                          <p className="text-[10px] text-amber-400">Ya existe un tomo con este link.</p>
+                        )}
+                        {!row.fileId && (
+                          <p className="text-[10px] text-red-400">No parece un link de Drive válido.</p>
+                        )}
+                      </div>
+                      {ready && <Download className="w-3 h-3 text-faint shrink-0 mt-1" />}
                     </div>
-                    {ready && <Download className="w-3 h-3 text-faint shrink-0 mt-1" />}
+
+                    {ready && detail && row.fileId && (
+                      <div className="ml-8 grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {detail.cover.trim() ? (
+                            <img
+                              src={proxyImageUrl(detail.cover)}
+                              alt=""
+                              className="w-6 h-9 rounded object-cover border border-line shrink-0 bg-bg"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.style.visibility = 'hidden';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-9 rounded border border-dashed border-line shrink-0 flex items-center justify-center">
+                              <ImageIcon className="w-3 h-3 text-faint" />
+                            </div>
+                          )}
+                          <input
+                            type="url"
+                            value={detail.cover}
+                            onChange={(e) => updateDetail(row.fileId as string, 'cover', e.target.value)}
+                            placeholder="Portada de este tomo (opcional)"
+                            className={`${inputCls} text-[11px] py-1.5`}
+                            spellCheck={false}
+                          />
+                        </div>
+                        <input
+                          type="date"
+                          value={detail.date}
+                          onChange={(e) => updateDetail(row.fileId as string, 'date', e.target.value)}
+                          className={`${inputCls} text-[11px] py-1.5`}
+                          aria-label={`Fecha de publicación del capítulo ${number}`}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -252,9 +362,11 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         <div className="rounded-xl bg-accent/5 border border-accent/20 px-3 py-2.5 flex gap-2">
           <FileText className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
           <p className="text-[10px] text-mute leading-relaxed">
-            Cada tomo queda con <strong className="text-ink">lectura online</strong> (preview de Drive)
-            y <strong className="text-ink">descarga directa</strong>. No ocupa Storage: solo guarda
-            los links. Después podés editar títulos, portadas y fechas uno por uno.
+            Cada tomo queda con <strong className="text-ink">lectura online</strong> (preview de Drive),
+            su <strong className="text-ink">portada</strong>, su{' '}
+            <strong className="text-ink">fecha</strong> y{' '}
+            <strong className="text-ink">descarga directa</strong>. No ocupa Storage: solo guarda los
+            links.
           </p>
         </div>
       </div>
