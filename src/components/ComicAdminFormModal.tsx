@@ -44,6 +44,7 @@ import {
 } from '../lib/comicArchive';
 import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
+import { BulkDriveImportModal } from './BulkDriveImportModal';
 
 interface ComicAdminFormModalProps {
   isOpen: boolean;
@@ -524,6 +525,8 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
   // sinopsis solos, sin pisar lo que ya está escrito).
   const [fandomUrl, setFandomUrl] = useState('');
   const [importingFandom, setImportingFandom] = useState(false);
+  // v0.11.2: importar varios links de Drive de una sola vez.
+  const [isBulkDriveOpen, setIsBulkDriveOpen] = useState(false);
 
   const steps = [
     { id: 'info',     label: 'Editar Cómic',    icon: BookOpen, desc: 'Info + pack completo' },
@@ -611,6 +614,18 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       return { ...ch, pdf_url: preview, links };
     }));
     showToast('Drive detectado: lectura online + descarga directa listos ✅', 'success');
+  };
+
+  /** v0.11.2: importación masiva — agrega todos los tomos de una y deja
+      seleccionado el primero de los nuevos. */
+  const handleBulkDriveImport = (created: Chapter[]) => {
+    if (created.length === 0) return;
+    setChapters(prev => [...prev, ...created]);
+    setSelectedChapterIdx(chapters.length);
+    showToast(
+      `${created.length} tomo${created.length === 1 ? '' : 's'} agregado${created.length === 1 ? '' : 's'} ✅`,
+      'success',
+    );
   };
 
   /** En una fila de descarga, un link de compartir de Drive se convierte
@@ -900,6 +915,16 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
           </button>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setIsBulkDriveOpen(true)}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 text-[11px] font-bold transition-colors"
+          title="Pegar varios links de Drive y crear un tomo por link"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+          Importar varios
+        </button>
+
         <div className="flex gap-2 overflow-x-auto md:flex-col md:overflow-x-visible md:overflow-y-auto pr-0.5 md:max-h-[380px]">
           {chapters.length === 0 && (
             <div className="py-8 text-center rounded-xl bg-bg/60 border border-dashed border-line">
@@ -1102,6 +1127,13 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
       </div>
       {/* Ayuda para admins (guía + conversor de Drive) — sobre el modal del form. */}
       <AdminHelpModal isOpen={isAdminHelpOpen} onClose={() => setIsAdminHelpOpen(false)} />
+      {/* v0.11.2: importación masiva de links de Drive. */}
+      <BulkDriveImportModal
+        isOpen={isBulkDriveOpen}
+        onClose={() => setIsBulkDriveOpen(false)}
+        existingChapters={chapters}
+        onImport={handleBulkDriveImport}
+      />
     </Modal>
   );
 };
