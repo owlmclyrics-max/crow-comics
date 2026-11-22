@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Library, Send, Map as MapIcon, History, Plus, X, Check, Bell, BellRing, HelpCircle, Sparkles, MessageCircle } from 'lucide-react';
+import { Home, BookOpen, User, Menu, Smartphone, Sun, Moon, Palette, Library, Send, Map as MapIcon, History, Plus, X, Check, Bell, BellRing, HelpCircle, Sparkles, MessageCircle, CalendarDays } from 'lucide-react';
 import type { CurrentView } from './Navbar';
 import { UserAvatar } from './ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
@@ -340,6 +340,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 Color del sitio
               </button>
 
+              <button
+                type="button"
+                onClick={() => go('lanzamientos')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-mute hover:bg-raised hover:text-ink transition-colors"
+              >
+                <CalendarDays className="w-5 h-5" />
+                Lanzamientos
+              </button>
               <button
                 type="button"
                 onClick={() => go('personajes')}

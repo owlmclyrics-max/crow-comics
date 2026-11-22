@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Crown,
   Sparkles,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 import type { Comic, LinkReport } from '../types/comic';
@@ -42,13 +43,14 @@ import { NotificationsBell } from './NotificationsBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
 
-export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap' | 'mensajes' | 'feed';
+export type CurrentView = 'landing' | 'inicio' | 'comics' | 'personajes' | 'character-detail' | 'comic-detail' | 'chapter-detail' | 'list-detail' | 'event-detail' | 'search' | 'biblioteca' | 'solicitudes' | 'profile' | 'historial' | 'public-profile' | 'roadmap' | 'mensajes' | 'feed' | 'lanzamientos';
 
 // Historial vive en el menú del avatar (y en la barra inferior móvil):
 // fuera del navbar para que la barra nunca se sature.
 const NAV_ITEMS = [
   { view: 'inicio', label: 'Inicio', icon: Home },
   { view: 'comics', label: 'Cómics', icon: BookOpen },
+  { view: 'lanzamientos', label: 'Lanzamientos', icon: CalendarDays },
   { view: 'personajes', label: 'Personajes', icon: User },
   { view: 'biblioteca', label: 'Mi Biblioteca', icon: Library },
   { view: 'solicitudes', label: 'Solicitar cómic', icon: Send },

@@ -77,6 +77,9 @@ const MessagesPage = lazy(() =>
 const FeedPage = lazy(() =>
   import('./components/FeedPage').then((m) => ({ default: m.FeedPage })),
 );
+const ReleasesPage = lazy(() =>
+  import('./components/ReleasesPage').then((m) => ({ default: m.ReleasesPage })),
+);
 
 // Los modales de administración también: solo el admin los usa y rara vez.
 const ComicAdminFormModal = lazy(() =>
@@ -118,6 +121,7 @@ const VALID_VIEWS: CurrentView[] = [
   'landing', 'inicio', 'comics', 'personajes', 'character-detail', 'comic-detail',
   'chapter-detail', 'list-detail', 'event-detail', 'profile', 'historial',
   'public-profile', 'roadmap', 'search', 'biblioteca', 'solicitudes',
+  'mensajes', 'feed', 'lanzamientos',
 ];
 
 /** Lee la vista e IDs desde el hash actual (#/vista?comic=..). */
@@ -775,6 +779,18 @@ export const App: React.FC = () => {
           /* VISTA 8: ROADMAP INTERACTIVO (por versión, persistente)    */
           /* ======================================================== */
           <RoadmapView onBack={() => handleNavigate('inicio')} />
+        ) : currentView === 'lanzamientos' ? (
+          /* ======================================================== */
+          /* VISTA 8.5: CALENDARIO DE LANZAMIENTOS (v0.11.0)           */
+          /* ======================================================== */
+          <ReleasesPage
+            comics={comics}
+            onOpenComic={(comicId) => {
+              const comic = comics.find((c) => c.id === comicId);
+              if (comic) handleOpenComicDetail(comic);
+            }}
+            onBack={() => handleNavigate('inicio')}
+          />
         ) : currentView === 'search' ? (
           /* ======================================================== */
           /* VISTA: BÚSQUEDA COMPLETA (Enter desde la paleta)          */

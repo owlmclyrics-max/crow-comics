@@ -36,6 +36,7 @@ import {
   parseDriveId,
 } from '../lib/driveLinks';
 import { fetchFandomInfo, isFandomWikiUrl } from '../lib/fandomImport';
+import { isFandomImageUrl, mirrorFandomCover } from '../lib/comicImages';
 import {
   openComicArchive,
   toWebpPages,
@@ -685,8 +686,10 @@ export const ComicAdminFormModal: React.FC<ComicAdminFormModalProps> = ({
         setTitle(info.title);
         filled.push('título');
       }
-      if (info.image && !coverUrl.trim()) {
-        setCoverUrl(info.image);
+      if (info.image && (!coverUrl.trim() || isFandomImageUrl(coverUrl))) {
+        // El link directo de Fandom da 403 al hotlinkearlo: lo descargamos
+        // por /fandom-image, lo pasamos a WebP y lo guardamos en el bucket.
+        setCoverUrl(await mirrorFandomCover(info.image));
         filled.push('portada');
       }
       if (info.description && !synopsis.trim()) {
