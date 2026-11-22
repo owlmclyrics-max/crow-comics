@@ -24,7 +24,8 @@ export interface Chapter {
   title: string;
   cover_url?: string; // Portada individual del capítulo / volumen
   pages_count?: number; // Ej: 32 págs
-  release_date?: string; // Fecha y hora de lanzamiento (datetime)
+  release_date?: string; // Fecha de publicación original del cómic (date)
+  schedule_date?: string; // Fecha y hora de lanzamiento en la página (datetime para horario de lanzamientos)
   links: ChapterLink[];
   pdf_url?: string; // URL del PDF para leer online (Google Drive preview, etc.)
   /** v0.9.9.9.6: páginas WebP en Cloudflare R2 (visor propio). Si existe,

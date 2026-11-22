@@ -91,7 +91,7 @@ export const deleteRelease = async (id: string): Promise<void> => {
 /**
  * Crea o actualiza un lanzamiento automáticamente desde un capítulo.
  * Si ya existe un lanzamiento para este chapter_id, lo actualiza.
- * Si no tiene release_date, elimina el lanzamiento existente.
+ * Si no tiene schedule_date, elimina el lanzamiento existente.
  */
 export const syncChapterRelease = async (
   chapterId: string,
@@ -100,7 +100,7 @@ export const syncChapterRelease = async (
   chapterTitle: string,
   coverUrl: string | null,
   publisher: string | null,
-  releaseDate: string | null,
+  scheduleDate: string | null,
   meId: string
 ): Promise<void> => {
   const db = requireDb();
@@ -112,8 +112,8 @@ export const syncChapterRelease = async (
     .eq('chapter_id', chapterId)
     .maybeSingle();
 
-  // Si no hay fecha de lanzamiento, eliminar el lanzamiento existente
-  if (!releaseDate) {
+  // Si no hay fecha de programación, eliminar el lanzamiento existente
+  if (!scheduleDate) {
     if (existing) {
       const { error } = await db.from('release_schedule').delete().eq('id', existing.id);
       if (error) throw new Error(`No se pudo eliminar el lanzamiento: ${error.message}`);
@@ -132,7 +132,7 @@ export const syncChapterRelease = async (
     chapter_label: chapterLabel,
     publisher,
     cover_url: coverUrl,
-    release_at: releaseDate,
+    release_at: scheduleDate,
     notes: null,
   };
 

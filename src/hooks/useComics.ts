@@ -19,8 +19,6 @@ export interface SaveResult {
 
 export type ComicInput = Omit<Comic, 'id' | 'chapters'> & { id?: string };
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
@@ -220,7 +218,8 @@ export const useComicsData = () => {
               title: chapter.title,
               cover_url: chapter.cover_url || null,
               pages_count: chapter.pages_count ?? null,
-              release_date: chapter.release_date || TODAY,
+              release_date: chapter.release_date || null,
+              schedule_date: chapter.schedule_date || null,
               links: (chapter.links ?? []).filter((link) => link.url.trim()),
               pdf_url: chapter.pdf_url || null,
               // v0.9.9.9.6: páginas del visor propio (WebP en Supabase Storage).
@@ -251,8 +250,8 @@ export const useComicsData = () => {
               }
               if (updateResult.error) throw updateResult.error;
 
-              // Sincronizar con release_schedule si tiene fecha de lanzamiento
-              if (chapter.release_date) {
+              // Sincronizar con release_schedule si tiene fecha de programación
+              if (chapter.schedule_date) {
                 try {
                   await syncChapterRelease(
                     chapter.id,
@@ -261,7 +260,7 @@ export const useComicsData = () => {
                     chapter.title,
                     chapter.cover_url || null,
                     comicData.publisher,
-                    chapter.release_date,
+                    chapter.schedule_date,
                     comicId
                   );
                 } catch (releaseError) {
@@ -291,7 +290,7 @@ export const useComicsData = () => {
               for (let i = 0; i < toCreate.length; i++) {
                 const chapter = toCreate[i];
                 const chapterId = insertedIds[i];
-                if (chapter.release_date && chapterId) {
+                if (chapter.schedule_date && chapterId) {
                   try {
                     await syncChapterRelease(
                       chapterId,
@@ -300,7 +299,7 @@ export const useComicsData = () => {
                       chapter.title,
                       chapter.cover_url || null,
                       comicData.publisher,
-                      chapter.release_date,
+                      chapter.schedule_date,
                       comicId
                     );
                   } catch (releaseError) {

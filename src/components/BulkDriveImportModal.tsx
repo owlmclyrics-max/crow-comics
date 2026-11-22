@@ -15,6 +15,7 @@ import type { Chapter } from '../types/comic';
 import { buildDriveDownloadUrl, buildDrivePreviewUrl, parseDriveId } from '../lib/driveLinks';
 import { proxyImageUrl } from '../lib/imageUrl';
 import { Modal } from './ui/Modal';
+import { ScheduleDatePicker } from './ui/ScheduleDatePicker';
 
 interface BulkDriveImportModalProps {
   isOpen: boolean;
@@ -30,8 +31,6 @@ interface ParsedRow {
   fileId: string | null;
   duplicate: boolean;
 }
-
-const TODAY = new Date().toISOString().slice(0, 16); // datetime-local format: YYYY-MM-DDTHH:mm
 
 const extractUsedIds = (chapters: Chapter[]): Set<string> => {
   const used = new Set<string>();
@@ -51,6 +50,7 @@ const buildChapterFromId = (
   n: number,
   coverUrl: string,
   releaseDate: string,
+  scheduleDate: string,
 ): Chapter => {
   const stamp = Date.now() + Math.floor(Math.random() * 1000);
   return {
@@ -60,7 +60,8 @@ const buildChapterFromId = (
     title: `Capítulo #${n}`,
     cover_url: coverUrl.trim(),
     pages_count: 32,
-    release_date: releaseDate || undefined, // Sin fecha por defecto, el admin elige cuándo lanzar
+    release_date: releaseDate || undefined,
+    schedule_date: scheduleDate || undefined,
     pdf_url: buildDrivePreviewUrl(fileId),
     links: [
       {
@@ -87,8 +88,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const [touched, setTouched] = useState(false);
   // v0.11.3: portada y fecha por tomo (con valores "para todos" al principio).
   const [bulkCover, setBulkCover] = useState('');
-  const [bulkDate, setBulkDate] = useState(''); // Sin fecha por defecto, el admin elige cuándo lanzar
-  const [details, setDetails] = useState<Record<string, { cover: string; date: string }>>({});
+  const [bulkDate, setBulkDate] = useState(''); // Fecha de publicación
+  const [bulkScheduleDate, setBulkScheduleDate] = useState(''); // Fecha de programación para lanzamiento
+  const [details, setDetails] = useState<Record<string, { cover: string; date: string; scheduleDate: string }>>({});
 
   const usedIds = useMemo(() => extractUsedIds(existingChapters), [existingChapters]);
 
@@ -102,14 +104,14 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
     setStart(max + 1);
     setTouched(false);
     setBulkCover('');
-    setBulkDate(TODAY);
+    setBulkDate('');
     setDetails({});
   }, [isOpen, existingChapters]);
 
   const detailFor = (fileId: string) =>
-    details[fileId] ?? { cover: bulkCover, date: bulkDate };
+    details[fileId] ?? { cover: bulkCover, date: bulkDate, scheduleDate: bulkScheduleDate };
 
-  const updateDetail = (fileId: string, field: 'cover' | 'date', value: string) => {
+  const updateDetail = (fileId: string, field: 'cover' | 'date' | 'scheduleDate', value: string) => {
     setDetails((prev) => ({
       ...prev,
       [fileId]: { ...detailFor(fileId), [field]: value },
@@ -123,6 +125,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   };
   const handleBulkDate = (value: string) => {
     setBulkDate(value);
+    setDetails({});
+  };
+  const handleBulkScheduleDate = (value: string) => {
+    setBulkScheduleDate(value);
     setDetails({});
   };
 
@@ -162,6 +168,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         row.number,
         detail.cover,
         detail.date,
+        detail.scheduleDate,
       );
     });
     onImport(created);
@@ -238,9 +245,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         <div className="rounded-xl border border-line bg-bg/40 p-3 space-y-2.5">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-3.5 h-3.5 text-accent" />
-            <span className="text-[11px] font-bold text-ink">Portada y fecha para todos</span>
+            <span className="text-[11px] font-bold text-ink">Portada y fechas para todos</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_150px] gap-2">
+          <div className="space-y-3">
             <input
               type="url"
               value={bulkCover}
@@ -249,16 +256,25 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
               className={inputCls}
               spellCheck={false}
             />
-            <input
-              type="datetime-local"
-              value={bulkDate}
-              onChange={(e) => handleBulkDate(e.target.value)}
-              className={inputCls}
+            <div>
+              <label className="text-[10px] font-semibold text-mute mb-1 block">Fecha de publicación</label>
+              <input
+                type="date"
+                value={bulkDate}
+                onChange={(e) => handleBulkDate(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <ScheduleDatePicker
+              value={bulkScheduleDate}
+              onChange={handleBulkScheduleDate}
+              label="Programar lanzamiento en página"
+              compact
             />
           </div>
           <p className="text-[10px] text-faint">
             Si dejás la portada vacía, cada tomo usa la portada del cómic. Abajo podés cambiar la
-            portada o la fecha de un tomo puntual.
+            portada o las fechas de un tomo puntual.
           </p>
         </div>
 
@@ -340,11 +356,16 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                           />
                         </div>
                         <input
-                          type="datetime-local"
+                          type="date"
                           value={detail.date}
                           onChange={(e) => updateDetail(row.fileId as string, 'date', e.target.value)}
                           className={`${inputCls} text-[11px] py-1.5`}
-                          aria-label={`Fecha y hora de publicación del capítulo ${number}`}
+                          aria-label={`Fecha de publicación del capítulo ${number}`}
+                        />
+                        <ScheduleDatePicker
+                          value={detail.scheduleDate}
+                          onChange={(val) => updateDetail(row.fileId as string, 'scheduleDate', val)}
+                          compact
                         />
                       </div>
                     )}
