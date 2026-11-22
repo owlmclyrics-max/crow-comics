@@ -9,11 +9,14 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Check,
   Heart,
+  Loader2,
   MessageCircle,
   Send,
   Sparkles,
   Trash2,
+  UserPlus,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { avatarOrFallback } from '../lib/avatarFallback';
@@ -27,6 +30,11 @@ import {
   type FeedComment,
   type FeedPost,
 } from '../lib/feed';
+import {
+  fetchSuggestedProfiles,
+  toggleFollow,
+  type SuggestedProfile,
+} from '../lib/social';
 import { showToast } from './ui/Toast';
 
 interface FeedPageProps {
@@ -67,6 +75,171 @@ const Avatar: React.FC<{ url: string | null; name: string; id?: string; size?: s
     >
       {name.slice(0, 2).toUpperCase()}
     </div>
+  );
+};
+
+/** Rail derecho estilo Instagram: perfil propio + sugerencias para seguir. */
+const SuggestionsRail: React.FC<{
+  meId: string;
+  myUsername: string;
+  myAvatar: string | null;
+  onSelectProfile: (profileId: string) => void;
+}> = ({ meId, myUsername, myAvatar, onSelectProfile }) => {
+  const [people, setPeople] = useState<SuggestedProfile[] | null>(null);
+  const [busy, setBusy] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await fetchSuggestedProfiles(meId, 8);
+        if (!cancelled) setPeople(list.filter((p) => p.id !== meId).slice(0, 5));
+      } catch {
+        if (!cancelled) setPeople([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [meId]);
+
+  const handleToggle = async (person: SuggestedProfile) => {
+    if (busy.has(person.id)) return;
+    const next = !person.isFollowing;
+    setBusy((prev) => new Set(prev).add(person.id));
+    setPeople((prev) =>
+      (prev ?? []).map((p) =>
+        p.id === person.id
+          ? { ...p, isFollowing: next, isFriend: next && p.followsMe }
+          : p,
+      ),
+    );
+    try {
+      await toggleFollow(person.id, meId, person.isFollowing);
+    } catch {
+      setPeople((prev) =>
+        (prev ?? []).map((p) =>
+          p.id === person.id
+            ? { ...p, isFollowing: person.isFollowing, isFriend: person.isFriend }
+            : p,
+        ),
+      );
+      showToast('No se pudo actualizar el seguimiento', 'error');
+    } finally {
+      setBusy((prev) => {
+        const s = new Set(prev);
+        s.delete(person.id);
+        return s;
+      });
+    }
+  };
+
+  return (
+    <aside className="hidden lg:block w-[300px] shrink-0">
+      <div className="sticky top-24 space-y-5">
+        {/* Mi perfil */}
+        <button
+          type="button"
+          onClick={() => onSelectProfile(meId)}
+          className="w-full flex items-center gap-3 text-left group"
+        >
+          <Avatar url={myAvatar} name={myUsername} id={meId} size="w-11 h-11 rounded-full" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-ink truncate group-hover:underline">
+              @{myUsername}
+            </span>
+            <span className="block text-[11px] text-faint">Tu perfil</span>
+          </span>
+        </button>
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-faint">Sugerencias para ti</span>
+          <button
+            type="button"
+            onClick={() => onSelectProfile(meId)}
+            className="text-[10px] font-bold text-ink hover:text-accent transition-colors"
+          >
+            Ver todo
+          </button>
+        </div>
+
+        {people === null ? (
+          <div className="py-6 flex justify-center">
+            <Loader2 className="w-4 h-4 animate-spin text-accent" />
+          </div>
+        ) : people.length === 0 ? (
+          <p className="text-[11px] text-faint leading-relaxed">
+            Cuando se sume más gente, acá van a aparecer sus perfiles para seguirlos.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {people.map((person) => (
+              <div key={person.id} className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onSelectProfile(person.id)}
+                  className="shrink-0 relative"
+                  title={`Ver @${person.username}`}
+                >
+                  <Avatar
+                    url={person.avatar_url}
+                    name={person.username}
+                    id={person.id}
+                    size="w-8 h-8 rounded-full"
+                  />
+                  {person.online && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-bg" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectProfile(person.id)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <span className="block text-xs font-bold text-ink truncate hover:underline">
+                    {person.username}
+                  </span>
+                  <span className="block text-[10px] text-faint truncate">
+                    {person.isFriend
+                      ? 'Amigo'
+                      : person.followsMe
+                        ? 'Te sigue'
+                        : person.isFollowing
+                          ? 'Siguiendo'
+                          : 'Sugerencia'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleToggle(person)}
+                  disabled={busy.has(person.id)}
+                  className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-bold transition-colors disabled:opacity-50 ${
+                    person.isFollowing ? 'text-mute hover:text-ink' : 'text-accent hover:text-accent2'
+                  }`}
+                >
+                  {person.isFollowing ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      Siguiendo
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3 h-3" />
+                      Seguir
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="text-[10px] leading-relaxed text-faint/70 pt-2">
+          Momentos es solo texto: nada de fotos. Las imágenes están reservadas para las portadas
+          de los tomos.
+        </p>
+      </div>
+    </aside>
   );
 };
 
@@ -209,8 +382,8 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 animate-fade-in pb-16">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[935px] mx-auto animate-fade-in pb-16">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-black text-ink flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-accent" />
           Momentos
@@ -225,11 +398,13 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/40 px-3.5 py-2.5">
+        <div className="rounded-xl bg-red-500/10 border border-red-500/40 px-3.5 py-2.5 mb-4">
           <p className="text-xs text-red-300">{error}</p>
         </div>
       )}
 
+      <div className="flex items-start justify-center gap-8">
+        <div className="w-full max-w-[600px] min-w-0 space-y-4">
       {/* ── Compositor ── */}
       <div className="rounded-2xl border border-line bg-surface p-4 space-y-3">
         <div className="flex items-start gap-3">
@@ -389,6 +564,15 @@ export const FeedPage: React.FC<FeedPageProps> = ({ onBack, onSelectProfile }) =
           </article>
         ))
       )}
+        </div>
+
+        <SuggestionsRail
+          meId={meId}
+          myUsername={myUsername}
+          myAvatar={profile?.avatar_url ?? null}
+          onSelectProfile={onSelectProfile}
+        />
+      </div>
     </div>
   );
 };

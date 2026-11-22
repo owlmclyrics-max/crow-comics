@@ -590,7 +590,6 @@ export const App: React.FC = () => {
       {/* Navbar Superior con Pestañas Inicio / Cómics y Atajo Ctrl+Shift+A */}
       {!isImmersiveReading && (
         <Navbar
-          comics={comics}
           currentView={currentView}
           onNavigate={handleNavigate}
           onSelectComic={handleOpenComicDetail}

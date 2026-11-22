@@ -38,7 +38,6 @@ import { AdminHelpModal } from './AdminHelpModal';
 import { AdminStorageModal } from './AdminStorageModal';
 import { AdminsModal } from './AdminsModal';
 import { useDmUnread } from '../hooks/useDmUnread';
-import { NewChaptersBell } from './NewChaptersBell';
 import { NotificationsBell } from './NotificationsBell';
 import { GoogleIcon } from './ui/GoogleIcon';
 import { useUserAvatar } from './ui/UserAvatar';
@@ -58,7 +57,6 @@ const NAV_ITEMS = [
 ] as const;
 
 interface NavbarProps {
-  comics: Comic[];
   currentView: CurrentView;
   onNavigate: (view: CurrentView) => void;
   onSelectComic: (comic: Comic) => void;
@@ -70,7 +68,6 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  comics,
   currentView,
   onNavigate,
   onSelectComic,
@@ -265,15 +262,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               menú hamburguesa). En PC (lg+) queda idéntica a siempre. */}
           <div className="flex flex-row items-center justify-center gap-1.5 shrink-0 lg:flex-col lg:w-full lg:group-hover/sidebar:flex-row lg:group-hover/sidebar:justify-start">
             {/* v0.10.6: campana de notificaciones sociales (follow/mensaje/like) */}
-            {user && (
-              <NotificationsBell
-                onSelectProfile={(id) => onSelectProfile?.(id)}
-                onOpenMessages={() => onNavigate('mensajes')}
-                onOpenFeed={() => onNavigate('feed')}
-              />
-            )}
-            {/* Campana: capítulos subidos desde tu última visita (todos) */}
-            <NewChaptersBell comics={comics} onSelectComic={onSelectComic} />
+            {/* v0.11.1: UNA sola campana (avisos sociales + tomos nuevos) */}
+            <NotificationsBell
+              onSelectProfile={(id) => onSelectProfile?.(id)}
+              onOpenMessages={() => onNavigate('mensajes')}
+              onOpenFeed={() => onNavigate('feed')}
+              onSelectComic={onSelectComic}
+            />
             <button
               type="button"
               onClick={handleToggleTheme}
