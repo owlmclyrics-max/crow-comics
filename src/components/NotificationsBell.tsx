@@ -328,7 +328,7 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
       </button>
 
       {open && (
-        <div className="absolute z-50 w-[22rem] max-w-[calc(100vw-1.5rem)] bg-bg border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-lg:fixed max-lg:top-[4.5rem] max-lg:right-3 max-lg:left-3 max-lg:w-auto lg:left-0 lg:bottom-full lg:mb-2">
+        <div className="absolute z-50 w-[22rem] max-w-[calc(100vw-1.5rem)] bg-bg border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-lg:fixed max-lg:top-[4.5rem] max-lg:right-3 max-lg:left-3 max-lg:w-auto lg:top-full lg:left-0 lg:mt-2">
           <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Bell className="w-4 h-4 text-accent shrink-0" />
