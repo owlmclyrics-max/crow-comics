@@ -10,6 +10,7 @@ import {
   type ReadCountsByComic,
   type TagSource,
 } from '../lib/comicTags';
+import { syncChapterRelease } from '../lib/releases';
 
 export interface SaveResult {
   success: boolean;
@@ -249,6 +250,24 @@ export const useComicsData = () => {
                   .eq('comic_id', resolvedComicId);
               }
               if (updateResult.error) throw updateResult.error;
+
+              // Sincronizar con release_schedule si tiene fecha de lanzamiento
+              if (chapter.release_date) {
+                try {
+                  await syncChapterRelease(
+                    chapter.id,
+                    comicData.title,
+                    chapter.chapter_number,
+                    chapter.title,
+                    chapter.cover_url || null,
+                    comicData.publisher,
+                    chapter.release_date,
+                    comicId
+                  );
+                } catch (releaseError) {
+                  console.warn('No se pudo sincronizar lanzamiento:', releaseError);
+                }
+              }
             }
 
             if (toCreate.length > 0) {
@@ -267,6 +286,28 @@ export const useComicsData = () => {
 
               if (insertResult.error) throw insertResult.error;
               insertedIds = ((insertResult.data ?? []) as { id: string }[]).map((row) => row.id);
+
+              // Sincronizar nuevos capítulos con release_schedule
+              for (let i = 0; i < toCreate.length; i++) {
+                const chapter = toCreate[i];
+                const chapterId = insertedIds[i];
+                if (chapter.release_date && chapterId) {
+                  try {
+                    await syncChapterRelease(
+                      chapterId,
+                      comicData.title,
+                      chapter.chapter_number,
+                      chapter.title,
+                      chapter.cover_url || null,
+                      comicData.publisher,
+                      chapter.release_date,
+                      comicId
+                    );
+                  } catch (releaseError) {
+                    console.warn('No se pudo sincronizar lanzamiento:', releaseError);
+                  }
+                }
+              }
             }
 
             // Copia del editor que se conserva: los capítulos ya existentes

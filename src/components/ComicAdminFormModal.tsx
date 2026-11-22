@@ -58,8 +58,6 @@ interface ComicAdminFormModalProps {
 
 type WizardStep = 'info' | 'chapters';
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 const LINK_TYPES: { value: NonNullable<ChapterLink['type']>; label: string }[] = [
   { value: 'pdf',      label: 'PDF' },
   { value: 'cloud',    label: 'Nube' },
@@ -74,7 +72,7 @@ const buildChapter = (comicId: string, n: number): Chapter => ({
   title: `Capítulo #${n}`,
   cover_url: '',
   pages_count: 32,
-  release_date: TODAY,
+  release_date: undefined, // Sin fecha por defecto, el admin elige cuándo lanzar
   links: [],
 });
 
@@ -230,8 +228,8 @@ const ChapterEditor: React.FC<{
         <input type="number" value={chapter.chapter_number}
           onChange={e => onUpdate('chapter_number', parseInt(e.target.value, 10))} className={inputCls} />
       </Field>
-      <Field label="Fecha">
-        <input type="date" value={chapter.release_date ?? TODAY}
+      <Field label="Fecha y hora de lanzamiento">
+        <input type="datetime-local" value={chapter.release_date ?? ''}
           onChange={e => onUpdate('release_date', e.target.value)} className={inputCls} />
       </Field>
       {/* Portada en fila propia y compacta: la preview no queda huérfana

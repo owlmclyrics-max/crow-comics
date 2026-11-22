@@ -10,6 +10,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 export interface ReleaseItem {
   id: string;
   comic_id: string | null;
+  chapter_id: string | null; // ID del capítulo vinculado
   title: string;
   chapter_label: string | null;
   publisher: string | null;
@@ -22,6 +23,7 @@ export interface ReleaseItem {
 
 export interface ReleaseInput {
   comic_id?: string | null;
+  chapter_id?: string | null; // ID del capítulo vinculado
   title: string;
   chapter_label?: string | null;
   publisher?: string | null;
@@ -50,6 +52,7 @@ export const createRelease = async (input: ReleaseInput, meId: string): Promise<
   const db = requireDb();
   const { error } = await db.from('release_schedule').insert({
     comic_id: input.comic_id ?? null,
+    chapter_id: input.chapter_id ?? null,
     title: input.title.trim(),
     chapter_label: input.chapter_label?.trim() || null,
     publisher: input.publisher?.trim() || null,
@@ -67,6 +70,7 @@ export const updateRelease = async (id: string, input: ReleaseInput): Promise<vo
     .from('release_schedule')
     .update({
       comic_id: input.comic_id ?? null,
+      chapter_id: input.chapter_id ?? null,
       title: input.title.trim(),
       chapter_label: input.chapter_label?.trim() || null,
       publisher: input.publisher?.trim() || null,
@@ -82,6 +86,73 @@ export const deleteRelease = async (id: string): Promise<void> => {
   const db = requireDb();
   const { error } = await db.from('release_schedule').delete().eq('id', id);
   if (error) throw new Error(`No se pudo borrar el lanzamiento: ${error.message}`);
+};
+
+/**
+ * Crea o actualiza un lanzamiento automáticamente desde un capítulo.
+ * Si ya existe un lanzamiento para este chapter_id, lo actualiza.
+ * Si no tiene release_date, elimina el lanzamiento existente.
+ */
+export const syncChapterRelease = async (
+  chapterId: string,
+  comicTitle: string,
+  chapterNumber: number,
+  chapterTitle: string,
+  coverUrl: string | null,
+  publisher: string | null,
+  releaseDate: string | null,
+  meId: string
+): Promise<void> => {
+  const db = requireDb();
+
+  // Primero, buscar si ya existe un lanzamiento para este capítulo
+  const { data: existing } = await db
+    .from('release_schedule')
+    .select('id')
+    .eq('chapter_id', chapterId)
+    .maybeSingle();
+
+  // Si no hay fecha de lanzamiento, eliminar el lanzamiento existente
+  if (!releaseDate) {
+    if (existing) {
+      const { error } = await db.from('release_schedule').delete().eq('id', existing.id);
+      if (error) throw new Error(`No se pudo eliminar el lanzamiento: ${error.message}`);
+    }
+    return;
+  }
+
+  // Generar título automático: "{Comic} - Tomo #{n}"
+  const title = `${comicTitle} - Tomo #${chapterNumber}`;
+  const chapterLabel = chapterTitle ? `#${chapterNumber} - ${chapterTitle}` : `#${chapterNumber}`;
+
+  const input = {
+    comic_id: null,
+    chapter_id: chapterId,
+    title,
+    chapter_label: chapterLabel,
+    publisher,
+    cover_url: coverUrl,
+    release_at: releaseDate,
+    notes: null,
+  };
+
+  if (existing) {
+    // Actualizar existente
+    const { error } = await db
+      .from('release_schedule')
+      .update(input)
+      .eq('id', existing.id);
+    if (error) throw new Error(`No se pudo actualizar el lanzamiento: ${error.message}`);
+  } else {
+    // Crear nuevo
+    const { error } = await db
+      .from('release_schedule')
+      .insert({
+        ...input,
+        created_by: meId,
+      });
+    if (error) throw new Error(`No se pudo crear el lanzamiento: ${error.message}`);
+  }
 };
 
 /* ── Helpers de fecha (hora local del navegador) ───────────────────────── */
