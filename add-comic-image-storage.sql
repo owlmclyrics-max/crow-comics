@@ -14,6 +14,8 @@ as $$
     where id = auth.uid()
       and lower(email) in (
         'owlmclyrics@gmail.com',
+        'mabner112@gmail.com',
+        'tmr296629@gmail.com',
         'crow.comics.01@gmail.com'
       )
   );
