@@ -31,7 +31,7 @@ interface ParsedRow {
   duplicate: boolean;
 }
 
-const TODAY = new Date().toISOString().split('T')[0];
+const TODAY = new Date().toISOString().slice(0, 16); // datetime-local format: YYYY-MM-DDTHH:mm
 
 const extractUsedIds = (chapters: Chapter[]): Set<string> => {
   const used = new Set<string>();
@@ -60,7 +60,7 @@ const buildChapterFromId = (
     title: `Capítulo #${n}`,
     cover_url: coverUrl.trim(),
     pages_count: 32,
-    release_date: releaseDate || TODAY,
+    release_date: releaseDate || undefined, // Sin fecha por defecto, el admin elige cuándo lanzar
     pdf_url: buildDrivePreviewUrl(fileId),
     links: [
       {
@@ -87,7 +87,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const [touched, setTouched] = useState(false);
   // v0.11.3: portada y fecha por tomo (con valores "para todos" al principio).
   const [bulkCover, setBulkCover] = useState('');
-  const [bulkDate, setBulkDate] = useState(TODAY);
+  const [bulkDate, setBulkDate] = useState(''); // Sin fecha por defecto, el admin elige cuándo lanzar
   const [details, setDetails] = useState<Record<string, { cover: string; date: string }>>({});
 
   const usedIds = useMemo(() => extractUsedIds(existingChapters), [existingChapters]);
@@ -250,7 +250,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
               spellCheck={false}
             />
             <input
-              type="date"
+              type="datetime-local"
               value={bulkDate}
               onChange={(e) => handleBulkDate(e.target.value)}
               className={inputCls}
@@ -340,11 +340,11 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                           />
                         </div>
                         <input
-                          type="date"
+                          type="datetime-local"
                           value={detail.date}
                           onChange={(e) => updateDetail(row.fileId as string, 'date', e.target.value)}
                           className={`${inputCls} text-[11px] py-1.5`}
-                          aria-label={`Fecha de publicación del capítulo ${number}`}
+                          aria-label={`Fecha y hora de publicación del capítulo ${number}`}
                         />
                       </div>
                     )}
