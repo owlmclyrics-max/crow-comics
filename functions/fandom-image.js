@@ -20,6 +20,33 @@ const isAllowedImageUrl = (parsed) =>
     parsed.hostname.endsWith('.wikia.nocookie.net') ||
     parsed.hostname === 'static.wikia.com');
 
+// Fandom /revision/latest responde 404 desde el worker; el archivo original sí.
+const plainFandomUrl = (parsed) => {
+  const idx = parsed.pathname.indexOf('/revision/');
+  if (idx < 0) return null;
+  const plain = new URL(parsed.toString());
+  plain.pathname = parsed.pathname.slice(0, idx);
+  plain.search = '';
+  return plain;
+};
+
+const fetchImage = async (parsed) => {
+  const headers = {
+    'user-agent': BROWSER_UA,
+    accept: 'image/avif,image/webp,image/png,image/jpeg,*/*',
+    referer: 'https://crow-comics.pages.dev/',
+  };
+  const plain = plainFandomUrl(parsed);
+  const candidates = plain ? [plain, parsed] : [parsed];
+  let last = null;
+  for (const candidate of candidates) {
+    const res = await fetch(candidate.toString(), { headers });
+    if (res.ok && res.body) return res;
+    last = res;
+  }
+  return last;
+};
+
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
   const target = (url.searchParams.get('u') || '').trim();
@@ -40,13 +67,7 @@ export const onRequestGet = async ({ request }) => {
 
   let upstream;
   try {
-    upstream = await fetch(parsed.toString(), {
-      headers: {
-        'user-agent': BROWSER_UA,
-        accept: 'image/avif,image/webp,image/png,image/jpeg,*/*',
-        referer: 'https://crow-comics.pages.dev/',
-      },
-    });
+    upstream = await fetchImage(parsed);
   } catch {
     return new Response('No se pudo descargar la imagen', { status: 502 });
   }

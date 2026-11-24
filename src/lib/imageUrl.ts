@@ -37,5 +37,12 @@ export const proxyImageUrl = (url: string | null | undefined): string => {
   ) {
     return raw;
   }
-  return `/img?u=${encodeURIComponent(raw)}`;
+  // Fandom: el endpoint /revision/latest responde 404 cuando lo pide el
+  // proxy. El archivo original (.../We3_TPB.jpg) sí responde 200, así que
+  // pedimos esa variante (solo en hosts de Fandom; el resto conserva su URL).
+  const isFandom = /^https:\/\/[^/]*\.wikia\.nocookie\.net\//.test(raw);
+  const normalized = isFandom
+    ? raw.replace(/\/revision\/[^?#]*/, '').replace(/[?#].*$/, '')
+    : raw;
+  return `/img?u=${encodeURIComponent(normalized)}`;
 };
