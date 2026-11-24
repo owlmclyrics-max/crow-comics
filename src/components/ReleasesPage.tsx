@@ -20,6 +20,7 @@ import type { Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from './ui/Toast';
 import { ReleaseFormModal } from './ReleaseFormModal';
+import { proxyImageUrl } from '../lib/imageUrl';
 import {
   countdownLabel,
   deleteRelease,
@@ -83,7 +84,7 @@ const ReleaseCard: React.FC<{
       <div className="shrink-0 w-14 sm:w-16 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line">
         {item.cover_url ? (
           <img
-            src={item.cover_url}
+            src={proxyImageUrl(item.cover_url)}
             alt={item.title}
             className="w-full h-full object-cover"
             loading="lazy"

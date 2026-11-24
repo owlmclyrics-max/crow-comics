@@ -11,6 +11,7 @@ import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 import { ComicPickerModal } from './ComicPickerModal';
 import { showToast } from './ui/Toast';
+import { proxyImageUrl } from '../lib/imageUrl';
 import {
   createRelease,
   updateRelease,
@@ -172,7 +173,7 @@ export const ReleaseFormModal: React.FC<ReleaseFormModalProps> = ({
             {selectedComic ? (
               <div className="flex items-center gap-3">
                 <img
-                  src={selectedComic.cover_url}
+                  src={proxyImageUrl(selectedComic.cover_url)}
                   alt=""
                   className="w-10 h-14 rounded-lg object-cover border border-line shrink-0"
                   referrerPolicy="no-referrer"
