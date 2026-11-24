@@ -16,6 +16,7 @@ import { buildDriveDownloadUrl, buildDrivePreviewUrl, parseDriveId } from '../li
 import { proxyImageUrl } from '../lib/imageUrl';
 import { Modal } from './ui/Modal';
 import { ScheduleDatePicker } from './ui/ScheduleDatePicker';
+import { PasteDateInput } from './ui/PasteDateInput';
 
 interface BulkDriveImportModalProps {
   isOpen: boolean;
@@ -258,11 +259,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             />
             <div>
               <label className="text-[10px] font-semibold text-mute mb-1 block">Fecha de publicación</label>
-              <input
-                type="date"
+              <PasteDateInput
                 value={bulkDate}
-                onChange={(e) => handleBulkDate(e.target.value)}
-                className={inputCls}
+                onChange={handleBulkDate}
+                label="Fecha de publicación para todos"
               />
             </div>
             <ScheduleDatePicker
@@ -273,8 +273,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             />
           </div>
           <p className="text-[10px] text-faint">
-            Si dejás la portada vacía, cada tomo usa la portada del cómic. Abajo podés cambiar la
-            portada o las fechas de un tomo puntual.
+            Si dejás la portada vacía, cada tomo usa la portada del cómic. En las fechas podés{' '}
+            <strong className="text-mute">pegar</strong> (22/11/2026 o 2026-11-22) o elegirlas con el
+            calendario. Abajo podés cambiar la portada o las fechas de un tomo puntual.
           </p>
         </div>
 
@@ -355,12 +356,11 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                             spellCheck={false}
                           />
                         </div>
-                        <input
-                          type="date"
+                        <PasteDateInput
                           value={detail.date}
-                          onChange={(e) => updateDetail(row.fileId as string, 'date', e.target.value)}
-                          className={`${inputCls} text-[11px] py-1.5`}
-                          aria-label={`Fecha de publicación del capítulo ${number}`}
+                          onChange={(iso) => updateDetail(row.fileId as string, 'date', iso)}
+                          label={`Fecha de publicación del capítulo ${number}`}
+                          compact
                         />
                         <ScheduleDatePicker
                           value={detail.scheduleDate}
