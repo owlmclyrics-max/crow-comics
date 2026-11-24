@@ -50,7 +50,6 @@ SELECT
   c.created_at
 FROM chapters c
 WHERE c.comic_id IS NULL
-   OR c.comic_id = ''
    OR NOT EXISTS (SELECT 1 FROM comics WHERE id = c.comic_id)
 ORDER BY c.created_at DESC
 LIMIT 10;
