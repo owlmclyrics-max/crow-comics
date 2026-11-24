@@ -10,7 +10,7 @@
  * No toca Storage: solo se guardan links.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Download, FileText, Image as ImageIcon, Link2, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileText, Image as ImageIcon, ImageOff, Link2, Loader2, Plus } from 'lucide-react';
 import type { Chapter } from '../types/comic';
 import { buildDriveDownloadUrl, buildDrivePreviewUrl, parseDriveId } from '../lib/driveLinks';
 import { proxyImageUrl } from '../lib/imageUrl';
@@ -78,6 +78,63 @@ const buildChapterFromId = (
 
 const inputCls =
   'w-full px-3 py-2 rounded-xl bg-bg border border-line focus:border-accent text-sm text-ink outline-none transition-colors placeholder:text-faint';
+
+/**
+ * Miniatura de portada con reintento: primero pide el link por el proxy
+ * (/img) y, si falla, prueba la URL original. Así un host sin proxy o una
+ * URL con /revision/latest no deja el hueco gris sin avisar.
+ */
+const CoverThumb: React.FC<{ url: string; className?: string; alt?: string }> = ({
+  url,
+  className = 'w-10 h-14',
+  alt = '',
+}) => {
+  const trimmed = url.trim();
+  const proxied = proxyImageUrl(trimmed);
+  const [src, setSrc] = useState(proxied);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setSrc(proxyImageUrl(trimmed));
+    setFailed(false);
+  }, [trimmed]);
+
+  if (!trimmed) {
+    return (
+      <div
+        className={`${className} rounded-lg border border-dashed border-line shrink-0 flex items-center justify-center bg-bg`}
+        title="Sin portada: se usa la del cómic"
+      >
+        <ImageIcon className="w-3.5 h-3.5 text-faint" />
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div
+        className={`${className} rounded-lg border border-red-500/40 bg-red-500/5 shrink-0 flex flex-col items-center justify-center gap-0.5`}
+        title="No se pudo cargar la portada. Probá con el link directo de la imagen (.jpg, .png, .webp)."
+      >
+        <ImageOff className="w-4 h-4 text-red-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`${className} rounded-lg object-cover border border-line shrink-0 bg-bg`}
+      referrerPolicy="no-referrer"
+      loading="lazy"
+      onError={() => {
+        if (src !== trimmed) setSrc(trimmed);
+        else setFailed(true);
+      }}
+    />
+  );
+};
 
 export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   isOpen,
@@ -273,14 +330,19 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             <span className="text-[11px] font-bold text-ink">Portada y fechas para todos</span>
           </div>
           <div className="space-y-3">
-            <input
-              type="url"
-              value={bulkCover}
-              onChange={(e) => handleBulkCover(e.target.value)}
-              placeholder="URL de portada (opcional)"
-              className={inputCls}
-              spellCheck={false}
-            />
+            <div className="flex items-center gap-2">
+              <CoverThumb url={bulkCover} />
+              <div className="flex-1 min-w-0">
+                <input
+                  type="url"
+                  value={bulkCover}
+                  onChange={(e) => handleBulkCover(e.target.value)}
+                  placeholder="URL de portada (opcional)"
+                  className={inputCls}
+                  spellCheck={false}
+                />
+              </div>
+            </div>
             <div>
               <label className="text-[10px] font-semibold text-mute mb-1 block">Fecha de publicación</label>
               <PasteDateInput
@@ -297,7 +359,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             />
           </div>
           <p className="text-[10px] text-faint">
-            Si dejás la portada vacía, cada tomo usa la portada del cómic. En las fechas podés{' '}
+            Si dejás la portada vacía, cada tomo usa la portada del cómic. Pegá el{' '}
+            <strong className="text-mute">link directo de la imagen</strong> (termina en .jpg, .png o
+            .webp), no la página donde está. En las fechas podés{' '}
             <strong className="text-mute">pegar</strong> (22/11/2026 o 2026-11-22) o elegirlas con el
             calendario. Abajo podés cambiar la portada o las fechas de un tomo puntual.
           </p>
@@ -365,21 +429,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                         />
                         <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            {detail.cover.trim() ? (
-                              <img
-                                src={proxyImageUrl(detail.cover)}
-                                alt=""
-                                className="w-6 h-9 rounded object-cover border border-line shrink-0 bg-bg"
-                                referrerPolicy="no-referrer"
-                                onError={(e) => {
-                                  e.currentTarget.style.visibility = 'hidden';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-6 h-9 rounded border border-dashed border-line shrink-0 flex items-center justify-center">
-                                <ImageIcon className="w-3 h-3 text-faint" />
-                              </div>
-                            )}
+                            <CoverThumb url={detail.cover} />
                             <input
                               type="url"
                               value={detail.cover}

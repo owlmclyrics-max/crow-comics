@@ -19,6 +19,15 @@ const PROXY_HOSTS = [
   'external-preview.redd.it',
   'i.imgur.com',
   'upload.wikimedia.org',
+  'blogger.googleusercontent.com',
+  'lh3.googleusercontent.com',
+  'i.pinimg.com',
+  'static.comicvine.com',
+  'comicvine.gamespot.com',
+  'm.media-amazon.com',
+  'images-na.ssl-images-amazon.com',
+  'i.annihil.us',
+  'images.unsplash.com',
 ];
 
 /**
