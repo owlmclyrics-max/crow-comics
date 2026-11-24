@@ -194,8 +194,27 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const applyBulkField = (field: 'cover' | 'date' | 'scheduleDate', value: string) => {
     setDetails((prev) => {
       const next: typeof prev = {};
+      // Primero, aplicar a los que ya tienen detalles
       for (const [id, detail] of Object.entries(prev)) {
         next[id] = { ...detail, [field]: value };
+      }
+      // Si hay filas parseadas, asegurarse de que todos tengan detalles
+      // para que se muestre el valor bulk en la vista previa
+      const fileIds = raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => parseDriveId(line))
+        .filter((id): id is string => id !== null);
+      for (const fileId of fileIds) {
+        if (!next[fileId]) {
+          next[fileId] = {
+            title: '',
+            cover: field === 'cover' ? value : bulkCover,
+            date: field === 'date' ? value : bulkDate,
+            scheduleDate: field === 'scheduleDate' ? value : bulkScheduleDate,
+          };
+        }
       }
       return next;
     });
