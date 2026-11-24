@@ -260,6 +260,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const handleImport = () => {
     if (preview.length === 0) return;
     const comicId = existingChapters[0]?.comic_id ?? '';
+    if (!comicId) {
+      alert('Error: No se encontró el cómic. Asegúrate de abrir el modal desde un cómic existente.');
+      return;
+    }
     const created = preview.map((row) => {
       const detail = detailFor(row.fileId as string);
       return buildChapterFromId(
@@ -272,6 +276,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         detail.scheduleDate,
       );
     });
+    console.log('Importando capítulos:', created);
     onImport(created);
     setRaw('');
     setDetails({});
