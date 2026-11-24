@@ -362,8 +362,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             Si dejás la portada vacía, cada tomo usa la portada del cómic. Pegá el{' '}
             <strong className="text-mute">link directo de la imagen</strong> (termina en .jpg, .png o
             .webp), no la página donde está. En las fechas podés{' '}
-            <strong className="text-mute">pegar</strong> (22/11/2026 o 2026-11-22) o elegirlas con el
-            calendario. Abajo podés cambiar la portada o las fechas de un tomo puntual.
+            <strong className="text-mute">pegar</strong> (22/11/2026, 2026-11-22, July 4, 2012 o
+            4 de julio de 2012) o elegirlas con el calendario. Abajo podés cambiar la portada o las
+            fechas de un tomo puntual.
           </p>
         </div>
 

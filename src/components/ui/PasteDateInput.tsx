@@ -8,6 +8,7 @@
  *   - 22/11/26
  *   - 2026-11-22 (ISO, también con hora: 2026-11-22T18:30)
  *   - texto con la fecha adentro, ej. "Fecha: 22/11/2026"
+ *   - fechas en inglés/español, ej. "July 4, 2012." o "4 de julio de 2012"
  *
  * El icono del calendario abre el selector nativo. El valor que emite
  * `onChange` es siempre ISO (YYYY-MM-DD), igual que el resto de la app.
@@ -24,6 +25,30 @@ const buildIso = (y: number, m: number, d: number): string | null => {
   return `${y}-${pad2(m)}-${pad2(d)}`;
 };
 
+const MONTH_NAMES: Record<string, number> = {
+  jan: 1, january: 1, ene: 1, enero: 1,
+  feb: 2, february: 2, febrero: 2,
+  mar: 3, march: 3, marzo: 3,
+  apr: 4, april: 4, abr: 4, abril: 4,
+  may: 5, mayo: 5,
+  jun: 6, june: 6, junio: 6,
+  jul: 7, july: 7, julio: 7,
+  aug: 8, august: 8, ago: 8, agosto: 8,
+  sep: 9, sept: 9, september: 9, set: 9, septiembre: 9, setiembre: 9,
+  oct: 10, october: 10, octubre: 10,
+  nov: 11, november: 11, noviembre: 11,
+  dec: 12, december: 12, diciembre: 12,
+};
+
+const monthNumber = (word: string): number | null => {
+  const key = word
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z]/gi, '')
+    .toLowerCase();
+  return MONTH_NAMES[key] ?? null;
+};
+
 /** Convierte casi cualquier fecha copiada a ISO (YYYY-MM-DD). */
 export const parseAnyDate = (raw: string): string | null => {
   const text = raw.trim();
@@ -36,6 +61,20 @@ export const parseAnyDate = (raw: string): string | null => {
   if (m) {
     const year = Number(m[3]);
     return buildIso(year < 100 ? 2000 + year : year, Number(m[2]), Number(m[1]));
+  }
+  // Fechas con mes en letras, típicas de Fandom/Wikipedia:
+  // "July 4, 2012." · "Jul 4 2012" · "4 July 2012" · "4 de julio de 2012".
+  m = text.match(/([a-záéíóúüñ.]+)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(?:de\s+)?(\d{2,4})/i);
+  if (m) {
+    const month = monthNumber(m[1]);
+    const year = Number(m[3]);
+    if (month) return buildIso(year < 100 ? 2000 + year : year, month, Number(m[2]));
+  }
+  m = text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(?:de\s+)?([a-záéíóúüñ.]+),?\s+(?:de\s+)?(\d{2,4})/i);
+  if (m) {
+    const month = monthNumber(m[2]);
+    const year = Number(m[3]);
+    if (month) return buildIso(year < 100 ? 2000 + year : year, month, Number(m[1]));
   }
   return null;
 };
