@@ -49,6 +49,7 @@ const buildChapterFromId = (
   comicId: string,
   fileId: string,
   n: number,
+  title: string,
   coverUrl: string,
   releaseDate: string,
   scheduleDate: string,
@@ -58,7 +59,7 @@ const buildChapterFromId = (
     id: `new_ch_${stamp}_${Math.random().toString(36).slice(2, 6)}`,
     comic_id: comicId,
     chapter_number: n,
-    title: `Capítulo #${n}`,
+    title: title.trim() || `Capítulo #${n}`,
     cover_url: coverUrl.trim(),
     pages_count: 32,
     release_date: releaseDate || undefined,
@@ -91,7 +92,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const [bulkCover, setBulkCover] = useState('');
   const [bulkDate, setBulkDate] = useState(''); // Fecha de publicación
   const [bulkScheduleDate, setBulkScheduleDate] = useState(''); // Fecha de programación para lanzamiento
-  const [details, setDetails] = useState<Record<string, { cover: string; date: string; scheduleDate: string }>>({});
+  const [details, setDetails] = useState<
+    Record<string, { title: string; cover: string; date: string; scheduleDate: string }>
+  >({});
 
   const usedIds = useMemo(() => extractUsedIds(existingChapters), [existingChapters]);
 
@@ -106,31 +109,51 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
     setTouched(false);
     setBulkCover('');
     setBulkDate('');
+    setBulkScheduleDate('');
     setDetails({});
   }, [isOpen, existingChapters]);
 
   const detailFor = (fileId: string) =>
-    details[fileId] ?? { cover: bulkCover, date: bulkDate, scheduleDate: bulkScheduleDate };
+    details[fileId] ?? {
+      title: '',
+      cover: bulkCover,
+      date: bulkDate,
+      scheduleDate: bulkScheduleDate,
+    };
 
-  const updateDetail = (fileId: string, field: 'cover' | 'date' | 'scheduleDate', value: string) => {
+  const updateDetail = (
+    fileId: string,
+    field: 'title' | 'cover' | 'date' | 'scheduleDate',
+    value: string,
+  ) => {
     setDetails((prev) => ({
       ...prev,
       [fileId]: { ...detailFor(fileId), [field]: value },
     }));
   };
 
-  // Cambiar el valor "para todos" reinicia los ajustes individuales.
+  // Cambiar un valor "para todos" pisa ese campo en todos los tomos,
+  // pero respeta lo que ya se escribió a mano (nombre, otros campos).
+  const applyBulkField = (field: 'cover' | 'date' | 'scheduleDate', value: string) => {
+    setDetails((prev) => {
+      const next: typeof prev = {};
+      for (const [id, detail] of Object.entries(prev)) {
+        next[id] = { ...detail, [field]: value };
+      }
+      return next;
+    });
+  };
   const handleBulkCover = (value: string) => {
     setBulkCover(value);
-    setDetails({});
+    applyBulkField('cover', value);
   };
   const handleBulkDate = (value: string) => {
     setBulkDate(value);
-    setDetails({});
+    applyBulkField('date', value);
   };
   const handleBulkScheduleDate = (value: string) => {
     setBulkScheduleDate(value);
-    setDetails({});
+    applyBulkField('scheduleDate', value);
   };
 
   const rows = useMemo<ParsedRow[]>(() => {
@@ -167,6 +190,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         comicId,
         row.fileId as string,
         row.number,
+        detail.title,
         detail.cover,
         detail.date,
         detail.scheduleDate,
@@ -187,7 +211,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
           </div>
           <div className="min-w-0">
             <h2 className="text-lg font-black text-ink truncate">Importar varios links de Drive</h2>
-            <p className="text-[11px] text-faint">Un link por línea · se crea un tomo por link</p>
+            <p className="text-[11px] text-faint">Un link por línea · nombre, portada y fechas por tomo</p>
           </div>
         </div>
         <button
@@ -330,43 +354,53 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                     </div>
 
                     {ready && detail && row.fileId && (
-                      <div className="ml-8 grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {detail.cover.trim() ? (
-                            <img
-                              src={proxyImageUrl(detail.cover)}
-                              alt=""
-                              className="w-6 h-9 rounded object-cover border border-line shrink-0 bg-bg"
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                e.currentTarget.style.visibility = 'hidden';
-                              }}
+                      <div className="ml-8 space-y-2">
+                        <input
+                          type="text"
+                          value={detail.title}
+                          onChange={(e) => updateDetail(row.fileId as string, 'title', e.target.value)}
+                          placeholder={`Nombre del tomo (vacío = Capítulo #${number})`}
+                          className={`${inputCls} text-[11px] py-1.5 font-semibold`}
+                          maxLength={120}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {detail.cover.trim() ? (
+                              <img
+                                src={proxyImageUrl(detail.cover)}
+                                alt=""
+                                className="w-6 h-9 rounded object-cover border border-line shrink-0 bg-bg"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  e.currentTarget.style.visibility = 'hidden';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-6 h-9 rounded border border-dashed border-line shrink-0 flex items-center justify-center">
+                                <ImageIcon className="w-3 h-3 text-faint" />
+                              </div>
+                            )}
+                            <input
+                              type="url"
+                              value={detail.cover}
+                              onChange={(e) => updateDetail(row.fileId as string, 'cover', e.target.value)}
+                              placeholder="Portada de este tomo (opcional)"
+                              className={`${inputCls} text-[11px] py-1.5`}
+                              spellCheck={false}
                             />
-                          ) : (
-                            <div className="w-6 h-9 rounded border border-dashed border-line shrink-0 flex items-center justify-center">
-                              <ImageIcon className="w-3 h-3 text-faint" />
-                            </div>
-                          )}
-                          <input
-                            type="url"
-                            value={detail.cover}
-                            onChange={(e) => updateDetail(row.fileId as string, 'cover', e.target.value)}
-                            placeholder="Portada de este tomo (opcional)"
-                            className={`${inputCls} text-[11px] py-1.5`}
-                            spellCheck={false}
+                          </div>
+                          <PasteDateInput
+                            value={detail.date}
+                            onChange={(iso) => updateDetail(row.fileId as string, 'date', iso)}
+                            label={`Fecha de publicación del capítulo ${number}`}
+                            compact
+                          />
+                          <ScheduleDatePicker
+                            value={detail.scheduleDate}
+                            onChange={(val) => updateDetail(row.fileId as string, 'scheduleDate', val)}
+                            compact
                           />
                         </div>
-                        <PasteDateInput
-                          value={detail.date}
-                          onChange={(iso) => updateDetail(row.fileId as string, 'date', iso)}
-                          label={`Fecha de publicación del capítulo ${number}`}
-                          compact
-                        />
-                        <ScheduleDatePicker
-                          value={detail.scheduleDate}
-                          onChange={(val) => updateDetail(row.fileId as string, 'scheduleDate', val)}
-                          compact
-                        />
                       </div>
                     )}
                   </div>
@@ -383,9 +417,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         <div className="rounded-xl bg-accent/5 border border-accent/20 px-3 py-2.5 flex gap-2">
           <FileText className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
           <p className="text-[10px] text-mute leading-relaxed">
-            Cada tomo queda con <strong className="text-ink">lectura online</strong> (preview de Drive),
-            su <strong className="text-ink">portada</strong>, su{' '}
-            <strong className="text-ink">fecha</strong> y{' '}
+            Cada tomo queda con <strong className="text-ink">nombre editable</strong>,{' '}
+            <strong className="text-ink">lectura online</strong> (preview de Drive), su{' '}
+            <strong className="text-ink">portada</strong>, sus{' '}
+            <strong className="text-ink">fechas</strong> y{' '}
             <strong className="text-ink">descarga directa</strong>. No ocupa Storage: solo guarda los
             links.
           </p>
