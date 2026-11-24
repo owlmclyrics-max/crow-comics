@@ -2,36 +2,34 @@
 -- Ejecutar este script en el SQL Editor de Supabase
 
 -- 1. Buscar el cómic exacto
-SELECT 
-  id, 
-  title, 
-  publisher, 
-  created_at,
-  updated_at
+SELECT
+  id,
+  title,
+  publisher,
+  created_at
 FROM comics
 WHERE title = 'Red Lanterns New 52'
    OR title ILIKE '%Red Lanterns New 52%';
 
 -- 2. Si el cómic existe, ver sus capítulos
-SELECT 
+SELECT
   c.id,
   c.chapter_number,
   c.title,
   c.release_date,
   c.schedule_date,
-  c.created_at,
-  c.updated_at
+  c.created_at
 FROM chapters c
 WHERE c.comic_id = (
-  SELECT id FROM comics 
-  WHERE title = 'Red Lanterns New 52' 
+  SELECT id FROM comics
+  WHERE title = 'Red Lanterns New 52'
   OR title ILIKE '%Red Lanterns New 52%'
   LIMIT 1
 )
 ORDER BY c.chapter_number;
 
 -- 3. Verificar lanzamientos para este cómic
-SELECT 
+SELECT
   rs.id,
   rs.title,
   rs.chapter_label,
@@ -44,7 +42,7 @@ WHERE rs.title ILIKE '%Red Lanterns New 52%'
 ORDER BY rs.release_at;
 
 -- 4. Verificar si hay capítulos huérfanos (sin cómic válido)
-SELECT 
+SELECT
   c.id,
   c.comic_id,
   c.chapter_number,
