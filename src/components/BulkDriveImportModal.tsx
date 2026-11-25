@@ -260,8 +260,9 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   }));
 
   /** Nombre automático: "Red Lanterns" → "Red Lanterns #13". */
+  const nameBase = bulkTitle.trim().replace(/[#\s]+$/, '');
   const autoTitle = (number: number) =>
-    bulkTitle.trim() ? `${bulkTitle.trim()} #${number}` : `Capítulo #${number}`;
+    nameBase ? `${nameBase} #${number}` : `Capítulo #${number}`;
 
   const handleImport = () => {
     if (preview.length === 0) return;
@@ -375,8 +376,8 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
               <p className="text-[10px] text-faint mt-1">
                 Se le agrega el número de cada tomo:{' '}
                 <strong className="text-mute">
-                  {bulkTitle.trim()
-                    ? `${bulkTitle.trim()} #${startNumber}, ${bulkTitle.trim()} #${startNumber + 1}…`
+                  {nameBase
+                    ? `${nameBase} #${startNumber}, ${nameBase} #${startNumber + 1}…`
                     : `Capítulo #${startNumber}, Capítulo #${startNumber + 1}…`}
                 </strong>
               </p>
