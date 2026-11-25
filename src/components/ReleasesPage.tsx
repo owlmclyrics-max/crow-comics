@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowRight,
   BookOpen,
   CalendarClock,
   CalendarX2,
@@ -25,6 +26,7 @@ import { proxyImageUrl } from '../lib/imageUrl';
 import {
   COLOMBIA_TZ,
   colombiaDayKey,
+  colombiaDayNumber,
   countdownLabel,
   deleteRelease,
   fetchReleases,
@@ -119,162 +121,218 @@ const groupEntriesByDay = (
   }));
 };
 
-const shortDateLabel = (iso: string): string =>
-  new Date(iso).toLocaleDateString('es', {
-    timeZone: COLOMBIA_TZ,
-    day: 'numeric',
-    month: 'short',
-  });
+/* Paleta del timeline (se repite a lo largo del riel). */
+const TIMELINE_COLORS = ['#a3e635', '#38bdf8', '#fb7185', '#facc15', '#fb923c', '#a78bfa'];
 
-const TimelineCard: React.FC<{
+const HEX_CLIP = 'polygon(24% 0%, 76% 0%, 100% 50%, 76% 100%, 24% 100%, 0% 50%)';
+
+const TimelineColumn: React.FC<{
   entry: TimelineEntry;
+  color: string;
+  nextColor: string;
   canManage: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onOpenComic: (comicId: string) => void;
   isPast?: boolean;
-  isLast?: boolean;
-}> = ({ entry, canManage, onEdit, onDelete, onOpenComic, isPast, isLast }) => {
+  dayLabel?: string | null;
+}> = ({
+  entry,
+  color,
+  nextColor,
+  canManage,
+  onEdit,
+  onDelete,
+  onOpenComic,
+  isPast,
+  dayLabel,
+}) => {
   const item = entry.primary;
   const ownNumber = chapterNumberOf(item);
   const others = entry.numbers.filter((n) => n !== ownNumber);
+  const dayNumber = colombiaDayNumber(item.release_at);
+  const monthLabel = new Date(item.release_at)
+    .toLocaleDateString('es', { timeZone: COLOMBIA_TZ, month: 'short' })
+    .replace('.', '');
 
   return (
-    <article className="group relative pl-7 sm:pl-9">
-      {/* Riel vertical */}
-      <span
-        aria-hidden
-        className={`absolute left-[11px] top-0 w-px ${
-          isLast ? 'h-9' : 'h-full'
-        } ${isPast ? 'bg-line/70' : 'bg-gradient-to-b from-accent/50 via-line to-line/40'}`}
-      />
-      {/* Nodo */}
-      <span
-        aria-hidden
-        className={`absolute left-[11px] top-9 z-10 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${
-          isPast
-            ? 'border-line bg-bg'
-            : 'border-accent bg-bg shadow-[0_0_0_4px_rgba(163,230,53,0.14)]'
-        }`}
-      />
-
-      <div className="relative overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-200 hover:border-accent/40 hover:bg-raised/30">
-        {!isPast && (
-          <span
-            aria-hidden
-            className="absolute inset-y-0 left-0 w-[2px] bg-gradient-to-b from-accent via-accent/40 to-transparent"
-          />
+    <div className="relative w-[132px] sm:w-[156px] shrink-0 snap-start">
+      {/* Día (solo en la primera tarjeta del grupo) */}
+      <div className="h-5 mb-1.5 flex items-center justify-center">
+        {dayLabel && (
+          <span className="text-[9px] font-black uppercase tracking-widest text-faint whitespace-nowrap">
+            {dayLabel}
+          </span>
         )}
-        <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-3.5">
-          {/* Portada */}
-          <div className="shrink-0 w-16 sm:w-20">
-            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-bg border border-line shadow-lg shadow-black/40">
-              {item.cover_url ? (
-                <img
-                  src={proxyImageUrl(item.cover_url)}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-faint" />
-                </div>
-              )}
+      </div>
+
+      {/* Hexágono con la fecha */}
+      <div
+        className="relative mx-auto h-[54px] w-[88px] transition-transform duration-300 hover:-translate-y-0.5"
+        style={{ clipPath: HEX_CLIP, background: isPast ? `${color}66` : color }}
+      >
+        <div
+          className="absolute inset-[2px] flex flex-col items-center justify-center bg-bg"
+          style={{ clipPath: HEX_CLIP }}
+        >
+          <span
+            className="text-lg font-black leading-none"
+            style={{ color: isPast ? 'var(--color-mute)' : color }}
+          >
+            {dayNumber}
+          </span>
+          <span className="text-[8px] font-bold uppercase tracking-widest text-faint mt-0.5">
+            {monthLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Riel + conectores */}
+      <div className="relative h-10">
+        <span
+          aria-hidden
+          className="absolute left-1/2 top-0 h-1/2 w-px -translate-x-1/2"
+          style={{ background: color, opacity: 0.45 }}
+        />
+        <span
+          aria-hidden
+          className="absolute -left-2 -right-2 top-1/2 h-[3px] -translate-y-1/2"
+          style={{ background: `linear-gradient(90deg, ${color}, ${nextColor})` }}
+        />
+        <span
+          aria-hidden
+          className="absolute left-1/2 bottom-0 h-1/2 w-px -translate-x-1/2"
+          style={{ background: color, opacity: 0.45 }}
+        />
+        <span
+          aria-hidden
+          className="absolute left-1/2 top-1/2 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-bg"
+          style={{
+            borderColor: isPast ? 'var(--color-line)' : color,
+            boxShadow: isPast ? undefined : `0 0 0 3px ${color}22`,
+          }}
+        />
+      </div>
+
+      {/* Tarjeta */}
+      <div
+        className="group/card relative mt-1 overflow-hidden rounded-2xl border bg-surface transition-colors hover:border-accent/40"
+        style={{ borderColor: `${color}55` }}
+      >
+        <div className="relative aspect-[2/3] overflow-hidden bg-bg">
+          {item.cover_url ? (
+            <img
+              src={proxyImageUrl(item.cover_url)}
+              alt={item.title}
+              className={`w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-[1.04] ${
+                isPast ? 'opacity-90' : ''
+              }`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-faint" />
             </div>
+          )}
+
+          {item.chapter_label && (
+            <span className="absolute left-1.5 top-1.5 max-w-[calc(100%-12px)] truncate px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[9px] font-bold text-white">
+              {item.chapter_label}
+            </span>
+          )}
+
+          {!isPast && (
+            <span
+              className="absolute right-1.5 top-1.5 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wide shadow-lg"
+              style={{ background: color, color: '#0b0b0b' }}
+            >
+              {countdownLabel(item.release_at)}
+            </span>
+          )}
+
+          {entry.count > 1 && (
+            <span
+              className="absolute right-1.5 bottom-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[9px] font-bold text-white"
+              title={
+                others.length
+                  ? `También salieron: ${others.map((n) => `#${n}`).join(', ')}`
+                  : undefined
+              }
+            >
+              <Layers className="w-2.5 h-2.5" />
+              {entry.count} tomos
+            </span>
+          )}
+
+          {isPast && (
+            <span className="absolute left-1.5 bottom-1.5 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[8px] font-bold uppercase tracking-wide text-white/80">
+              Publicado
+            </span>
+          )}
+        </div>
+
+        <div className="p-2 space-y-1">
+          <h3
+            className={`text-[11px] font-bold leading-tight line-clamp-2 ${
+              isPast ? 'text-mute' : 'text-ink'
+            }`}
+          >
+            {item.title}
+          </h3>
+
+          <div className="flex items-center justify-between gap-1 text-[10px]">
+            <span className="inline-flex items-center gap-1 font-bold" style={{ color }}>
+              <Clock className="w-2.5 h-2.5" />
+              {releaseTimeLabel(item.release_at)}
+            </span>
+            {item.publisher && (
+              <span className="text-[8px] font-bold uppercase tracking-wide text-faint truncate">
+                {item.publisher}
+              </span>
+            )}
           </div>
 
-          {/* Info */}
-          <div className="min-w-0 flex-1 py-0.5 space-y-1.5">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-accent">
-                <Clock className="w-3 h-3" />
-                {releaseTimeLabel(item.release_at)}
-              </span>
-              <span className="text-[10px] text-faint">· {shortDateLabel(item.release_at)}</span>
-              {isPast ? (
-                <span className="px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold uppercase tracking-wide text-mute">
-                  Publicado
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[9px] font-bold uppercase tracking-wide">
-                  <CalendarClock className="w-2.5 h-2.5" />
-                  {countdownLabel(item.release_at)}
-                </span>
-              )}
-              {item.publisher && (
-                <span className="px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold text-mute uppercase tracking-wide">
-                  {item.publisher}
-                </span>
-              )}
-            </div>
-
-            <h3
-              className={`text-sm sm:text-[15px] font-bold leading-snug line-clamp-2 ${
-                isPast ? 'text-ink/80' : 'text-ink'
-              }`}
-            >
-              {item.title}
-            </h3>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              {item.chapter_label && (
-                <span className="px-2 py-0.5 rounded-lg bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent">
-                  {item.chapter_label}
-                </span>
-              )}
-              {entry.count > 1 && (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-bg border border-line text-[10px] font-semibold text-mute"
-                  title={others.length ? `También salieron: ${others.map((n) => `#${n}`).join(', ')}` : undefined}
-                >
-                  <Layers className="w-3 h-3" />
-                  {entry.count} tomos juntos
-                </span>
-              )}
-            </div>
-
-            {item.notes && (
-              <p className="text-[11px] text-faint leading-snug line-clamp-2">{item.notes}</p>
-            )}
-
-            {item.comic_id && (
+          <div className="flex items-end justify-between gap-1 pt-0.5">
+            {item.comic_id ? (
               <button
                 type="button"
                 onClick={() => onOpenComic(item.comic_id as string)}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent2 transition-colors pt-0.5"
+                className="inline-flex items-center gap-1 text-[10px] font-bold hover:text-accent2 transition-colors"
+                style={{ color }}
               >
-                <BookOpen className="w-3 h-3" /> Ver cómic
+                <BookOpen className="w-2.5 h-2.5" /> Ver cómic
               </button>
+            ) : (
+              <span />
+            )}
+
+            {canManage && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="p-1 rounded-md bg-bg border border-line text-mute hover:text-accent hover:border-accent/40 transition-colors"
+                  title="Editar"
+                  aria-label="Editar lanzamiento"
+                >
+                  <Pencil className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="p-1 rounded-md bg-bg border border-line text-mute hover:text-accent2 hover:border-accent/40 transition-colors"
+                  title="Borrar"
+                  aria-label="Borrar lanzamiento"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
             )}
           </div>
         </div>
-
-        {canManage && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={onEdit}
-              className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent hover:border-accent/40 transition-colors"
-              title="Editar"
-              aria-label="Editar lanzamiento"
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent2 hover:border-accent/40 transition-colors"
-              title="Borrar"
-              aria-label="Borrar lanzamiento"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </div>
-        )}
       </div>
-    </article>
+    </div>
   );
 };
 
@@ -318,6 +376,13 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
 
   const list = tab === 'upcoming' ? upcoming : past;
   const groups = useMemo(() => groupEntriesByDay(list), [list]);
+  const flat = useMemo(
+    () =>
+      groups.flatMap((group) =>
+        group.entries.map((entry, i) => ({ entry, dayLabel: i === 0 ? group.label : null })),
+      ),
+    [groups],
+  );
   const next = upcoming[0]?.primary;
   const totalTomos = list.reduce((acc, entry) => acc + entry.count, 0);
 
@@ -473,43 +538,38 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
           )}
         </div>
       ) : (
-        <div className="space-y-7">
+        <div className="space-y-3">
           {totalTomos > list.length && (
             <p className="text-[11px] text-faint">
-              Los tomos que salieron al mismo tiempo se muestran como uno solo, con el último
-              número publicado.
+              Los tomos que salieron al mismo tiempo se muestran como una sola tarjeta, con el
+              último número publicado.
             </p>
           )}
-          {groups.map((group) => {
-            const tomos = group.entries.reduce((acc, entry) => acc + entry.count, 0);
-            return (
-              <section key={group.key} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-[11px] font-black uppercase tracking-widest text-mute whitespace-nowrap">
-                    {group.label}
-                  </h2>
-                  <span className="flex-1 h-px bg-gradient-to-r from-line to-transparent" />
-                  <span className="text-[10px] font-bold text-faint whitespace-nowrap">
-                    {tomos} tomo{tomos === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className="space-y-2.5">
-                  {group.entries.map((entry, i) => (
-                    <TimelineCard
-                      key={entry.primary.id}
-                      entry={entry}
-                      canManage={canManageContent && Boolean(user)}
-                      onEdit={() => openEdit(entry.primary)}
-                      onDelete={() => void handleDelete(entry.primary)}
-                      onOpenComic={onOpenComic}
-                      isPast={tab === 'past'}
-                      isLast={i === group.entries.length - 1}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+
+          <div className="overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex items-stretch min-w-max">
+              {flat.map(({ entry, dayLabel }, index) => (
+                <TimelineColumn
+                  key={entry.primary.id}
+                  entry={entry}
+                  color={TIMELINE_COLORS[index % TIMELINE_COLORS.length]}
+                  nextColor={TIMELINE_COLORS[(index + 1) % TIMELINE_COLORS.length]}
+                  canManage={canManageContent && Boolean(user)}
+                  onEdit={() => openEdit(entry.primary)}
+                  onDelete={() => void handleDelete(entry.primary)}
+                  onOpenComic={onOpenComic}
+                  isPast={tab === 'past'}
+                  dayLabel={dayLabel}
+                />
+              ))}
+            </div>
+          </div>
+
+          {list.length > 3 && (
+            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-faint">
+              <ArrowRight className="w-3 h-3" /> Deslizá para ver el resto del timeline
+            </p>
+          )}
         </div>
       )}
 
