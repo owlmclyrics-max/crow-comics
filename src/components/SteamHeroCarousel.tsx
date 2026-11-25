@@ -116,12 +116,12 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-75"
             />
-            <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden sm:[mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]">
+            <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden flex justify-end">
               <img
                 src={proxyImageUrl(fallbackComic.cover_url)}
                 alt=""
                 aria-hidden="true"
-                className="w-full h-full object-cover object-top sm:object-contain sm:object-right"
+                className="w-full h-full object-cover object-top sm:w-auto sm:max-w-full sm:object-contain sm:object-right sm:[mask-image:linear-gradient(to_right,transparent_0%,black_38%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]"
               />
             </div>
           </>
@@ -227,11 +227,11 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                       v0.9.9.8: en móvil la portada llena TODO el banner y sin
                       fundido ni velos (queda solo la imagen, como pidió el
                       usuario); el fundido arranca en sm+ igual que siempre. */}
-                  <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden sm:[mask-image:linear-gradient(to_right,transparent_0%,black_26%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]">
+                  <div className="absolute inset-y-0 right-0 h-full w-full sm:w-[48%] lg:w-[42%] max-w-[820px] overflow-hidden flex justify-end">
                     <img
                       src={cover}
                       alt=""
-                      className="w-full h-full object-cover object-top sm:object-contain sm:object-right"
+                      className="w-full h-full object-cover object-top sm:w-auto sm:max-w-full sm:object-contain sm:object-right sm:[mask-image:linear-gradient(to_right,transparent_0%,black_38%,black_100%)] sm:[mask-repeat:no-repeat] sm:[mask-size:100%_100%]"
                     />
                   </div>
                 </>
