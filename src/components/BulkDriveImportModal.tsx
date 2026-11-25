@@ -10,7 +10,7 @@
  * No toca Storage: solo se guardan links.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Download, FileText, Image as ImageIcon, ImageOff, Link2, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileText, Image as ImageIcon, ImageOff, Link2, Loader2, Plus, Type } from 'lucide-react';
 import type { Chapter } from '../types/comic';
 import { buildDriveDownloadUrl, buildDrivePreviewUrl, parseDriveId } from '../lib/driveLinks';
 import { proxyImageUrl } from '../lib/imageUrl';
@@ -146,6 +146,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
   const [start, setStart] = useState(1);
   const [touched, setTouched] = useState(false);
   // v0.11.3: portada y fecha por tomo (con valores "para todos" al principio).
+  const [bulkTitle, setBulkTitle] = useState('');
   const [bulkCover, setBulkCover] = useState('');
   const [bulkDate, setBulkDate] = useState(''); // Fecha de publicación
   const [bulkScheduleDate, setBulkScheduleDate] = useState(''); // Fecha de programación para lanzamiento
@@ -164,6 +165,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
     );
     setStart(max + 1);
     setTouched(false);
+    setBulkTitle('');
     setBulkCover('');
     setBulkDate('');
     setBulkScheduleDate('');
@@ -257,6 +259,10 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
     number: startNumber + i,
   }));
 
+  /** Nombre automático: "Red Lanterns" → "Red Lanterns #13". */
+  const autoTitle = (number: number) =>
+    bulkTitle.trim() ? `${bulkTitle.trim()} #${number}` : `Capítulo #${number}`;
+
   const handleImport = () => {
     if (preview.length === 0) return;
     const comicId = existingChapters[0]?.comic_id ?? '';
@@ -270,7 +276,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
         comicId,
         row.fileId as string,
         row.number,
-        detail.title,
+        detail.title.trim() || autoTitle(row.number),
         detail.cover,
         detail.date,
         detail.scheduleDate,
@@ -347,13 +353,34 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
           </p>
         </div>
 
-        {/* Portada y fecha para todos (cada tomo se puede ajustar abajo) */}
+        {/* Nombre, portada y fecha para todos (cada tomo se puede ajustar abajo) */}
         <div className="rounded-xl border border-line bg-bg/40 p-3 space-y-2.5">
           <div className="flex items-center gap-2">
             <ImageIcon className="w-3.5 h-3.5 text-accent" />
-            <span className="text-[11px] font-bold text-ink">Portada y fechas para todos</span>
+            <span className="text-[11px] font-bold text-ink">Nombre, portada y fechas para todos</span>
           </div>
           <div className="space-y-3">
+            <div>
+              <label className="text-[10px] font-semibold text-mute mb-1 flex items-center gap-1">
+                <Type className="w-3 h-3" /> Nombre para todos
+              </label>
+              <input
+                type="text"
+                value={bulkTitle}
+                onChange={(e) => setBulkTitle(e.target.value)}
+                placeholder="Ej. Red Lanterns"
+                className={inputCls}
+                maxLength={100}
+              />
+              <p className="text-[10px] text-faint mt-1">
+                Se le agrega el número de cada tomo:{' '}
+                <strong className="text-mute">
+                  {bulkTitle.trim()
+                    ? `${bulkTitle.trim()} #${startNumber}, ${bulkTitle.trim()} #${startNumber + 1}…`
+                    : `Capítulo #${startNumber}, Capítulo #${startNumber + 1}…`}
+                </strong>
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <CoverThumb url={bulkCover} />
               <div className="flex-1 min-w-0">
@@ -383,12 +410,13 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
             />
           </div>
           <p className="text-[10px] text-faint">
-            Si dejás la portada vacía, cada tomo usa la portada del cómic. Pegá el{' '}
+            El nombre de arriba se aplica a todos y se le suma <strong className="text-mute">#N</strong>{' '}
+            según el número de cada tomo. Si querés un nombre distinto para uno puntual, escribilo
+            abajo y ese manda. Si dejás la portada vacía, cada tomo usa la del cómic. Pegá el{' '}
             <strong className="text-mute">link directo de la imagen</strong> (termina en .jpg, .png o
             .webp), no la página donde está. En las fechas podés{' '}
             <strong className="text-mute">pegar</strong> (22/11/2026, 2026-11-22, July 4, 2012 o
-            4 de julio de 2012) o elegirlas con el calendario. Abajo podés cambiar la portada o las
-            fechas de un tomo puntual.
+            4 de julio de 2012) o elegirlas con el calendario.
           </p>
         </div>
 
@@ -448,7 +476,7 @@ export const BulkDriveImportModal: React.FC<BulkDriveImportModalProps> = ({
                           type="text"
                           value={detail.title}
                           onChange={(e) => updateDetail(row.fileId as string, 'title', e.target.value)}
-                          placeholder={`Nombre del tomo (vacío = Capítulo #${number})`}
+                          placeholder={`Nombre de este tomo (vacío = ${autoTitle(number)})`}
                           className={`${inputCls} text-[11px] py-1.5 font-semibold`}
                           maxLength={120}
                         />
