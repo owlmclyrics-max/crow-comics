@@ -244,7 +244,7 @@ const TimelineColumn: React.FC<{
 
           {!isPast && (
             <span
-              className="absolute right-1.5 top-1.5 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wide shadow-lg"
+              className="absolute right-1.5 top-1.5 max-w-[calc(100%-12px)] truncate px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wide shadow-lg"
               style={{ background: color, color: '#0b0b0b' }}
             >
               {countdownLabel(item.release_at)}
