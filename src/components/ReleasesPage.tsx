@@ -10,6 +10,7 @@ import {
   CalendarClock,
   CalendarX2,
   Clock,
+  Layers,
   Loader2,
   Pencil,
   Plus,
@@ -24,7 +25,6 @@ import { proxyImageUrl } from '../lib/imageUrl';
 import {
   COLOMBIA_TZ,
   colombiaDayKey,
-  colombiaDayNumber,
   countdownLabel,
   deleteRelease,
   fetchReleases,
@@ -41,121 +41,239 @@ interface ReleasesPageProps {
 
 const dayKey = (iso: string): string => colombiaDayKey(iso);
 
-const groupByDay = (items: ReleaseItem[]): Array<{ key: string; label: string; items: ReleaseItem[] }> => {
+/** Clave de serie: mismo cómic (o mismo título sin el "Tomo #N"). */
+const seriesKeyOf = (item: ReleaseItem): string => {
+  if (item.comic_id) return `c:${item.comic_id}`;
+  const base = item.title
+    .replace(/\s*[-–—]\s*tomo\s*#?\s*\d+\s*$/i, '')
+    .trim()
+    .toLowerCase();
+  return `t:${base || item.title.trim().toLowerCase()}`;
+};
+
+/** Número del tomo: de "… - Tomo #13", "#13 - …" o "#13". */
+const chapterNumberOf = (item: ReleaseItem): number | null => {
+  const m =
+    item.title.match(/tomo\s*#\s*(\d+)/i) ??
+    item.chapter_label?.match(/#\s*(\d+)/) ??
+    item.title.match(/#\s*(\d+)/);
+  return m ? Number(m[1]) : null;
+};
+
+interface TimelineEntry {
+  primary: ReleaseItem;
+  /** Cuántos tomos salieron juntos en ese mismo instante. */
+  count: number;
+  /** Números de esos tomos, de menor a mayor. */
+  numbers: number[];
+}
+
+/**
+ * Si varios tomos de la misma serie salen a la misma hora, se muestra uno solo:
+ * el del número más alto (el último publicado). El resto queda como "+N tomos".
+ */
+const collapseBatches = (items: ReleaseItem[], order: 'asc' | 'desc' = 'asc'): TimelineEntry[] => {
   const map = new Map<string, ReleaseItem[]>();
   for (const item of items) {
-    const key = dayKey(item.release_at);
+    const key = `${seriesKeyOf(item)}|${colombiaDayKey(item.release_at)}|${releaseTimeLabel(item.release_at)}`;
     const list = map.get(key);
     if (list) list.push(item);
     else map.set(key, [item]);
   }
+
+  const entries: TimelineEntry[] = [];
+  for (const batch of map.values()) {
+    let primary = batch[0];
+    for (const item of batch) {
+      const n = chapterNumberOf(item);
+      const p = chapterNumberOf(primary);
+      if (n !== null && (p === null || n > p)) primary = item;
+    }
+    const numbers = batch
+      .map(chapterNumberOf)
+      .filter((n): n is number => n !== null)
+      .sort((a, b) => a - b);
+    entries.push({ primary, count: batch.length, numbers });
+  }
+
+  const dir = order === 'asc' ? 1 : -1;
+  return entries.sort(
+    (a, b) => (+new Date(a.primary.release_at) - +new Date(b.primary.release_at)) * dir,
+  );
+};
+
+const groupEntriesByDay = (
+  entries: TimelineEntry[],
+): Array<{ key: string; label: string; entries: TimelineEntry[] }> => {
+  const map = new Map<string, TimelineEntry[]>();
+  for (const entry of entries) {
+    const key = dayKey(entry.primary.release_at);
+    const list = map.get(key);
+    if (list) list.push(entry);
+    else map.set(key, [entry]);
+  }
   return Array.from(map.entries()).map(([key, list]) => ({
     key,
-    label: releaseDateLabel(list[0].release_at),
-    items: list,
+    label: releaseDateLabel(list[0].primary.release_at),
+    entries: list,
   }));
 };
 
-const ReleaseCard: React.FC<{
-  item: ReleaseItem;
+const shortDateLabel = (iso: string): string =>
+  new Date(iso).toLocaleDateString('es', {
+    timeZone: COLOMBIA_TZ,
+    day: 'numeric',
+    month: 'short',
+  });
+
+const TimelineCard: React.FC<{
+  entry: TimelineEntry;
   canManage: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onOpenComic: (comicId: string) => void;
   isPast?: boolean;
-}> = ({ item, canManage, onEdit, onDelete, onOpenComic, isPast }) => {
-  const d = new Date(item.release_at);
-  return (
-    <article className="group relative flex gap-3 sm:gap-4 p-3 rounded-2xl border border-line bg-surface hover:border-accent/40 transition-colors">
-      {/* Bloque de fecha */}
-      <div className="shrink-0 w-14 sm:w-16 rounded-xl bg-bg border border-line flex flex-col items-center justify-center py-2">
-        <span className="text-[9px] uppercase font-bold tracking-wider text-faint">
-          {d.toLocaleDateString('es', { timeZone: COLOMBIA_TZ, month: 'short' }).replace('.', '')}
-        </span>
-        <span className={`text-xl font-black leading-none ${isPast ? 'text-mute' : 'text-accent'}`}>
-          {colombiaDayNumber(item.release_at)}
-        </span>
-        <span className="text-[9px] text-faint mt-0.5">
-          {d.toLocaleDateString('es', { timeZone: COLOMBIA_TZ, weekday: 'short' }).replace('.', '')}
-        </span>
-      </div>
+  isLast?: boolean;
+}> = ({ entry, canManage, onEdit, onDelete, onOpenComic, isPast, isLast }) => {
+  const item = entry.primary;
+  const ownNumber = chapterNumberOf(item);
+  const others = entry.numbers.filter((n) => n !== ownNumber);
 
-      {/* Portada */}
-      <div className="shrink-0 w-14 sm:w-16 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line">
-        {item.cover_url ? (
-          <img
-            src={proxyImageUrl(item.cover_url)}
-            alt={item.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
+  return (
+    <article className="group relative pl-7 sm:pl-9">
+      {/* Riel vertical */}
+      <span
+        aria-hidden
+        className={`absolute left-[11px] top-0 w-px ${
+          isLast ? 'h-9' : 'h-full'
+        } ${isPast ? 'bg-line/70' : 'bg-gradient-to-b from-accent/50 via-line to-line/40'}`}
+      />
+      {/* Nodo */}
+      <span
+        aria-hidden
+        className={`absolute left-[11px] top-9 z-10 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${
+          isPast
+            ? 'border-line bg-bg'
+            : 'border-accent bg-bg shadow-[0_0_0_4px_rgba(163,230,53,0.14)]'
+        }`}
+      />
+
+      <div className="relative overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-200 hover:border-accent/40 hover:bg-raised/30">
+        {!isPast && (
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-[2px] bg-gradient-to-b from-accent via-accent/40 to-transparent"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-faint" />
+        )}
+        <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-3.5">
+          {/* Portada */}
+          <div className="shrink-0 w-16 sm:w-20">
+            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-bg border border-line shadow-lg shadow-black/40">
+              {item.cover_url ? (
+                <img
+                  src={proxyImageUrl(item.cover_url)}
+                  alt={item.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-faint" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="min-w-0 flex-1 py-0.5 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-accent">
+                <Clock className="w-3 h-3" />
+                {releaseTimeLabel(item.release_at)}
+              </span>
+              <span className="text-[10px] text-faint">· {shortDateLabel(item.release_at)}</span>
+              {isPast ? (
+                <span className="px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold uppercase tracking-wide text-mute">
+                  Publicado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[9px] font-bold uppercase tracking-wide">
+                  <CalendarClock className="w-2.5 h-2.5" />
+                  {countdownLabel(item.release_at)}
+                </span>
+              )}
+              {item.publisher && (
+                <span className="px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold text-mute uppercase tracking-wide">
+                  {item.publisher}
+                </span>
+              )}
+            </div>
+
+            <h3
+              className={`text-sm sm:text-[15px] font-bold leading-snug line-clamp-2 ${
+                isPast ? 'text-ink/80' : 'text-ink'
+              }`}
+            >
+              {item.title}
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {item.chapter_label && (
+                <span className="px-2 py-0.5 rounded-lg bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent">
+                  {item.chapter_label}
+                </span>
+              )}
+              {entry.count > 1 && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-bg border border-line text-[10px] font-semibold text-mute"
+                  title={others.length ? `También salieron: ${others.map((n) => `#${n}`).join(', ')}` : undefined}
+                >
+                  <Layers className="w-3 h-3" />
+                  {entry.count} tomos juntos
+                </span>
+              )}
+            </div>
+
+            {item.notes && (
+              <p className="text-[11px] text-faint leading-snug line-clamp-2">{item.notes}</p>
+            )}
+
+            {item.comic_id && (
+              <button
+                type="button"
+                onClick={() => onOpenComic(item.comic_id as string)}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent2 transition-colors pt-0.5"
+              >
+                <BookOpen className="w-3 h-3" /> Ver cómic
+              </button>
+            )}
+          </div>
+        </div>
+
+        {canManage && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent hover:border-accent/40 transition-colors"
+              title="Editar"
+              aria-label="Editar lanzamiento"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent2 hover:border-accent/40 transition-colors"
+              title="Borrar"
+              aria-label="Borrar lanzamiento"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
           </div>
         )}
       </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1 py-0.5 space-y-1">
-        <div className="flex items-start gap-2">
-          <h3 className={`text-sm font-bold leading-snug ${isPast ? 'text-mute' : 'text-ink'}`}>
-            {item.title}
-          </h3>
-          {item.publisher && (
-            <span className="hidden sm:inline-flex shrink-0 px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold text-mute uppercase tracking-wide">
-              {item.publisher}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-mute">
-          {item.chapter_label && <span className="font-semibold text-accent">{item.chapter_label}</span>}
-          <span className="inline-flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {releaseTimeLabel(item.release_at)}
-          </span>
-          {!isPast && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[9px] font-bold uppercase tracking-wide">
-              <CalendarClock className="w-2.5 h-2.5" />
-              {countdownLabel(item.release_at)}
-            </span>
-          )}
-        </div>
-        {item.notes && <p className="text-[11px] text-faint leading-snug line-clamp-2">{item.notes}</p>}
-        {item.comic_id && (
-          <button
-            type="button"
-            onClick={() => onOpenComic(item.comic_id as string)}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent2 transition-colors pt-0.5"
-          >
-            <BookOpen className="w-3 h-3" /> Ver cómic
-          </button>
-        )}
-      </div>
-
-      {canManage && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent hover:border-accent/40 transition-colors"
-            title="Editar"
-            aria-label="Editar lanzamiento"
-          >
-            <Pencil className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1.5 rounded-lg bg-bg/90 border border-line text-mute hover:text-accent2 hover:border-accent/40 transition-colors"
-            title="Borrar"
-            aria-label="Borrar lanzamiento"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        </div>
-      )}
     </article>
   );
 };
@@ -190,19 +308,18 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
     const now = Date.now();
     const all = releases ?? [];
     return {
-      upcoming: all
-        .filter((r) => new Date(r.release_at).getTime() >= now)
-        .sort((a, b) => +new Date(a.release_at) - +new Date(b.release_at)),
-      past: all
-        .filter((r) => new Date(r.release_at).getTime() < now)
-        .sort((a, b) => +new Date(b.release_at) - +new Date(a.release_at))
-        .slice(0, 20),
+      upcoming: collapseBatches(all.filter((r) => new Date(r.release_at).getTime() >= now), 'asc'),
+      past: collapseBatches(all.filter((r) => new Date(r.release_at).getTime() < now), 'desc').slice(
+        0,
+        20,
+      ),
     };
   }, [releases]);
 
   const list = tab === 'upcoming' ? upcoming : past;
-  const groups = useMemo(() => groupByDay(list), [list]);
-  const next = upcoming[0];
+  const groups = useMemo(() => groupEntriesByDay(list), [list]);
+  const next = upcoming[0]?.primary;
+  const totalTomos = list.reduce((acc, entry) => acc + entry.count, 0);
 
   const handleDelete = async (item: ReleaseItem) => {
     if (!window.confirm(`¿Borrar el lanzamiento de "${item.title}"?`)) return;
@@ -356,33 +473,43 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
           )}
         </div>
       ) : (
-        <div className="space-y-6">
-          {groups.map((group) => (
-            <section key={group.key} className="space-y-2.5">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[11px] font-black uppercase tracking-widest text-mute">
-                  {group.label}
-                </h2>
-                <span className="flex-1 h-px bg-line" />
-                <span className="text-[10px] font-bold text-faint">
-                  {group.items.length} lanzamiento{group.items.length === 1 ? '' : 's'}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {group.items.map((item) => (
-                  <ReleaseCard
-                    key={item.id}
-                    item={item}
-                    canManage={canManageContent && Boolean(user)}
-                    onEdit={() => openEdit(item)}
-                    onDelete={() => void handleDelete(item)}
-                    onOpenComic={onOpenComic}
-                    isPast={tab === 'past'}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
+        <div className="space-y-7">
+          {totalTomos > list.length && (
+            <p className="text-[11px] text-faint">
+              Los tomos que salieron al mismo tiempo se muestran como uno solo, con el último
+              número publicado.
+            </p>
+          )}
+          {groups.map((group) => {
+            const tomos = group.entries.reduce((acc, entry) => acc + entry.count, 0);
+            return (
+              <section key={group.key} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-mute whitespace-nowrap">
+                    {group.label}
+                  </h2>
+                  <span className="flex-1 h-px bg-gradient-to-r from-line to-transparent" />
+                  <span className="text-[10px] font-bold text-faint whitespace-nowrap">
+                    {tomos} tomo{tomos === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {group.entries.map((entry, i) => (
+                    <TimelineCard
+                      key={entry.primary.id}
+                      entry={entry}
+                      canManage={canManageContent && Boolean(user)}
+                      onEdit={() => openEdit(entry.primary)}
+                      onDelete={() => void handleDelete(entry.primary)}
+                      onOpenComic={onOpenComic}
+                      isPast={tab === 'past'}
+                      isLast={i === group.entries.length - 1}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
 
