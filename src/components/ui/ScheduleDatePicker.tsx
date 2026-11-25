@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Clock, X } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
+import { colombiaLocalToIso } from '../../lib/releases';
 
 interface ScheduleDatePickerProps {
   value?: string; // ISO datetime string (YYYY-MM-DDTHH:mm)
@@ -38,9 +39,20 @@ export const ScheduleDatePicker: React.FC<ScheduleDatePickerProps> = ({
 
   const formatDisplay = () => {
     if (!value) return 'Sin programar';
-    const d = new Date(value);
-    const dateStr = d.toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(colombiaLocalToIso(value));
+    if (Number.isNaN(d.getTime())) return 'Sin programar';
+    const dateStr = d.toLocaleDateString('es-CO', {
+      timeZone: 'America/Bogota',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const timeStr = d.toLocaleTimeString('es-CO', {
+      timeZone: 'America/Bogota',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
     return `${dateStr} - ${timeStr}`;
   };
 
@@ -93,6 +105,7 @@ export const ScheduleDatePicker: React.FC<ScheduleDatePickerProps> = ({
           </button>
         )}
       </div>
+      <p className="text-[10px] text-faint mt-1">Hora de Colombia (GMT-5)</p>
 
       {/* Date picker popover */}
       {isDatePickerOpen && (

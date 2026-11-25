@@ -46,6 +46,7 @@ import { Modal } from './ui/Modal';
 import { ImageUploadField } from './ImageUploadField';
 import { BulkDriveImportModal } from './BulkDriveImportModal';
 import { ScheduleDatePicker } from './ui/ScheduleDatePicker';
+import { isoToColombiaInput } from '../lib/releases';
 
 interface ComicAdminFormModalProps {
   isOpen: boolean;
@@ -235,7 +236,7 @@ const ChapterEditor: React.FC<{
       </Field>
       <Field label="Programar lanzamiento en página" col2>
         <ScheduleDatePicker
-          value={chapter.schedule_date ?? ''}
+          value={chapter.schedule_date ? isoToColombiaInput(chapter.schedule_date) : ''}
           onChange={(val) => onUpdate('schedule_date', val)}
           label="Fecha y hora para aparecer en horario de lanzamientos"
         />

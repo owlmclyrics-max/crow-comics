@@ -245,6 +245,7 @@ export const ReleaseFormModal: React.FC<ReleaseFormModalProps> = ({
                 onChange={(e) => setReleaseAt(e.target.value)}
                 className={inputCls}
               />
+              <p className="text-[10px] text-faint">Hora de Colombia (GMT-5)</p>
             </Field>
             <Field label="Portada">
               <ImageUploadField label="Portada" value={coverUrl} onChange={setCoverUrl} compact />

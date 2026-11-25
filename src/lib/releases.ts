@@ -100,8 +100,7 @@ export const syncChapterRelease = async (
   chapterTitle: string,
   coverUrl: string | null,
   publisher: string | null,
-  scheduleDate: string | null,
-  meId: string
+  scheduleDate: string | null
 ): Promise<void> => {
   const db = requireDb();
 
@@ -125,6 +124,10 @@ export const syncChapterRelease = async (
   const title = `${comicTitle} - Tomo #${chapterNumber}`;
   const chapterLabel = chapterTitle ? `#${chapterNumber} - ${chapterTitle}` : `#${chapterNumber}`;
 
+  // El valor del editor viene en hora de Colombia: lo pasamos a UTC real.
+  const releaseAt = colombiaLocalToIso(scheduleDate);
+  if (!releaseAt) throw new Error('La fecha de programación no es válida');
+
   const input = {
     comic_id: null,
     chapter_id: chapterId,
@@ -132,7 +135,7 @@ export const syncChapterRelease = async (
     chapter_label: chapterLabel,
     publisher,
     cover_url: coverUrl,
-    release_at: scheduleDate,
+    release_at: releaseAt,
     notes: null,
   };
 
@@ -144,45 +147,99 @@ export const syncChapterRelease = async (
       .eq('id', existing.id);
     if (error) throw new Error(`No se pudo actualizar el lanzamiento: ${error.message}`);
   } else {
-    // Crear nuevo
+    // Crear nuevo. `created_by` debe ser el usuario logueado (FK a auth.users),
+    // no el id del cómic: si no, el insert falla y el calendario queda vacío.
+    const { data: authData } = await db.auth.getUser();
     const { error } = await db
       .from('release_schedule')
       .insert({
         ...input,
-        created_by: meId,
+        created_by: authData.user?.id ?? null,
       });
     if (error) throw new Error(`No se pudo crear el lanzamiento: ${error.message}`);
   }
 };
 
-/* ── Helpers de fecha (hora local del navegador) ───────────────────────── */
+/* ── Helpers de fecha (hora de Colombia, GMT-5, sin horario de verano) ──── */
 
-const pad = (n: number) => String(n).padStart(2, '0');
+/** Zona horaria de Colombia. No cambia con el horario de verano. */
+export const COLOMBIA_TZ = 'America/Bogota';
 
-/** ISO → valor para <input type="datetime-local">. */
-export const toLocalInput = (iso: string): string => {
+// Formato YYYY-MM-DD en hora de Colombia.
+const CO_DATE_FMT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: COLOMBIA_TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+// Formato HH:mm en hora de Colombia.
+const CO_TIME_FMT = new Intl.DateTimeFormat('en-GB', {
+  timeZone: COLOMBIA_TZ,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/** Clave de día (YYYY-MM-DD) en hora de Colombia. */
+export const colombiaDayKey = (iso: string): string => {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours(),
-  )}:${pad(d.getMinutes())}`;
+  return Number.isNaN(d.getTime()) ? '' : CO_DATE_FMT.format(d);
 };
 
-/** Valor de datetime-local → ISO UTC. */
-export const fromLocalInput = (value: string): string => {
-  const d = new Date(value);
+/** Número de día del mes en hora de Colombia. */
+export const colombiaDayNumber = (iso: string): number =>
+  Number(colombiaDayKey(iso).split('-')[2] || 0);
+
+/**
+ * Valor de <input type="datetime-local"> (hora de Colombia) → ISO UTC.
+ * Acepta también un ISO con zona (lo deja como está).
+ */
+export const colombiaLocalToIso = (value: string): string => {
+  const v = value.trim();
+  if (!v) return '';
+  if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(v)) {
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+  }
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return '';
+  // Colombia es UTC-5 todo el año: 18:00 en Bogotá = 23:00 UTC.
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00-05:00`);
   return Number.isNaN(d.getTime()) ? '' : d.toISOString();
 };
 
-export const releaseDateLabel = (iso: string): string => {
+/** ISO → valor de <input type="datetime-local"> en hora de Colombia. */
+export const isoToColombiaInput = (iso: string): string => {
+  const v = iso.trim();
+  // Si ya viene sin zona, es hora de pared (la del editor): se deja igual.
+  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(v) && !/[zZ]$|[+-]\d{2}:?\d{2}$/.test(v)) {
+    return v.slice(0, 16).replace(' ', 'T');
+  }
   const d = new Date(iso);
-  const today = new Date();
-  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diffDays = Math.round((startOf(d) - startOf(today)) / 86_400_000);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${CO_DATE_FMT.format(d)}T${CO_TIME_FMT.format(d)}`;
+};
+
+/** Compatibilidad con los nombres viejos (ya usan hora de Colombia). */
+export const toLocalInput = isoToColombiaInput;
+export const fromLocalInput = colombiaLocalToIso;
+
+/** Etiqueta de día: Hoy / Mañana / Ayer / "martes, 25 de noviembre". */
+export const releaseDateLabel = (iso: string): string => {
+  const key = colombiaDayKey(iso);
+  if (!key) return '';
+  const todayKey = CO_DATE_FMT.format(new Date());
+  const toUtc = (k: string) => {
+    const [y, m, d] = k.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  const diffDays = Math.round((toUtc(key) - toUtc(todayKey)) / 86_400_000);
   if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Mañana';
   if (diffDays === -1) return 'Ayer';
-  return d.toLocaleDateString('es', {
+  return new Date(iso).toLocaleDateString('es', {
+    timeZone: COLOMBIA_TZ,
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -190,7 +247,12 @@ export const releaseDateLabel = (iso: string): string => {
 };
 
 export const releaseTimeLabel = (iso: string): string =>
-  new Date(iso).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  new Date(iso).toLocaleTimeString('es-CO', {
+    timeZone: COLOMBIA_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
 /** Cuánto falta en texto corto ("en 3 días", "en 2 h"). */
 export const countdownLabel = (iso: string): string => {

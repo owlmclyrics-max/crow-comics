@@ -10,7 +10,7 @@ import {
   type ReadCountsByComic,
   type TagSource,
 } from '../lib/comicTags';
-import { syncChapterRelease } from '../lib/releases';
+import { syncChapterRelease, colombiaLocalToIso } from '../lib/releases';
 
 export interface SaveResult {
   success: boolean;
@@ -219,7 +219,7 @@ export const useComicsData = () => {
               cover_url: chapter.cover_url || null,
               pages_count: chapter.pages_count ?? null,
               release_date: chapter.release_date || null,
-              schedule_date: chapter.schedule_date || null,
+              schedule_date: chapter.schedule_date ? colombiaLocalToIso(chapter.schedule_date) : null,
               links: (chapter.links ?? []).filter((link) => link.url.trim()),
               pdf_url: chapter.pdf_url || null,
               // v0.9.9.9.6: páginas del visor propio (WebP en Supabase Storage).
@@ -260,8 +260,7 @@ export const useComicsData = () => {
                     chapter.title,
                     chapter.cover_url || null,
                     comicData.publisher,
-                    chapter.schedule_date,
-                    comicId
+                    chapter.schedule_date
                   );
                 } catch (releaseError) {
                   console.warn('No se pudo sincronizar lanzamiento:', releaseError);
@@ -299,8 +298,7 @@ export const useComicsData = () => {
                       chapter.title,
                       chapter.cover_url || null,
                       comicData.publisher,
-                      chapter.schedule_date,
-                      comicId
+                      chapter.schedule_date
                     );
                   } catch (releaseError) {
                     console.warn('No se pudo sincronizar lanzamiento:', releaseError);

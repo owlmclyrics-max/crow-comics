@@ -22,6 +22,9 @@ import { showToast } from './ui/Toast';
 import { ReleaseFormModal } from './ReleaseFormModal';
 import { proxyImageUrl } from '../lib/imageUrl';
 import {
+  COLOMBIA_TZ,
+  colombiaDayKey,
+  colombiaDayNumber,
   countdownLabel,
   deleteRelease,
   fetchReleases,
@@ -36,10 +39,7 @@ interface ReleasesPageProps {
   onBack: () => void;
 }
 
-const dayKey = (iso: string): string => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-};
+const dayKey = (iso: string): string => colombiaDayKey(iso);
 
 const groupByDay = (items: ReleaseItem[]): Array<{ key: string; label: string; items: ReleaseItem[] }> => {
   const map = new Map<string, ReleaseItem[]>();
@@ -70,13 +70,13 @@ const ReleaseCard: React.FC<{
       {/* Bloque de fecha */}
       <div className="shrink-0 w-14 sm:w-16 rounded-xl bg-bg border border-line flex flex-col items-center justify-center py-2">
         <span className="text-[9px] uppercase font-bold tracking-wider text-faint">
-          {d.toLocaleDateString('es', { month: 'short' }).replace('.', '')}
+          {d.toLocaleDateString('es', { timeZone: COLOMBIA_TZ, month: 'short' }).replace('.', '')}
         </span>
         <span className={`text-xl font-black leading-none ${isPast ? 'text-mute' : 'text-accent'}`}>
-          {d.getDate()}
+          {colombiaDayNumber(item.release_at)}
         </span>
         <span className="text-[9px] text-faint mt-0.5">
-          {d.toLocaleDateString('es', { weekday: 'short' }).replace('.', '')}
+          {d.toLocaleDateString('es', { timeZone: COLOMBIA_TZ, weekday: 'short' }).replace('.', '')}
         </span>
       </div>
 
