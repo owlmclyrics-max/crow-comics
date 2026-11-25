@@ -20,7 +20,8 @@ const isAllowedImageUrl = (parsed) =>
     parsed.hostname.endsWith('.wikia.nocookie.net') ||
     parsed.hostname === 'static.wikia.com');
 
-// Fandom /revision/latest responde 404 desde el worker; el archivo original sí.
+// Fandom /revision/latest responde 404 desde el worker y el archivo directo
+// llega en 200px. wsrv.nl sí entrega la original completa (sin agrandar).
 const plainFandomUrl = (parsed) => {
   const idx = parsed.pathname.indexOf('/revision/');
   if (idx < 0) return null;
@@ -30,6 +31,11 @@ const plainFandomUrl = (parsed) => {
   return plain;
 };
 
+const wsrvFandomUrl = (parsed) => {
+  const plain = (plainFandomUrl(parsed) ?? parsed).toString().replace(/^https?:\/\//, '');
+  return `https://wsrv.nl/?url=${encodeURIComponent(plain)}&w=1200&we&output=webp&q=85`;
+};
+
 const fetchImage = async (parsed) => {
   const headers = {
     'user-agent': BROWSER_UA,
@@ -37,11 +43,14 @@ const fetchImage = async (parsed) => {
     referer: 'https://crow-comics.pages.dev/',
   };
   const plain = plainFandomUrl(parsed);
-  const candidates = plain ? [plain, parsed] : [parsed];
+  const candidates = [wsrvFandomUrl(parsed)];
+  if (plain) candidates.push(plain.toString());
+  candidates.push(parsed.toString());
   let last = null;
   for (const candidate of candidates) {
-    const res = await fetch(candidate.toString(), { headers });
-    if (res.ok && res.body) return res;
+    const res = await fetch(candidate, { headers });
+    const type = res.headers.get('content-type') || '';
+    if (res.ok && res.body && type.startsWith('image/')) return res;
     last = res;
   }
   return last;

@@ -53,5 +53,5 @@ export const proxyImageUrl = (url: string | null | undefined): string => {
   const normalized = isFandom
     ? raw.replace(/\/revision\/[^?#]*/, '').replace(/[?#].*$/, '')
     : raw;
-  return `/img?u=${encodeURIComponent(normalized)}`;
+  return `/img?u=${encodeURIComponent(normalized)}&v=4`;
 };

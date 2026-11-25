@@ -121,7 +121,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                 src={proxyImageUrl(fallbackComic.cover_url)}
                 alt=""
                 aria-hidden="true"
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover object-top sm:object-contain sm:object-right"
               />
             </div>
           </>
@@ -231,7 +231,7 @@ export const SteamHeroCarousel: React.FC<SteamHeroCarouselProps> = ({
                     <img
                       src={cover}
                       alt=""
-                      className="w-full h-full object-cover object-top"
+                      className="w-full h-full object-cover object-top sm:object-contain sm:object-right"
                     />
                   </div>
                 </>

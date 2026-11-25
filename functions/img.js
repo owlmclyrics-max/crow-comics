@@ -60,6 +60,21 @@ const plainFandomUrl = (parsed) => {
 };
 
 /**
+ * Fandom le entrega al worker una versión diminuta (200px) de la portada.
+ * wsrv.nl (proxy de imágenes público) sí obtiene la original completa, así
+ * que para Fandom pedimos por ahí. `we` evita agrandar: si la original mide
+ * 465px, devuelve 465px nítidos en vez de un upscale borroso.
+ */
+const wsrvFandomUrl = (parsed) => {
+  const plain = plainFandomUrl(parsed) ?? parsed.toString();
+  const noScheme = plain.replace(/^https?:\/\//, '');
+  return `https://wsrv.nl/?url=${encodeURIComponent(noScheme)}&w=1200&we&output=webp&q=85`;
+};
+
+const isImageResponse = (res) =>
+  res.ok && (res.headers.get('content-type') || '').startsWith('image/');
+
+/**
  * Trae la imagen del origen con reintentos: Fandom (Fastly) limita las
  * ráfagas — si el home pide 8 portadas a la vez, alguna responde 403/429.
  * Reintenta 2 veces con espera creciente en esos casos.
@@ -71,20 +86,24 @@ const fetchUpstream = async (url) => {
     accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
   };
 
-  // En Fandom probamos primero el archivo original: el endpoint /revision/
-  // responde 404 desde el worker.
+  // Fandom: wsrv primero (la original completa), después el archivo directo.
+  const candidates = [];
+  if (url.hostname.endsWith('wikia.nocookie.net')) {
+    candidates.push(wsrvFandomUrl(url));
+  }
   const fallback = plainFandomUrl(url);
-  const candidates = fallback ? [fallback, url.toString()] : [url.toString()];
+  if (fallback) candidates.push(fallback);
+  candidates.push(url.toString());
 
   let lastStatus = 502;
   for (const candidate of candidates) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt > 0) {
         await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
       }
       try {
         const res = await fetch(candidate, { headers });
-        if (res.ok) return res;
+        if (isImageResponse(res)) return res;
         lastStatus = res.status;
         // 4xx definitivos (400/404/etc.) no mejoran con reintento
         if (res.status !== 403 && res.status !== 429 && res.status < 500) break;

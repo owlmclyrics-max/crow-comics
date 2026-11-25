@@ -18,7 +18,7 @@ export const isFandomImageUrl = (url: string): boolean =>
 
 /** URL del proxy de imágenes de Fandom (functions/fandom-image.js). */
 export const fandomImageProxyUrl = (url: string): string =>
-  `/fandom-image?u=${encodeURIComponent(url.trim())}`;
+  `/fandom-image?u=${encodeURIComponent(url.trim())}&v=2`;
 
 /** Re-encodea una imagen a WebP limitando el ancho (calidad fiel, poco peso). */
 export const toWebpImage = async (
