@@ -9,19 +9,25 @@ import {
   ArrowRight,
   BookOpen,
   CalendarClock,
+  CalendarDays,
   CalendarX2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Layers,
+  LayoutList,
   Loader2,
   Pencil,
   Plus,
   RefreshCw,
   Trash2,
+  X,
 } from 'lucide-react';
 import type { Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from './ui/Toast';
 import { ReleaseFormModal } from './ReleaseFormModal';
+import { Modal } from './ui/Modal';
 import { proxyImageUrl } from '../lib/imageUrl';
 import {
   COLOMBIA_TZ,
@@ -125,6 +131,10 @@ const groupEntriesByDay = (
 const TIMELINE_COLORS = ['#a3e635', '#38bdf8', '#fb7185', '#facc15', '#fb923c', '#a78bfa'];
 
 const HEX_CLIP = 'polygon(24% 0%, 76% 0%, 100% 50%, 76% 100%, 24% 100%, 0% 50%)';
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const CAL_WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 const TimelineColumn: React.FC<{
   entry: TimelineEntry;
@@ -344,6 +354,14 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ReleaseItem | null>(null);
   const [reloading, setReloading] = useState(false);
+  const [view, setView] = useState<'timeline' | 'calendar'>('timeline');
+  const [dayOpen, setDayOpen] = useState<string | null>(null);
+
+  const todayKey = colombiaDayKey(new Date().toISOString());
+  const [cursor, setCursor] = useState(() => {
+    const [y, m] = colombiaDayKey(new Date().toISOString()).split('-').map(Number);
+    return { year: y, month: m - 1 };
+  });
 
   const load = useCallback(async (spinner = false) => {
     if (spinner) setReloading(true);
@@ -383,6 +401,51 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
       ),
     [groups],
   );
+
+  /* ── Vista calendario ─────────────────────────────────────────────── */
+  const allEntries = useMemo(() => collapseBatches(releases ?? [], 'asc'), [releases]);
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, TimelineEntry[]>();
+    for (const entry of allEntries) {
+      const key = colombiaDayKey(entry.primary.release_at);
+      const list = map.get(key);
+      if (list) list.push(entry);
+      else map.set(key, [entry]);
+    }
+    return map;
+  }, [allEntries]);
+
+  const calendar = useMemo(() => {
+    const { year, month } = cursor;
+    const first = new Date(Date.UTC(year, month, 1));
+    const lead = (first.getUTCDay() + 6) % 7;
+    const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const cells: Array<{ key: string; day: number | null }> = [];
+    for (let i = 0; i < lead; i += 1) cells.push({ key: `lead-${i}`, day: null });
+    for (let d = 1; d <= days; d += 1) {
+      cells.push({ key: `${year}-${pad2(month + 1)}-${pad2(d)}`, day: d });
+    }
+    while (cells.length % 7 !== 0) cells.push({ key: `tail-${cells.length}`, day: null });
+    return {
+      cells,
+      label: first.toLocaleDateString('es', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+    };
+  }, [cursor]);
+
+  const dayEntries = dayOpen ? (byDay.get(dayOpen) ?? []) : [];
+
+  const shiftMonth = (delta: number) => {
+    setCursor(({ year, month }) => {
+      const d = new Date(Date.UTC(year, month + delta, 1));
+      return { year: d.getUTCFullYear(), month: d.getUTCMonth() };
+    });
+  };
+
+  const goToday = () => {
+    const [y, m] = todayKey.split('-').map(Number);
+    setCursor({ year: y, month: m - 1 });
+  };
   const next = upcoming[0]?.primary;
   const totalTomos = list.reduce((acc, entry) => acc + entry.count, 0);
 
@@ -479,24 +542,53 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
         </div>
       </header>
 
-      {/* Pestañas */}
-      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-surface border border-line">
-        <button
-          onClick={() => setTab('upcoming')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            tab === 'upcoming' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
-          }`}
-        >
-          Próximos {upcoming.length > 0 ? `(${upcoming.length})` : ''}
-        </button>
-        <button
-          onClick={() => setTab('past')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            tab === 'past' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
-          }`}
-        >
-          Pasados {past.length > 0 ? `(${past.length})` : ''}
-        </button>
+      {/* Pestañas + selector de vista */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {view === 'timeline' ? (
+          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-surface border border-line">
+            <button
+              onClick={() => setTab('upcoming')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                tab === 'upcoming' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
+              }`}
+            >
+              Próximos {upcoming.length > 0 ? `(${upcoming.length})` : ''}
+            </button>
+            <button
+              onClick={() => setTab('past')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                tab === 'past' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
+              }`}
+            >
+              Pasados {past.length > 0 ? `(${past.length})` : ''}
+            </button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-faint">
+            Tocá un día con portada para ver sus lanzamientos.
+          </p>
+        )}
+
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-surface border border-line">
+          <button
+            onClick={() => setView('timeline')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              view === 'timeline' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
+            }`}
+            aria-pressed={view === 'timeline'}
+          >
+            <LayoutList className="w-3.5 h-3.5" /> Timeline
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              view === 'calendar' ? 'bg-accent text-onaccent' : 'text-mute hover:text-ink'
+            }`}
+            aria-pressed={view === 'calendar'}
+          >
+            <CalendarDays className="w-3.5 h-3.5" /> Calendario
+          </button>
+        </div>
       </div>
 
       {/* Contenido */}
@@ -517,18 +609,14 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
             </p>
           )}
         </div>
-      ) : groups.length === 0 ? (
+      ) : allEntries.length === 0 ? (
         <div className="py-16 flex flex-col items-center gap-3 text-center">
           <CalendarX2 className="w-10 h-10 text-faint" />
-          <p className="text-sm font-bold text-mute">
-            {tab === 'upcoming' ? 'No hay lanzamientos programados' : 'Todavía no hay lanzamientos pasados'}
-          </p>
+          <p className="text-sm font-bold text-mute">No hay lanzamientos programados</p>
           <p className="text-[11px] text-faint max-w-sm">
-            {tab === 'upcoming'
-              ? 'Cuando el equipo agregue fechas, van a aparecer acá ordenadas por día y hora.'
-              : 'Los lanzamientos aparecen acá cuando pasa su fecha.'}
+            Cuando el equipo agregue fechas, van a aparecer acá en el timeline y en el calendario.
           </p>
-          {canManageContent && user && tab === 'upcoming' && (
+          {canManageContent && user && (
             <button
               onClick={openNew}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent2 text-onaccent text-xs font-bold transition-colors"
@@ -536,6 +624,123 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
               <Plus className="w-3.5 h-3.5" /> Agregar el primero
             </button>
           )}
+        </div>
+      ) : view === 'calendar' ? (
+        <div className="rounded-3xl border border-line bg-surface p-3 sm:p-5 space-y-4">
+          {/* Navegación de mes */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => shiftMonth(-1)}
+                className="p-2 rounded-xl bg-bg border border-line text-mute hover:text-ink hover:bg-raised transition-colors"
+                aria-label="Mes anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <h2 className="min-w-[9.5rem] text-center text-sm sm:text-base font-black text-ink capitalize">
+                {calendar.label}
+              </h2>
+              <button
+                onClick={() => shiftMonth(1)}
+                className="p-2 rounded-xl bg-bg border border-line text-mute hover:text-ink hover:bg-raised transition-colors"
+                aria-label="Mes siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={goToday}
+              className="px-3 py-1.5 rounded-xl bg-bg border border-line text-[11px] font-bold text-mute hover:text-accent hover:border-accent/40 transition-colors"
+            >
+              Hoy
+            </button>
+          </div>
+
+          {/* Días de la semana + grilla */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {CAL_WEEKDAYS.map((d) => (
+              <div
+                key={d}
+                className="pb-1 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-faint"
+              >
+                {d}
+              </div>
+            ))}
+
+            {calendar.cells.map((cell) => {
+              if (!cell.day) return <div key={cell.key} aria-hidden />;
+              const dayList = byDay.get(cell.key) ?? [];
+              const latest = dayList[dayList.length - 1];
+              const has = dayList.length > 0;
+              const isToday = cell.key === todayKey;
+              const isPastDay = cell.key < todayKey;
+
+              return (
+                <button
+                  key={cell.key}
+                  type="button"
+                  disabled={!has}
+                  onClick={() => setDayOpen(cell.key)}
+                  className={`relative flex aspect-square flex-col items-center justify-center rounded-2xl transition-colors ${
+                    has ? 'cursor-pointer hover:bg-raised/50' : 'cursor-default'
+                  }`}
+                  aria-label={
+                    has ? `Ver ${dayList.length} lanzamiento(s) del día ${cell.day}` : undefined
+                  }
+                >
+                  <span
+                    className={`relative flex items-center justify-center overflow-hidden rounded-full ${
+                      has
+                        ? 'w-10 h-10 sm:w-14 sm:h-14'
+                        : 'w-8 h-8 sm:w-10 sm:h-10 border border-line/60'
+                    } ${isToday ? 'ring-2 ring-accent' : has ? 'ring-1 ring-line' : ''} ${
+                      !has && isPastDay ? 'opacity-40' : ''
+                    }`}
+                  >
+                    {has && latest.primary.cover_url && (
+                      <img
+                        src={proxyImageUrl(latest.primary.cover_url)}
+                        alt=""
+                        className={`absolute inset-0 h-full w-full object-cover ${
+                          isPastDay ? 'opacity-70' : ''
+                        }`}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    {has && <span className="absolute inset-0 bg-black/45" />}
+                    <span
+                      className={`relative font-black leading-none ${
+                        has ? 'text-sm sm:text-base text-white' : 'text-[11px] sm:text-xs text-mute'
+                      } ${isToday && !has ? 'text-accent' : ''}`}
+                    >
+                      {cell.day}
+                    </span>
+                  </span>
+
+                  {dayList.length > 1 && (
+                    <span className="absolute right-0.5 top-0.5 sm:right-1 sm:top-1 min-w-[15px] h-[15px] px-1 rounded-full bg-accent text-onaccent text-[8px] font-black flex items-center justify-center">
+                      {dayList.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="py-12 flex flex-col items-center gap-2 text-center">
+          <CalendarX2 className="w-8 h-8 text-faint" />
+          <p className="text-sm font-bold text-mute">
+            {tab === 'upcoming'
+              ? 'No hay lanzamientos próximos'
+              : 'Todavía no hay lanzamientos pasados'}
+          </p>
+          <p className="text-[11px] text-faint">
+            {tab === 'upcoming'
+              ? 'Probá la vista Calendario o programá uno nuevo.'
+              : 'Los lanzamientos aparecen acá cuando pasa su fecha.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -572,6 +777,146 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({ comics, onOpenComic,
           )}
         </div>
       )}
+
+      {/* Ficha del día */}
+      <Modal
+        isOpen={dayOpen !== null}
+        onClose={() => setDayOpen(null)}
+        className="max-w-lg"
+        closeOnBackdrop
+      >
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-line">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-accent">
+              Lanzamientos del día
+            </p>
+            <h3 className="text-base sm:text-lg font-black text-ink capitalize leading-tight">
+              {dayOpen ? releaseDateLabel(`${dayOpen}T12:00:00-05:00`) : ''}
+            </h3>
+            <p className="text-[11px] text-faint">
+              {dayEntries.length} lanzamiento{dayEntries.length === 1 ? '' : 's'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDayOpen(null)}
+            className="shrink-0 p-2 rounded-xl bg-bg border border-line text-mute hover:text-ink hover:border-accent/40 transition-colors"
+            aria-label="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-3 sm:p-4 space-y-2 overflow-y-auto">
+          {dayEntries.map((entry) => {
+            const item = entry.primary;
+            const isPastItem = new Date(item.release_at).getTime() < Date.now();
+            return (
+              <div
+                key={item.id}
+                className="flex gap-3 p-2.5 rounded-2xl border border-line bg-bg/40"
+              >
+                <div className="w-14 shrink-0 aspect-[2/3] rounded-lg overflow-hidden bg-bg border border-line">
+                  {item.cover_url ? (
+                    <img
+                      src={proxyImageUrl(item.cover_url)}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <BookOpen className="w-4 h-4 text-faint" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-accent">
+                      <Clock className="w-3 h-3" />
+                      {releaseTimeLabel(item.release_at)}
+                    </span>
+                    {isPastItem ? (
+                      <span className="px-1.5 py-0.5 rounded-md bg-raised text-[9px] font-bold uppercase tracking-wide text-mute">
+                        Publicado
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[9px] font-bold uppercase tracking-wide">
+                        <CalendarClock className="w-2.5 h-2.5" />
+                        {countdownLabel(item.release_at)}
+                      </span>
+                    )}
+                    {entry.count > 1 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-bg border border-line text-[9px] font-bold text-mute">
+                        <Layers className="w-2.5 h-2.5" />
+                        {entry.count} tomos
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-bold text-ink leading-snug line-clamp-2">
+                    {item.title}
+                  </h4>
+
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-faint">
+                    {item.chapter_label && (
+                      <span className="font-bold text-accent">{item.chapter_label}</span>
+                    )}
+                    {item.publisher && (
+                      <span className="uppercase tracking-wide">{item.publisher}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    {item.comic_id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDayOpen(null);
+                          onOpenComic(item.comic_id as string);
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-accent hover:text-accent2 transition-colors"
+                      >
+                        <BookOpen className="w-3 h-3" /> Ver cómic
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+
+                    {canManageContent && user && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDayOpen(null);
+                            openEdit(item);
+                          }}
+                          className="p-1.5 rounded-lg bg-bg border border-line text-mute hover:text-accent hover:border-accent/40 transition-colors"
+                          title="Editar"
+                          aria-label="Editar lanzamiento"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(item)}
+                          className="p-1.5 rounded-lg bg-bg border border-line text-mute hover:text-accent2 hover:border-accent/40 transition-colors"
+                          title="Borrar"
+                          aria-label="Borrar lanzamiento"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
 
       <ReleaseFormModal
         isOpen={formOpen}
