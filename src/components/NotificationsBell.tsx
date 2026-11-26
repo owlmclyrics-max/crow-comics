@@ -11,7 +11,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, BookOpen, CheckCheck, X } from 'lucide-react';
+import { Bell, BookOpen, CheckCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { Chapter, Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
 import { useComics } from '../context/ComicsContext';
@@ -118,6 +118,8 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
   const ref = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const [chipEdges, setChipEdges] = useState({ left: false, right: false });
 
   /* ── Tomos nuevos desde la última visita ── */
   const allChapters = useMemo<ChapterRow[]>(() => {
@@ -273,6 +275,32 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
       window.removeEventListener('scroll', update, true);
     };
   }, [open, computeCoords]);
+
+  /** Flechas de la fila de filtros: solo si hay chips fuera de vista. */
+  const updateChipEdges = useCallback(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    setChipEdges({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(updateChipEdges, 60);
+    window.addEventListener('resize', updateChipEdges);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('resize', updateChipEdges);
+    };
+  }, [open, filter, updateChipEdges]);
+
+  const scrollChips = (dir: 1 | -1) => {
+    const el = chipsRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
+  };
 
   const closeBell = () => {
     setOpen(false);
@@ -444,22 +472,52 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
             </div>
           </div>
 
-          {/* Chips estilo IG */}
-          <div className="flex gap-1.5 px-3 py-2 border-b border-line bg-raised/30 overflow-x-auto [scrollbar-width:none]">
-            {FILTERS.map((f) => (
+          {/* Chips estilo IG (con flechas si no entran todos) */}
+          <div className="relative border-b border-line bg-raised/30">
+            {chipEdges.left && (
               <button
-                key={f.id}
                 type="button"
-                onClick={() => setFilter(f.id)}
-                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors ${
-                  filter === f.id
-                    ? 'bg-accent text-onaccent'
-                    : 'bg-bg border border-line text-mute hover:text-ink'
-                }`}
+                onClick={() => scrollChips(-1)}
+                className="absolute inset-y-0 left-0 z-10 flex w-7 items-center justify-center bg-gradient-to-r from-bg via-bg/90 to-transparent text-mute hover:text-accent transition-colors"
+                aria-label="Ver filtros anteriores"
               >
-                {f.label}
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
+
+            <div
+              ref={chipsRef}
+              onScroll={updateChipEdges}
+              className={`flex gap-1.5 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+                chipEdges.left ? 'pl-7' : 'pl-3'
+              } ${chipEdges.right ? 'pr-7' : 'pr-3'}`}
+            >
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors ${
+                    filter === f.id
+                      ? 'bg-accent text-onaccent'
+                      : 'bg-bg border border-line text-mute hover:text-ink'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {chipEdges.right && (
+              <button
+                type="button"
+                onClick={() => scrollChips(1)}
+                className="absolute inset-y-0 right-0 z-10 flex w-7 items-center justify-center bg-gradient-to-l from-bg via-bg/90 to-transparent text-mute hover:text-accent transition-colors"
+                aria-label="Ver más filtros"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto">
