@@ -10,6 +10,7 @@
  * agrupado por Hoy / Ayer / fecha. El globo del botón suma ambos mundos.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, BookOpen, CheckCheck, X } from 'lucide-react';
 import type { Chapter, Comic } from '../types/comic';
 import { useAuth } from '../context/AuthContext';
@@ -99,14 +100,24 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
 }) => {
   const { user } = useAuth();
   const { comics, refreshComics } = useComics();
-  const { follows } = useFollows();
+  const { follows, markSeen: markFollowSeen } = useFollows();
   const meId = user?.id ?? null;
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationItem[] | null>(null);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>('todas');
   const [seenAt, setSeenAt] = useState<Date | null>(() => readSeenAt());
+  /** Tomos que había al abrir el panel (se congelan para que no desaparezcan). */
+  const [sessionChapters, setSessionChapters] = useState<ChapterRow[] | null>(null);
+  const [coords, setCoords] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   /* ── Tomos nuevos desde la última visita ── */
   const allChapters = useMemo<ChapterRow[]>(() => {
@@ -174,7 +185,16 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
       return;
     }
     try {
-      setItems(await fetchNotifications(meId));
+      const list = await fetchNotifications(meId);
+      setItems(list);
+      // Al abrir la campana el contenido ya se ve: queda como leído.
+      const hasUnread = list.some((n) => !n.read_at);
+      if (hasUnread) {
+        await markAllNotificationsRead(meId);
+        const nowIso = new Date().toISOString();
+        setItems((prev) => (prev ?? []).map((n) => (n.read_at ? n : { ...n, read_at: nowIso })));
+      }
+      setUnread(0);
     } catch {
       setItems([]);
     }
@@ -206,14 +226,57 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) closeBell();
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || panelRef.current?.contains(target)) return;
+      closeBell();
     };
     if (open) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open, newChapters.length]);
+  }, [open]);
+
+  /** Coloca el panel pegado a la campana sin que se salga de la pantalla. */
+  const computeCoords = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Móvil/tablet: debajo de la barra, ancho completo.
+    if (vw < 1024) {
+      const top = Math.max(12, r.bottom + 8);
+      setCoords({ left: 12, top, width: vw - 24, maxHeight: vh - top - 12 });
+      return;
+    }
+
+    // PC: al lado del riel izquierdo, hacia arriba si hay más espacio.
+    const width = 352;
+    let left = r.right + 12;
+    if (left + width > vw - 12) left = Math.max(12, vw - width - 12);
+
+    const spaceAbove = r.top - 12;
+    const spaceBelow = vh - r.bottom - 12;
+    const useAbove = spaceAbove >= spaceBelow;
+    const maxHeight = Math.max(240, Math.min(useAbove ? spaceAbove : spaceBelow, 620));
+    const top = useAbove ? Math.max(12, r.bottom - maxHeight) : r.bottom + 8;
+    setCoords({ left, top, width, maxHeight });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    computeCoords();
+    const update = () => computeCoords();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open, computeCoords]);
 
   const closeBell = () => {
     setOpen(false);
+    setSessionChapters(null);
     if (newChapters.length > 0) markChaptersSeen();
   };
 
@@ -222,8 +285,14 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
       closeBell();
       return;
     }
+    computeCoords();
+    // Congelamos los tomos visibles y limpiamos el globo al instante.
+    setSessionChapters(newChapters);
     setOpen(true);
     void loadList();
+    if (newChapters.length > 0) markChaptersSeen();
+    // Ver la campana también marca como vistos los cómics seguidos.
+    for (const entry of followedNew) markFollowSeen(entry.comic.id);
   };
 
   const handleOpenSocial = (n: NotificationItem) => {
@@ -250,6 +319,8 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
   };
 
   /* ── Filas unificadas ── */
+  const displayChapters = sessionChapters ?? newChapters;
+
   const rows = useMemo<Row[]>(() => {
     const socialRows: Row[] = (items ?? []).map((n) => ({
       kind: 'social',
@@ -258,7 +329,7 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
       n,
     }));
     // Tomos: los de cómics seguidos pesan más, pero se muestran todos los nuevos.
-    const chapterRows: Row[] = newChapters.slice(0, 20).map((entry) => ({
+    const chapterRows: Row[] = displayChapters.slice(0, 20).map((entry) => ({
       kind: 'chapter',
       at: entry.date.toISOString(),
       id: `ch-${entry.chapter.id}`,
@@ -287,7 +358,7 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
         list = [...socialRows, ...chapterRows];
     }
     return list.sort((a, b) => +new Date(b.at) - +new Date(a.at));
-  }, [items, newChapters, filter]);
+  }, [items, displayChapters, filter]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Row[]>();
@@ -310,6 +381,7 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         onClick={toggle}
         aria-label="Notificaciones"
@@ -327,8 +399,19 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
         )}
       </button>
 
-      {open && (
-        <div className="absolute z-50 w-[22rem] max-w-[calc(100vw-1.5rem)] bg-bg border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in max-lg:fixed max-lg:top-[4.5rem] max-lg:right-3 max-lg:left-3 max-lg:w-auto lg:bottom-full lg:left-0 lg:mb-2">
+      {open &&
+        coords &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              left: coords.left,
+              top: coords.top,
+              width: coords.width,
+              maxHeight: coords.maxHeight,
+            }}
+            className="fixed z-[60] flex flex-col bg-bg border border-line rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+          >
           <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Bell className="w-4 h-4 text-accent shrink-0" />
@@ -379,7 +462,7 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
             ))}
           </div>
 
-          <div className="max-h-[65vh] overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {items === null && filter !== 'tomos' ? (
               <div className="py-10 text-center">
                 <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto" />
@@ -464,8 +547,9 @@ export const NotificationsBell: React.FC<NotificationsBellProps> = ({
               ))
             )}
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
